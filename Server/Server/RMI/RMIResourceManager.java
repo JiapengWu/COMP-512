@@ -20,7 +20,7 @@ public class RMIResourceManager extends ResourceManager
 {
 	private static String s_serverName = "Server";
 	//TODO: REPLACE 'ALEX' WITH YOUR GROUP NUMBER TO COMPILE
-	private static String s_rmiPrefix = "groupJingPaul_";
+	private static String s_rmiPrefix = "group6_";
 
 	public static void main(String args[])
 	{
