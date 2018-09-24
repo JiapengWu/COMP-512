@@ -67,7 +67,7 @@ public class RMIClient extends Client
 	public void connectServer(String server, int port, String name)
 	{
 		try {
-			boolean first = true;
+			boolean  = true;
 			while (true) {
 				try {
 					Registry registry = LocateRegistry.getRegistry(server, port);
