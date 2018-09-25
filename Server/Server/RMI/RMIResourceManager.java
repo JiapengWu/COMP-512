@@ -21,7 +21,7 @@ public class RMIResourceManager extends ResourceManager
 	private static String s_serverName = "Server";
 	//TODO: REPLACE 'ALEX' WITH YOUR GROUP NUMBER TO COMPILE
 	private static String s_rmiPrefix = "group6_";
-	private int port = 1099;
+	private static int port = 1099;
 
 
 	public static void main(String args[])
@@ -34,16 +34,13 @@ public class RMIResourceManager extends ResourceManager
 		// Create the RMI server entry
 		try {
 			// Create a new Server object
-			RMIResourceManager server = new RMIResourceManager(s_serverName);
-
-			ResourceManager flightRM = new ResourceManager("flightRM");
-			ResourceManager carRM = new ResourceManager("carRM");
-			ResourceManager hotelRM = new ResourceManager("hotelRM");
+		  
+			RMIResourceManager server = new RMIResourceManager(s_rmiPrefix + s_serverName);
+			ResourceManager resourceManager = new ResourceManager(s_rmiPrefix + s_serverName + "_RM");
 
 			// Dynamically generate the stub (MiddleWare proxy)
-			UnicastRemoteObject.exportObject(flightRM, port);
-			UnicastRemoteObject.exportObject(carRM, port);
-			UnicastRemoteObject.exportObject(hotelRM, port);
+			UnicastRemoteObject.exportObject(server, port);
+			UnicastRemoteObject.exportObject(resourceManager, port);
 
 			// Bind the remote object's stub in the registry
 			Registry l_registry;
@@ -53,7 +50,9 @@ public class RMIResourceManager extends ResourceManager
 				l_registry = LocateRegistry.getRegistry(port);
 			}
 			final Registry registry = l_registry;
-			registry.rebind(s_rmiPrefix + s_serverName, resourceManager);
+			
+			registry.rebind(s_rmiPrefix + s_serverName, server);
+			registry.rebind(s_rmiPrefix + s_serverName + "_RM", resourceManager);
 
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {

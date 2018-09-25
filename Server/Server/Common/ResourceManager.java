@@ -384,5 +384,6 @@ public class ResourceManager implements IResourceManager
 	{
 		return m_name;
 	}
+	
 }
  
