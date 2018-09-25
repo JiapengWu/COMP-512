@@ -43,6 +43,16 @@ public class RMIMiddleWare implements IResourceManager {
 
     // create client registry
 
+
+
+    try {
+      getResourceManagers(args);
+    } catch (Exception e) {
+      Trace.error("Error getting resource manager");
+    }
+    RMIResourceManager server = new RMIResourceManager(s_rmiPrefix + s_serverName);
+    ResourceManager resourceManager = new ResourceManager(s_rmiPrefix + s_serverName + "_RM");
+
     try {
       client_registry = LocateRegistry.createRegistry(middleware_port);
     } catch (RemoteException e) {
@@ -53,11 +63,24 @@ public class RMIMiddleWare implements IResourceManager {
         Trace.error("Cannot get client registry.");
       }
     }
-
+    // Dynamically generate the stub (MiddleWare proxy)
     try {
-      getResourceManagers(args);
-    } catch (Exception e) {
-      Trace.error("Error getting resource manager");
+      UnicastRemoteObject.exportObject(flightRM, middleware_port);
+      UnicastRemoteObject.exportObject(carRM, middleware_port);
+      UnicastRemoteObject.exportObject(roomRM, middleware_port);
+      UnicastRemoteObject.exportObject(customerRM, middleware_port);
+    } catch (RemoteException e) {
+      Trace.error("Error getting registering resource manager");
+    }
+    
+    try {
+      client_registry.rebind(s_rmiPrefix + "Flights" + "_RM", flightRM);
+      client_registry.rebind(s_rmiPrefix + "Cars" + "_RM", carRM);
+      client_registry.rebind(s_rmiPrefix + "Rooms" + "_RM", roomRM);
+      client_registry.rebind(s_rmiPrefix + "Customer" + "_RM", customerRM);
+      
+    } catch (RemoteException e) {
+      Trace.error("Error getting rebinding resource manager");
     }
 
     
