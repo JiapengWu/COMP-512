@@ -1,9 +1,10 @@
 ./run_rmi.sh > /dev/null
 
 echo "Edit file run_middleware.sh to include instructions for launching the middleware"
-echo ' $0 - server name'
+
 echo '  $1 - hostname of Flights'
 echo '  $2 - hostname of Cars'
 echo '  $3 - hostname of Rooms'
+echo '   $4 - hostname of Customers'
 
-java -Djava.security.policy=java.policy -Djava.rmi.server.codebase=file:$(pwd)/ Server.RMI.RMIMiddleware Resources $0 $1 $2 $3
+java -Djava.security.policy=java.policy -Djava.rmi.server.codebase=file:$(pwd)/ Server.RMI.RMIMiddleware Resources $1 $2 $3 $4
