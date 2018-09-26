@@ -1,24 +1,29 @@
 package Server.Common;
 
+import java.util.HashMap;
+
 import Server.Interface.IResourceManager;
 
 public class CustomerUtility {
   
+  private static HashMap<Integer, Customer> customer_map;
+  
   public static boolean reserveItem(IResourceManager customerRM, IResourceManager targetRM, int id, int customerID, String key, String location) {
     Trace.info("RM::reserveItem(" + id + ", customer=" + customerID + ", " + customerID + ", " + location + ") called" ); 
     // get customer from m_data
-    Customer customer = (Customer) ((ResourceManager) customerRM).readData(id, Customer.getKey(customerID));
+    Customer customer = customer_map.get(customerID);
     if (customer == null)
     {
       Trace.warn("RM::reserveItem(" + id + ", " + customerID + ", " + key + ", " + location + ")  failed--customer doesn't exist");
       return false;
-    } 
+    }
 
     // Check if the item is available
     ReservableItem item = (ReservableItem)((ResourceManager)targetRM).readData(id, key);
     if(item instanceof Flight) {
       
     }
+    
     
 /*
     if (item == null)

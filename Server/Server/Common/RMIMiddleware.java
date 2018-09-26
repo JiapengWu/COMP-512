@@ -1,15 +1,12 @@
-package Server.RMI;
+package Server.Common;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 import java.util.Vector;
 
-import Server.Common.CustomerUtility;
-import Server.Common.Flight;
-import Server.Common.RMHashMap;
-import Server.Common.Trace;
 import Server.Interface.IResourceManager;
 
 public class RMIMiddleware implements IResourceManager {
@@ -22,7 +19,7 @@ public class RMIMiddleware implements IResourceManager {
   private static IResourceManager roomRM;
   private static IResourceManager customerRM;
   
-  protected RMHashMap m_itemHT = new RMHashMap();
+  protected static HashMap<Integer, Customer> customer_map = new HashMap<Integer, Customer>();
   private static int middleware_port = 1099;
   private static int server_port = 1099;
 
@@ -84,6 +81,7 @@ public class RMIMiddleware implements IResourceManager {
 		}
 
 		// Create and install a security manager
+
 		if (System.getSecurityManager() == null)
 		{
 			System.setSecurityManager(new SecurityManager());
@@ -136,15 +134,6 @@ public class RMIMiddleware implements IResourceManager {
     return roomRM.addRooms(id, location, numRooms, price);
   }
 
-  @Override
-  public int newCustomer(int id) throws RemoteException {
-    return customerRM.newCustomer(id);
-  }
-
-  @Override
-  public boolean newCustomer(int id, int cid) throws RemoteException {
-    return customerRM.newCustomer(id, cid);
-  }
 
   @Override
   public boolean deleteFlight(int id, int flightNum) throws RemoteException {
@@ -201,10 +190,63 @@ public class RMIMiddleware implements IResourceManager {
     return roomRM.queryRoomsPrice(id, location);
   }
   
+  @Override
+  public int newCustomer(int id) throws RemoteException {
+    return customerRM.newCustomer(id);
+  }
+
+  @Override
+  public boolean newCustomer(int id, int cid) throws RemoteException {
+    return customerRM.newCustomer(id, cid);
+  }
+
+  public boolean reserveItem(IResourceManager customerRM, IResourceManager targetRM, int id, int customerID, String key, String location) {
+    Trace.info("RM::reserveItem(" + id + ", customer=" + customerID + ", " + customerID + ", " + location + ") called" ); 
+    // get customer from m_data
+    Customer customer = customer_map.get(customerID);
+    if (customer == null)
+    {
+      Trace.warn("RM::reserveItem(" + id + ", " + customerID + ", " + key + ", " + location + ")  failed--customer doesn't exist");
+      return false;
+    }
+
+    // Check if the item is available
+    ReservableItem item = (ReservableItem)((ResourceManager)targetRM).readData(id, key);
+    if(item instanceof Flight) {
+      
+    }
+    
+    
+/*
+    if (item == null)
+    {
+      Trace.warn("RM::reserveItem(" + id + ", " + customerID + ", " + key + ", " + location + ") failed--item doesn't exist");
+      return false;
+    }
+    else if (item.getCount() == 0)
+    {
+      Trace.warn("RM::reserveItem(" + id + ", " + customerID + ", " + key + ", " + location + ") failed--No more items");
+      return false;
+    }
+    else{
+      reserve(customer, key, location, item.getPrice());
+      customerRM.writeData(id, customer.getKey(), customer);
+      // Decrease the number of available items in the storage
+      item.setCount(item.getCount() - 1);
+      item.setReserved(item.getReserved() + 1);
+      customerRM.writeData(id, item.getKey(), item);
+
+      Trace.info("RM::reserveItem(" + id + ", " + customerID + ", " + key + ", " + location + ") succeeded");
+      return true;
+    }
+    
+    //*/
+    return true;
+  }
   
   @Override
   public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException {
-    return CustomerUtility.reserveItem(customerRM, flightRM, id, customerID, Flight.getKey(flightNumber), String.valueOf(flightNumber));
+    return this.reserveItem(customerRM, flightRM, id, customerID, Flight.getKey(flightNumber), String.valueOf(flightNumber));
   }
 
   @Override
