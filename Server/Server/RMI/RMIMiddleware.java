@@ -9,7 +9,6 @@ import java.util.Vector;
 import Server.Common.CustomerUtility;
 import Server.Common.Flight;
 import Server.Common.RMHashMap;
-import Server.Common.ResourceManager;
 import Server.Common.Trace;
 import Server.Interface.IResourceManager;
 
@@ -90,9 +89,6 @@ public class RMIMiddleware implements IResourceManager {
 			System.setSecurityManager(new SecurityManager());
 		}
    
-    
-    
-    
   }
 
   public static void getResourceManagers(String args[]) throws Exception {
