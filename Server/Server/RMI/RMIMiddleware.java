@@ -42,7 +42,7 @@ public class RMIMiddleware implements IResourceManager {
 	    }
 
 	    // Create a new Server object
-	    RMIMiddleWare mw = new RMIMiddleWare(s_serverName);
+	    RMIMiddleware mw = new RMIMiddleware(s_serverName);
 	    // Dynamically generate the stub (MiddleWare proxy
 	    IResourceManager mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
 	    
@@ -131,7 +131,6 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public boolean addCars(int id, String location, int numCars, int price) throws RemoteException {
-    // TODO Auto-generated method stub
     return carRM.addCars(id, location, numCars, price);
   }
 

@@ -6,7 +6,5 @@
 # echo '  $2 - hostname of Cars'
 # echo '  $3 - hostname of Rooms'
 # echo '   $4 - hostname of Customers'
-echo $1
-echo $4
 
 java -Djava.security.policy=java.policy -Djava.rmi.server.codebase=file:$(pwd)/ Server.RMI.RMIMiddleware mw_server $1 $2 $3 $4
