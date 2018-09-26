@@ -49,18 +49,15 @@ public abstract class ReservableItem extends RMItem implements Serializable
 		m_nReserved = r;
 	}
 
-	public int getReserved()
-	{
+	public int getReserved(){
 		return m_nReserved;
 	}
 
-	public String getLocation()
-	{
+	public String getLocation(){
 		return m_location;
 	}
 
-	public String toString()
-	{
+	public String toString(){
 		return "RESERVABLEITEM key='" + getKey() + "', location='" + getLocation() +
 			"', count='" + getCount() + "', price='" + getPrice() + "'";
 	}

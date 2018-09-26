@@ -1,16 +1,17 @@
 package Server.RMI;
 
-import Server.Interface.*;
-import Server.Common.*;
-
-import java.rmi.AccessException;
-import java.rmi.NotBoundException;
-import java.util.*;
-
-import java.rmi.registry.Registry;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Vector;
+
+import Server.Common.CustomerUtility;
+import Server.Common.Flight;
+import Server.Common.RMHashMap;
+import Server.Common.ResourceManager;
+import Server.Common.Trace;
+import Server.Interface.IResourceManager;
 
 public class RMIMiddleware implements IResourceManager {
   private static String s_serverName = "MiddleWare";
@@ -203,10 +204,11 @@ public class RMIMiddleware implements IResourceManager {
   public int queryRoomsPrice(int id, String location) throws RemoteException {
     return roomRM.queryRoomsPrice(id, location);
   }
-
+  
+  
   @Override
   public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException {
-    return customerRM.reserveFlight(id, customerID, flightNumber);
+    return CustomerUtility.reserveItem(customerRM, flightRM, id, customerID, Flight.getKey(flightNumber), String.valueOf(flightNumber));
   }
 
   @Override
