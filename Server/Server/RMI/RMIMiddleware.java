@@ -224,11 +224,16 @@ public class RMIMiddleware implements IResourceManager {
   @Override
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location,
       boolean car, boolean room) throws RemoteException {
-    return false;
+    	boolean res = true;
+		for (String fn:flightNumbers) res &=reserveFlight(id,customerID,Integer.parseInt(fn));
+		if (car) res &= reserveCar(id, customerID, location);
+		if (room) res &= reserveRoom(id, customerID, location);
+		return res; // return False if any of the above failed
   }
 
   @Override
   public String getName() throws RemoteException {
     return roomRM.getName();
   }
+
 }
