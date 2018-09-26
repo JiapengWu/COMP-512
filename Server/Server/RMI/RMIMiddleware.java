@@ -12,102 +12,117 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
-public class RMIMiddleWare implements IResourceManager {
+public class RMIMiddleware implements IResourceManager {
   private static String s_serverName = "MiddleWare";
   private static final String s_rmiPrefix = "group6_";
   private static final String RM_Suffix = "_RM";
 
-  private static ResourceManager flightRM;
-  private static ResourceManager carRM;
-  private static ResourceManager roomRM;
-  private static ResourceManager customerRM;
-  private static Registry client_registry;
-
+  private static IResourceManager flightRM;
+  private static IResourceManager carRM;
+  private static IResourceManager roomRM;
+  private static IResourceManager customerRM;
+  
   protected RMHashMap m_itemHT = new RMHashMap();
-  private static int middleware_port = 1100;
+  private static int middleware_port = 1099;
   private static int server_port = 1099;
 
-  public RMIMiddleWare(String s_serverName2) {
+  public RMIMiddleware(String s_serverName2) {
   }
 
   public static void main(String args[]) {
-
-    if (args.length > 0) {
-      s_serverName = args[0];
-    }
-
-    // Create a new Server object
-    RMIMiddleWare mw = new RMIMiddleWare(s_serverName);
-
-    // get 3 registry from server
-
-    // create client registry
+  	try{
 
 
+	    if (args.length ==5) {
+	      s_serverName = args[0];
+	    }
+	    else{
+	    	Trace.error("RMIMiddleWare:: Expect 5 arguments. $0: hostname of MiddleWare, $1-$4: hostname of servers");
+	    	System.exit(1);
+	    }
 
-    try {
-      getResourceManagers(args);
-    } catch (Exception e) {
-      Trace.error("Error getting resource manager");
-    }
-    RMIResourceManager server = new RMIResourceManager(s_rmiPrefix + s_serverName);
-    ResourceManager resourceManager = new ResourceManager(s_rmiPrefix + s_serverName + "_RM");
+	    // Create a new Server object
+	    RMIMiddleWare mw = new RMIMiddleWare(s_serverName);
+	    // Dynamically generate the stub (MiddleWare proxy
+	    IResourceManager mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
+	    
 
-    try {
-      client_registry = LocateRegistry.createRegistry(middleware_port);
-    } catch (RemoteException e) {
+	    Registry client_registry;
+	   	try {
+	      client_registry = LocateRegistry.createRegistry(middleware_port);
+	    } catch (RemoteException e) {
+	        client_registry = LocateRegistry.getRegistry(middleware_port);
+	      
+	    }
+	    final Registry registry = client_registry;
+	    registry.rebind(s_rmiPrefix + s_serverName, mw_RM); //group6_MiddleWare
 
-      try {
-        client_registry = LocateRegistry.getRegistry(middleware_port);
-      } catch (RemoteException e1) {
-        Trace.error("Cannot get client registry.");
-      }
-    }
-    // Dynamically generate the stub (MiddleWare proxy)
-    try {
-      UnicastRemoteObject.exportObject(flightRM, middleware_port);
-      UnicastRemoteObject.exportObject(carRM, middleware_port);
-      UnicastRemoteObject.exportObject(roomRM, middleware_port);
-      UnicastRemoteObject.exportObject(customerRM, middleware_port);
-    } catch (RemoteException e) {
-      Trace.error("Error getting registering resource manager");
-    }
+	    try {
+	      getResourceManagers(args);
+	    } catch (Exception e) {
+	      Trace.error("RMIMiddleware: Error getting resource manager");
+	      e.printStackTrace();
+	    }
+	    Runtime.getRuntime().addShutdownHook(new Thread() {
+				public void run() {
+					try {
+						registry.unbind(s_rmiPrefix + s_serverName);
+						System.out.println("'" + s_serverName + "' MiddleWare unbound");
+					}
+					catch(Exception e) {
+						System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+						e.printStackTrace();
+					}
+				}
+			});                                       
+			System.out.println("'" + s_serverName + "' Middleware server ready and bound to '" + s_rmiPrefix + s_serverName + "'");
+	}
+    catch (Exception e) {
+			System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+			e.printStackTrace();
+			System.exit(1);
+		}
+
+		// Create and install a security manager
+		if (System.getSecurityManager() == null)
+		{
+			System.setSecurityManager(new SecurityManager());
+		}
+   
     
-    try {
-      client_registry.rebind(s_rmiPrefix + "Flights" + "_RM", flightRM);
-      client_registry.rebind(s_rmiPrefix + "Cars" + "_RM", carRM);
-      client_registry.rebind(s_rmiPrefix + "Rooms" + "_RM", roomRM);
-      client_registry.rebind(s_rmiPrefix + "Customer" + "_RM", customerRM);
-      
-    } catch (RemoteException e) {
-      Trace.error("Error getting rebinding resource manager");
-    }
-
+    
     
   }
 
   public static void getResourceManagers(String args[]) throws Exception {
-
-    Registry flightRegistry = LocateRegistry.getRegistry(args[1], server_port);
-    flightRM = (ResourceManager) flightRegistry.lookup(s_rmiPrefix + "Flights" + "_RM");
+  	Registry flightRegistry = null;
+  	Registry carRegistry = null;
+  	Registry roomRegistry = null;
+  	Registry customerRegistry = null;
+  	
+    flightRegistry = LocateRegistry.getRegistry(args[1], server_port);
+    flightRM = (IResourceManager) flightRegistry.lookup(s_rmiPrefix + "Flights");
     if (flightRM == null)
       throw new AssertionError();
     
-    Registry carRegistry = LocateRegistry.getRegistry(args[2], server_port);
-    carRM = (ResourceManager) carRegistry.lookup(s_rmiPrefix + "Cars" + "_RM");
+    carRegistry = LocateRegistry.getRegistry(args[2], server_port);
+    carRM = (IResourceManager) carRegistry.lookup(s_rmiPrefix + "Cars");
     if (carRM == null)
       throw new AssertionError();
     
-    Registry roomRegistry = LocateRegistry.getRegistry(args[3],server_port);
-    roomRM = (ResourceManager) roomRegistry.lookup(s_rmiPrefix + "Rooms" + "_RM");
+   	roomRegistry = LocateRegistry.getRegistry(args[3],server_port);
+    roomRM = (IResourceManager) roomRegistry.lookup(s_rmiPrefix + "Rooms");
     if (roomRM == null)
       throw new AssertionError();
 
-    Registry customerRegistry = LocateRegistry.getRegistry(args[4],server_port);
-    customerRM = (ResourceManager) customerRegistry.lookup(s_rmiPrefix + "Customer" + "_RM");
+  	
+    customerRegistry = LocateRegistry.getRegistry(args[4],server_port);
+    customerRM = (IResourceManager) customerRegistry.lookup(s_rmiPrefix + "Customers");
     if (roomRM == null)
       throw new AssertionError();
+  	Trace.info("RMIMiddleware: All RMs get");
   }
+
 
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
       throws RemoteException {
@@ -192,17 +207,17 @@ public class RMIMiddleWare implements IResourceManager {
 
   @Override
   public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException {
-    return flightRM.reserveFlight(id, customerID, flightNumber);
+    return customerRM.reserveFlight(id, customerID, flightNumber);
   }
 
   @Override
   public boolean reserveCar(int id, int customerID, String location) throws RemoteException {
-    return carRM.reserveCar(id, customerID, location);
+    return customerRM.reserveCar(id, customerID, location);
   }
 
   @Override
   public boolean reserveRoom(int id, int customerID, String location) throws RemoteException {
-    return roomRM.reserveRoom(id, customerID, location);
+    return customerRM.reserveRoom(id, customerID, location);
   }
 
   @Override

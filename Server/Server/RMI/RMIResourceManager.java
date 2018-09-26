@@ -34,14 +34,11 @@ public class RMIResourceManager extends ResourceManager
 		// Create the RMI server entry
 		try {
 			// Create a new Server object
-		  
 			RMIResourceManager server = new RMIResourceManager(s_rmiPrefix + s_serverName);
-			ResourceManager resourceManager = new ResourceManager(s_rmiPrefix + s_serverName + "_RM");
-
+			
 			// Dynamically generate the stub (MiddleWare proxy)
-			UnicastRemoteObject.exportObject(server, port);
-			UnicastRemoteObject.exportObject(resourceManager, port);
-
+			IResourceManager resourceManager = (IResourceManager) UnicastRemoteObject.exportObject(server, port);
+			
 			// Bind the remote object's stub in the registry
 			Registry l_registry;
 			try {
@@ -51,8 +48,7 @@ public class RMIResourceManager extends ResourceManager
 			}
 			final Registry registry = l_registry;
 			
-			registry.rebind(s_rmiPrefix + s_serverName, server);
-			registry.rebind(s_rmiPrefix + s_serverName + "_RM", resourceManager);
+			registry.rebind(s_rmiPrefix + s_serverName, resourceManager);
 
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {
