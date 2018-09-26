@@ -13,15 +13,15 @@ import java.io.*;
 public class RMIClient extends Client
 {
 	private static String s_serverHost = "localhost";
-	private static int s_serverPort = 1099;
+	private static int s_serverPort = 3099;
 	private static String s_serverName = "Server";
-	
+
 
 	//TODO: REPLACE 'ALEX' WITH YOUR GROUP NUMBER TO COMPILE
 	private static String s_rmiPrefix = "group6_";
 
 	public static void main(String args[])
-	{	
+	{
 		if (args.length > 0)
 		{
 			s_serverHost = args[0];
@@ -47,8 +47,8 @@ public class RMIClient extends Client
 			RMIClient client = new RMIClient();
 			client.connectServer();
 			client.start();
-		} 
-		catch (Exception e) {    
+		}
+		catch (Exception e) {
 			System.err.println((char)27 + "[31;1mClient exception: " + (char)27 + "[0mUncaught exception");
 			e.printStackTrace();
 			System.exit(1);
@@ -92,4 +92,3 @@ public class RMIClient extends Client
 		}
 	}
 }
-
