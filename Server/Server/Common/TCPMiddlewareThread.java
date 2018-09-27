@@ -2,22 +2,24 @@ package Server.Common;
 
 
 import java.util.*;
-import Util.Message;
-import Util.MessageDecoder;
 import java.io.*;
 import java.net.Socket;
 
+import Util.Message;
+import Util.MessageDecoder;
+
 public class TCPMiddlewareThread implements Runnable{
 
-	private Socket mw_socket;
-	private HashMap<String, String> servertType2host; // {<ServerType>: <Hostname>}
+	private Socket client_socket;
+	private HashMap<String, String> serverType2host; // {<ServerType>: <Hostname>}
 	private int server_port = 1099; // port of the servers
 	private final MessageDecoder msgDecoder; // each message per thread
 
-	public TCPMiddlewareThread(Socket mw_socket, HashMap<String, String> servertType2host){
-		this.mw_socket = mw_socket;
-		this.servertType2host = servertType2host;
-		msgDecoder = new msgDecoder(); 
+
+	public TCPMiddlewareThread(Socket client_socket, HashMap<String, String> serverType2host){
+		this.client_socket = client_socket;
+		this.serverType2host = serverType2host;
+		msgDecoder = new MessageDecoder(); 
 	}
 
 
@@ -25,15 +27,20 @@ public class TCPMiddlewareThread implements Runnable{
 	@Override
 	public void run(){
 		// connection with client
-		BufferedReader fromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		PrintWriter toClient = new PrintWriter(socket.getOutputStream(),true);
+		BufferedReader fromClient = new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
+		PrintWriter toClient = new PrintWriter(client_socket.getOutputStream(),true);
 
 		// connection with Flight/Car/Room Server
 		String request = fromClient.readLine();
 		String serverType = msgDecoder.decode_Type(request);
+		Trace.info("TCPMiddlewareThread:: recieve and forward commandType '"+serverType+"'...")
+		
 		// FIXME: doesn't handle cases with Customer or multiple server --- this only connect to 1 server
 		String server_host = "";
-		if (serverType) server_host = serverType2host.get(serverType);
+		if (serverType!="ALL") server_host = serverType2host.get(serverType);
+		// else{
+		// 	// need to connect to multiple server here
+		// }
 
 		// forward command to corresponding RM and get result from the server
 		String result = sendRecvStr(request, server_host);
@@ -43,7 +50,7 @@ public class TCPMiddlewareThread implements Runnable{
 		// write the result back to client
 		toClient.println(result);
 		toClient.flush();
-		socket.close();
+		client_socket.close();
 	}
 
 

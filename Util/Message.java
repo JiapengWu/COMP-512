@@ -15,7 +15,7 @@ public class Message{
 
 	private String msg_type; // method name this message contains, eg, "addFlights","queryCar"...
 	private String contents=null;
-	private String server_type=""; // which server to execute remote interface
+	private String server_type="ALL"; // which server to execute remote interface
 
 	private String prefix="";
 
@@ -103,7 +103,7 @@ public class Message{
 		this.contents = (new JSONObject()).accumulate(prefix+"id",id).toString();
 	}
 
-	// more encoding methods....
+	// TODO: more encoding methods....
 
 
 }

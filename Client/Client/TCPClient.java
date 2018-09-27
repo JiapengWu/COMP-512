@@ -31,7 +31,7 @@ public class TCPClient extends Client{
 		}
 		try {
 			TCPClient client = new TCPClient();
-			client.connectServer(s_serverHost,mw_port);
+			client.connectServer();
 			client.start();
 		} 
 		catch (Exception e) {    
@@ -42,7 +42,10 @@ public class TCPClient extends Client{
 
 	}
 
-	@Override
+	public void connectServer(){
+		this.connectServer(s_serverHost,mw_port);
+	}
+
 	public void connectServer(String s_serverHost, int mw_port){
 		m_resourceManager = new TCPClientHandler(s_serverHost,mw_port);
 	}
