@@ -5,6 +5,8 @@ import java.rmi.RemoteException;
 
 import java.util.*;
 
+import Server.Common.ReservableItem;
+
 /** 
  * Simplified version from CSE 593 Univ. of Washington
  *
@@ -208,4 +210,5 @@ public interface IResourceManager extends Remote
      */
     public String getName()
         throws RemoteException;
+
 }
