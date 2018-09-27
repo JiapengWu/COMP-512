@@ -12,7 +12,7 @@ public class TCPClient extends Client{
 		super();
 	}
 
-	public static void main(String args[]){
+	public static void main(String[] args){
 		if (args.length > 0)
 		{
 			s_serverHost = args[0];

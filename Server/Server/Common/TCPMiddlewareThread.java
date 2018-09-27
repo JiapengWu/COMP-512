@@ -1,7 +1,9 @@
 package Server.Common;
 
-import Utils.Message;
-import Utils.MessageDecoder;
+
+import java.util.*;
+import Util.Message;
+import Util.MessageDecoder;
 import java.io.*;
 import java.net.Socket;
 
@@ -9,10 +11,10 @@ public class TCPMiddlewareThread implements Runnable{
 
 	private Socket mw_socket;
 	private HashMap<String, String> servertType2host; // {<ServerType>: <Hostname>}
-	private server_port = 1099; // port of the servers
+	private int server_port = 1099; // port of the servers
 	private final MessageDecoder msgDecoder; // each message per thread
 
-	public TCPClientHandler(Socket mw_socket, HashMap<String, String> servertType2host){
+	public TCPMiddlewareThread(Socket mw_socket, HashMap<String, String> servertType2host){
 		this.mw_socket = mw_socket;
 		this.servertType2host = servertType2host;
 		msgDecoder = new msgDecoder(); 
@@ -21,7 +23,7 @@ public class TCPMiddlewareThread implements Runnable{
 
 	
 	@Override
-	public run(){
+	public void run(){
 		// connection with client
 		BufferedReader fromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		PrintWriter toClient = new PrintWriter(socket.getOutputStream(),true);
@@ -30,11 +32,11 @@ public class TCPMiddlewareThread implements Runnable{
 		String request = fromClient.readLine();
 		String serverType = msgDecoder.decode_Type(request);
 		// FIXME: doesn't handle cases with Customer or multiple server --- this only connect to 1 server
-		String server_host = ""
+		String server_host = "";
 		if (serverType) server_host = serverType2host.get(serverType);
 
 		// forward command to corresponding RM and get result from the server
-		String result = sendRecvStr(request, server_host, server_port);
+		String result = sendRecvStr(request, server_host);
 		if (result.equals("<IOException>")) Trace.error("IOException from server "+server_host);
 		if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
 

@@ -3,6 +3,7 @@ package message;
 public class MessageDecoder{
 	private final String COMMAND = "MSG_COMMAND"; 
 	private final String CONTENT = "MSG_CONTENT";
+	private final String TYPE = "SERVER_TYPE"; 
 
 	private String msg_type; // method name this message contains, eg, "addFlights","queryCar"...
 	private JSONobject args; // arguments to the message method

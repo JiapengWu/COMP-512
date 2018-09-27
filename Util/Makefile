@@ -8,10 +8,9 @@ java.policy: FORCE
 
 FORCE: ;
 
-compile-util: Util/*.java 
-	javac Util/*.java 
+compile-util: *.java 
+	javac -cp ~/workspace/COMP512/java-json.jar *.java 
 
-# clean:
-# 	rm -f Server/Interface/*.class Server/Common/*.class Server/RMI/*.class
-# 	rm -f RMIInterface.jar
-# 	rm -f java.policy 
+clean:
+	rm -f *.class
+

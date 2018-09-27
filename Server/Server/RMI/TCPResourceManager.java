@@ -4,7 +4,9 @@ import Server.Interface.*;
 import Server.Common.*;
 
 import java.util.*;
-import Util.*
+import Util.*;
+import java.net.Socket;
+import java.io.*;
 
 public class TCPResourceManager extends ResourceManager 
 {
@@ -44,11 +46,11 @@ public class TCPResourceManager extends ResourceManager
 
 			}
 			catch(IOException e){
-				Trace.error("Server "+server_host+" get IOException";)
+				Trace.error("Server "+server_host+" get IOException");
 				res = "<IOException>";
 			}
 			catch( IllegalArgumentException e){
-				Trace.error("Server "+server_host+" get IllegalArgumentException";)
+				Trace.error("Server "+server_host+" get IllegalArgumentException");
 				res = "IllegalArgumentException";
 			}
 

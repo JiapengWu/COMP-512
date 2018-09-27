@@ -3,7 +3,9 @@ package Server.RMI;
 import Server.Common.TCPMiddlewareThread;
 import java.net.Socket;
 import java.net.ServerSocket;
-
+import java.io.*;
+import Server.Common.Trace;
+import java.util.*;
 
 public class TCPMiddleWare {
 	private static String s_serverHost = "localhost"; // this is useless cuz we only need the port to start a server socket
@@ -13,7 +15,7 @@ public class TCPMiddleWare {
 
   	}
 
-  	public static void main(args[]) throws IOException{
+  	public static void main(String[] args) throws IOException{
   		/* 
   		argv[0]: middleware hostname
   		argv[1]: flight server hostname
@@ -36,7 +38,7 @@ public class TCPMiddleWare {
 	    ServerSocket serverSocket = new ServerSocket(s_port);
 	    while (true){
 	    	Socket socket = serverSocket.accept();
-	    	(new TCPMiddlewareThread(socket, serverType2host)).start();
+	    	(new TCPMiddlewareThread(socket, serverType2host)).run();
 	    }
 
   	}

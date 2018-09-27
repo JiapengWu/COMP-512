@@ -1,6 +1,8 @@
 package Util;
 import org.json.JSONObject;
+import org.json.JSONArray;
 
+import java.util.Vector;
 
 public class Message{
 
@@ -13,13 +15,13 @@ public class Message{
 	private String server_type=""; // which server to execute remote interface
 
 	private String prefix="";
-	
+
 	public Message(String msg_type){
 		this.msg_type = msg_type;
-		if msg_type.contains("Flight") {prefix="flight_";server_type="Flight";}
-		else if msg_type.contains("Car") {prefix="car_";server_type="Car";}
-		else if msg_type.contains("Room") {prefix="room_";server_type="Room";}
-		else if msg_type.contains("Customer") prefix="customer_";
+		if (msg_type.contains("Flight")) {prefix="flight_";server_type="Flight";}
+		else if (msg_type.contains("Car")) {prefix="car_";server_type="Car";}
+		else if (msg_type.contains("Room")) {prefix="room_";server_type="Room";}
+		else if (msg_type.contains("Customer")) prefix="customer_";
 		else prefix="bundle_"; 
 	}
 
@@ -35,7 +37,7 @@ public class Message{
 	public String toString(){
 		JSONObject obj = new JSONObject();
 		obj.accumulate(COMMAND, msg_type);
-		obj.accumulate(TYPE, )
+		obj.accumulate(TYPE, server_type);
 		obj.accumulate(CONTENT, contents);
 		return obj.toString();
 	}
