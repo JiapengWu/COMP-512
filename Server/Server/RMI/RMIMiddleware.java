@@ -4,6 +4,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Vector;
 
 import Server.Common.Trace;
@@ -17,7 +19,7 @@ public class RMIMiddleware implements IResourceManager {
   private static IResourceManager carRM;
   private static IResourceManager roomRM;
 
-//  protected static HashMap<String, Customer> customer_map = new HashMap<String, Customer>();
+  private ArrayList<Integer> customerIdx;
   private static int middleware_port = 3099;
   private static int server_port = 3099;
 
@@ -103,23 +105,6 @@ public class RMIMiddleware implements IResourceManager {
       
   }
 
-  // Writes a data item
-  /*
-  protected void writeCustomer(int xid, String key, Customer value)
-  {
-    synchronized(customer_map) {
-      customer_map.put(key, value);
-    }
-  }
-
-  // Remove the item out of storage
-  protected void removeCustomer(int xid, String key)
-  {
-    synchronized(customer_map) {
-      customer_map.remove(key);
-    }
-  }
-*/
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
       throws RemoteException {
     return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
@@ -173,7 +158,8 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public String queryCustomerInfo(int id, int customerID) throws RemoteException {
-    return flightRM.queryCustomerInfo(id, customerID) + carRM.queryCustomerInfo(id, customerID) + roomRM.queryCustomerInfo(id, customerID);
+    return flightRM.queryCustomerInfo(id, customerID)
+        + carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1] + roomRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
   }
 
   @Override
@@ -193,11 +179,14 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public int newCustomer(int id) throws RemoteException {
-    return flightRM.newCustomer(id) + carRM.newCustomer(id) + roomRM.newCustomer(id);
+    int cid = Collections.max(customerIdx);
+    this.newCustomer(id, cid);
+    return cid;
   }
 
   @Override
   public boolean newCustomer(int id, int cid) throws RemoteException {
+    this.customerIdx.add(cid);
     return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
   }
 
