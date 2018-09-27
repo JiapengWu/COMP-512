@@ -8,11 +8,15 @@ java.policy: FORCE
 
 FORCE: ;
 
-../Server/RMIInterface.jar: ../Server/Server/Interface/IResourceManager.java
-	make -C ../Server/ RMIInterface.jar
+../Util/utils.jar: ../Util/Message.java
+	make -C ../Util/ utils.jar
 
-compile-client: ../Server/RMIInterface.jar
-	javac -cp ../Server/RMIInterface.jar Client/*.java
+../Server/RMIInterface.jar: ../Server/Server/Interface/IResourceManager.java 
+	make -C ../Server/ RMIInterface.jar
+	
+
+compile-client: ../Server/RMIInterface.jar ../Util/utils.jar
+	javac -cp ../Server/RMIInterface.jar:../Util/utils.jar Client/*.java
 
 clean:
 	rm -f Client/*.class

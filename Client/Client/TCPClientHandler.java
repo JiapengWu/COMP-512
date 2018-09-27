@@ -1,6 +1,6 @@
 package Client;
 
-import Utils.Message;
+import Util.Message;
 import java.io.*;
 import java.net.Socket;
 
@@ -87,47 +87,47 @@ public class TCPClientHandler{
 	}
     
     public boolean deleteCustomer(int id, int customerID) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public int queryFlight(int id, int flightNumber) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public int queryCars(int id, String location) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public int queryRooms(int id, String location) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
    
     public String queryCustomerInfo(int id, int customerID) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
     
     
     public int queryFlightPrice(int id, int flightNumber) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public int queryCarsPrice(int id, String location) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public int queryRoomsPrice(int id, String location) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public boolean reserveFlight(int id, int customerID, int flightNumber) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public boolean reserveCar(int id, int customerID, String location) 
-	throws RemoteException; 
-
+	throws IOException, IllegalArgumentException; 
+    
     
     public boolean reserveRoom(int id, int customerID, String location) 
-	throws RemoteException; 
+	throws IOException, IllegalArgumentException; 
 
     
     public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room)

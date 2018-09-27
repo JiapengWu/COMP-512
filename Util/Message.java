@@ -1,6 +1,9 @@
 package Util;
 import org.json.JSONObject;
 import org.json.JSONArray;
+import org.json.JSONException;
+
+
 
 import java.util.Vector;
 
@@ -35,15 +38,23 @@ public class Message{
 	*/
 	@Override
 	public String toString(){
-		JSONObject obj = new JSONObject();
-		obj.accumulate(COMMAND, msg_type);
-		obj.accumulate(TYPE, server_type);
-		obj.accumulate(CONTENT, contents);
+		JSONObject obj = null;
+		try{
+			obj = new JSONObject();
+			obj.accumulate(COMMAND, msg_type);
+			obj.accumulate(TYPE, server_type);
+			obj.accumulate(CONTENT, contents);
+		}
+		catch (JSONException e){
+			System.err.println("ERROR:: Message.java: JSON.toString failed for COMMAND="+msg_type+"TYPE="+server_type+CONTENT+"=contents");
+			e.printStackTrace();
+		}
+		
 		return obj.toString();
 	}
 
 	// encode an <AddFlights> command
-	public void addFlightCommand(int id, int flightNum, int flightSeats, int flightPrice){
+	public void addFlightCommand(int id, int flightNum, int flightSeats, int flightPrice) throws JSONException {
 		this.contents = (new JSONObject())
 						.accumulate(prefix+"id",id)
 						.accumulate(prefix+"Num",flightNum)
@@ -52,7 +63,7 @@ public class Message{
 	}
 
 	// encode <AddCars> or <AddRooms> command
-	public void addCommand(int id, String location, int nums, int price){
+	public void addCommand(int id, String location, int nums, int price) throws JSONException{
 		this.contents = (new JSONObject())
 						.accumulate(prefix+"id",id)
 						.accumulate(prefix+"location",location)
@@ -61,21 +72,22 @@ public class Message{
 	}
 
 	// encode <deleteFlight> command
-	public void delFlightCommand(int id, int flightNum){
-		this.contents = (new JSONObejct())
+	public void delFlightCommand(int id, int flightNum) throws JSONException{
+		this.contents = (new JSONObject())
 						.accumulate(prefix+"id",id)
 						.accumulate(prefix+"Num",flightNum).toString();
 	}
 
 	// encode <deleteCars> or <deleteRooms>
-	public void delCommand(int id, String location){
-		this.contents = (new JSONObejct())
+	public void delCommand(int id, String location) throws JSONException{
+		this.contents = (new JSONObject())
 						.accumulate(prefix+"id",id)
 						.accumulate(prefix+"location",location).toString();
 	}
 
 	// encode <bundle>
-	public void bundleCommand(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room){
+	public void bundleCommand(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room)
+		throws JSONException {
 		JSONArray flightNums = new JSONArray();
 		for (String fn :flightNumbers) flightNums.put(fn);
 		this.contents = (new JSONObject()).accumulate("id",id)
@@ -87,8 +99,8 @@ public class Message{
 	}
 
 	// encode <addCustomer> with id
-	public void addCustomerCommand(int id){
-		this.contents = (new JSONObejct()).accumulate(prefix+"id",id).toString();
+	public void addCustomerCommand(int id) throws JSONException{
+		this.contents = (new JSONObject()).accumulate(prefix+"id",id).toString();
 	}
 
 	// more encoding methods....

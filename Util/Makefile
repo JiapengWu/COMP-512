@@ -11,6 +11,11 @@ FORCE: ;
 compile-util: *.java 
 	javac -cp ~/workspace/COMP512/java-json.jar *.java 
 
+utils.jar: *.java
+	@echo "Compiling Util library to Util/utils.jar"
+	javac -cp ~/workspace/COMP512/java-json.jar *.java 
+	jar cvf utils.jar ./Message.class
+
 clean:
 	rm -f *.class
 
