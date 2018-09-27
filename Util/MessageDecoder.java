@@ -8,7 +8,7 @@ public class MessageDecoder{
 	private JSONobject args; // arguments to the message method
 
 	public MessageDecoder(){
-		
+
 	}
 
 	// return which server this command goes to
@@ -18,9 +18,8 @@ public class MessageDecoder{
 	}
 
 	// parse a JSON string 
-	public String decode(String msgStr){
+	public String decode_Method(String msgStr){
 		JSONObject obj = new JSONObject(msgStr);
-		msg_type = obj.getString(COMMAND);
-		args = obj.getJSONObject(CONTENT); // something like {"id":2,"location":"montreal"} 
+		return obj.getString(COMMAND);
 	}
 }

@@ -5,12 +5,12 @@ import java.net.Socket;
 import java.net.ServerSocket;
 
 
-public class TCPMiddleWare implements IResourcManager{
+public class TCPMiddleWare {
 	private static String s_serverHost = "localhost"; // this is useless cuz we only need the port to start a server socket
   	private static int s_port = 1099; // port of middleware
   	
   	public TCPMiddleWare(){
-  		
+
   	}
 
   	public static void main(args[]) throws IOException{

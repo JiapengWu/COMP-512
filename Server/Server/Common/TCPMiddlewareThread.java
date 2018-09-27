@@ -1,5 +1,7 @@
 package Server.Common;
+
 import Utils.Message;
+import Utils.MessageDecoder;
 import java.io.*;
 import java.net.Socket;
 
@@ -17,7 +19,7 @@ public class TCPMiddlewareThread implements Runnable{
 	}
 
 
-	// NOTE: doesn't handle Customer --- only connect to 1 server
+	
 	@Override
 	public run(){
 		// connection with client
@@ -25,18 +27,38 @@ public class TCPMiddlewareThread implements Runnable{
 		PrintWriter toClient = new PrintWriter(socket.getOutputStream(),true);
 
 		// connection with Flight/Car/Room Server
-		String serverType = msgDecoder.decode_Type(fromClient.readLine());
+		String request = fromClient.readLine();
+		String serverType = msgDecoder.decode_Type(request);
+		// FIXME: doesn't handle cases with Customer or multiple server --- this only connect to 1 server
 		String server_host = ""
 		if (serverType) server_host = serverType2host.get(serverType);
 
+		// forward command to corresponding RM and get result from the server
+		String result = sendRecvStr(request, server_host, server_port);
+		if (result.equals("<IOException>")) Trace.error("IOException from server "+server_host);
+		if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
+
+		// write the result back to client
+		toClient.println(result);
+		toClient.flush();
+		socket.close();
+	}
+
+
+	public String sendRecvStr(String request, String server_host) throws IOException, IllegalArgumentException{
 		Socket server_socket = new Socket(server_host, server_port);
 		BufferedReader fromServer = new BufferedReader(new InputStreamReader(server_socket.getInputStream()));
 		PrintWriter toServer = new PrintWriter(server_socket.getOutputStream(),true);
 
-		//TODO: actual shit happening here:
-
+		toServer.println(request);
+		toServer.flush();
+		String res = fromServer.readLine();
+		if (res.equals("<IOException>")) throw new IOException();
+		if (res.equals("<IllegalArgumentException>")) throw new IllegalArgumentException();
+		return res;
 	}
 
+	// FIXME: Implement IResourceManager Interface here??? 
 
 	
 }
