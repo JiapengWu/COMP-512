@@ -1,13 +1,12 @@
-package Server.Common;
+package Server.RMI;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Calendar;
-import java.util.HashMap;
 import java.util.Vector;
 
+import Server.Common.Trace;
 import Server.Interface.IResourceManager;
 
 public class RMIMiddleware implements IResourceManager {
