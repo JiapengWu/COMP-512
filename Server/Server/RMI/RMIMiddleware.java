@@ -4,28 +4,24 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Vector;
 
-import Server.Common.CustomerUtility;
-import Server.Common.Flight;
-import Server.Common.RMHashMap;
-import Server.Common.ResourceManager;
 import Server.Common.Trace;
 import Server.Interface.IResourceManager;
 
 public class RMIMiddleware implements IResourceManager {
   private static String s_serverName = "MiddleWare";
   private static final String s_rmiPrefix = "group6_";
-  private static final String RM_Suffix = "_RM";
 
   private static IResourceManager flightRM;
   private static IResourceManager carRM;
   private static IResourceManager roomRM;
-  private static IResourceManager customerRM;
-  
-  protected RMHashMap m_itemHT = new RMHashMap();
-  private static int middleware_port = 1099;
-  private static int server_port = 1099;
+
+  private ArrayList<Integer> customerIdx;
+  private static int middleware_port = 3099;
+  private static int server_port = 3099;
 
   public RMIMiddleware(String s_serverName2) {
   }
@@ -33,8 +29,7 @@ public class RMIMiddleware implements IResourceManager {
   public static void main(String args[]) {
   	try{
 
-
-	    if (args.length ==5) {
+	    if (args.length == 5) {
 	      s_serverName = args[0];
 	    }
 	    else{
@@ -46,14 +41,13 @@ public class RMIMiddleware implements IResourceManager {
 	    RMIMiddleware mw = new RMIMiddleware(s_serverName);
 	    // Dynamically generate the stub (MiddleWare proxy
 	    IResourceManager mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
-	    
 
 	    Registry client_registry;
 	   	try {
-	      client_registry = LocateRegistry.createRegistry(middleware_port);
+	       client_registry = LocateRegistry.createRegistry(middleware_port);
 	    } catch (RemoteException e) {
-	        client_registry = LocateRegistry.getRegistry(middleware_port);
-	      
+	       client_registry = LocateRegistry.getRegistry(middleware_port);
+
 	    }
 	    final Registry registry = client_registry;
 	    registry.rebind(s_rmiPrefix + s_serverName, mw_RM); //group6_MiddleWare
@@ -72,10 +66,9 @@ public class RMIMiddleware implements IResourceManager {
 					}
 					catch(Exception e) {
 						System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
-						e.printStackTrace();
 					}
 				}
-			});                                       
+			});
 			System.out.println("'" + s_serverName + "' Middleware server ready and bound to '" + s_rmiPrefix + s_serverName + "'" + "at port:"+String.valueOf(middleware_port));
 	}
     catch (Exception e) {
@@ -85,45 +78,32 @@ public class RMIMiddleware implements IResourceManager {
 		}
 
 		// Create and install a security manager
+
 		if (System.getSecurityManager() == null)
 		{
 			System.setSecurityManager(new SecurityManager());
 		}
-   
-    
-    
-    
+
   }
 
   public static void getResourceManagers(String args[]) throws Exception {
-  	Registry flightRegistry = null;
-  	Registry carRegistry = null;
-  	Registry roomRegistry = null;
-  	Registry customerRegistry = null;
-  	
-    flightRegistry = LocateRegistry.getRegistry(args[1], server_port);
+
+    Registry flightRegistry = LocateRegistry.getRegistry(args[1], server_port);
     flightRM = (IResourceManager) flightRegistry.lookup(s_rmiPrefix + "Flights");
     if (flightRM == null)
       throw new AssertionError();
-    
-    carRegistry = LocateRegistry.getRegistry(args[2], server_port);
+
+    Registry carRegistry = LocateRegistry.getRegistry(args[2], server_port);
     carRM = (IResourceManager) carRegistry.lookup(s_rmiPrefix + "Cars");
     if (carRM == null)
       throw new AssertionError();
-    
-   	roomRegistry = LocateRegistry.getRegistry(args[3],server_port);
+
+   	Registry roomRegistry = LocateRegistry.getRegistry(args[3],server_port);
     roomRM = (IResourceManager) roomRegistry.lookup(s_rmiPrefix + "Rooms");
     if (roomRM == null)
       throw new AssertionError();
-
-  	
-    customerRegistry = LocateRegistry.getRegistry(args[4],server_port);
-    customerRM = (IResourceManager) customerRegistry.lookup(s_rmiPrefix + "Customers");
-    if (roomRM == null)
-      throw new AssertionError();
-  	Trace.info("RMIMiddleware: All RMs get");
+      
   }
-
 
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
       throws RemoteException {
@@ -140,15 +120,6 @@ public class RMIMiddleware implements IResourceManager {
     return roomRM.addRooms(id, location, numRooms, price);
   }
 
-  @Override
-  public int newCustomer(int id) throws RemoteException {
-    return customerRM.newCustomer(id);
-  }
-
-  @Override
-  public boolean newCustomer(int id, int cid) throws RemoteException {
-    return customerRM.newCustomer(id, cid);
-  }
 
   @Override
   public boolean deleteFlight(int id, int flightNum) throws RemoteException {
@@ -167,7 +138,7 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public boolean deleteCustomer(int id, int customerID) throws RemoteException {
-    return customerRM.deleteCustomer(id, customerID);
+    return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID) && roomRM.deleteCustomer(id, customerID);
   }
 
   @Override
@@ -187,7 +158,8 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public String queryCustomerInfo(int id, int customerID) throws RemoteException {
-    return customerRM.queryCustomerInfo(id, customerID);
+    return flightRM.queryCustomerInfo(id, customerID)
+        + carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1] + roomRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
   }
 
   @Override
@@ -204,22 +176,35 @@ public class RMIMiddleware implements IResourceManager {
   public int queryRoomsPrice(int id, String location) throws RemoteException {
     return roomRM.queryRoomsPrice(id, location);
   }
-  
-  
+
+  @Override
+  public int newCustomer(int id) throws RemoteException {
+    int cid = Collections.max(customerIdx);
+    this.newCustomer(id, cid);
+    return cid;
+  }
+
+  @Override
+  public boolean newCustomer(int id, int cid) throws RemoteException {
+    this.customerIdx.add(cid);
+    return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
+  }
+
   @Override
   public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException {
-    return CustomerUtility.reserveItem(customerRM, flightRM, id, customerID, Flight.getKey(flightNumber), String.valueOf(flightNumber));
+    return flightRM.reserveFlight(id, customerID, flightNumber);
   }
 
   @Override
   public boolean reserveCar(int id, int customerID, String location) throws RemoteException {
-    return customerRM.reserveCar(id, customerID, location);
+    return carRM.reserveCar(id, customerID, location);
   }
 
   @Override
   public boolean reserveRoom(int id, int customerID, String location) throws RemoteException {
-    return customerRM.reserveRoom(id, customerID, location);
+    return roomRM.reserveRoom(id, customerID, location);
   }
+
 
   @Override
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location,
