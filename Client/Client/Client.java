@@ -11,7 +11,7 @@ import java.rmi.UnmarshalException;
 
 public abstract class Client
 {
-	IResourceManager m_resourceManager = null;
+	TCPClientHandler m_resourceManager = null;
 
 	public Client()
 	{
