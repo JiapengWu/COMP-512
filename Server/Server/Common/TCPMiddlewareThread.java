@@ -33,7 +33,7 @@ public class TCPMiddlewareThread implements Runnable{
 		// connection with Flight/Car/Room Server
 		String request = fromClient.readLine();
 		String serverType = msgDecoder.decode_Type(request);
-		Trace.info("TCPMiddlewareThread:: recieve and forward commandType '"+serverType+"'...")
+		Trace.info("TCPMiddlewareThread:: recieve and forward commandType '"+serverType+"'...");
 		
 		// FIXME: doesn't handle cases with Customer or multiple server --- this only connect to 1 server
 		String server_host = "";
@@ -44,7 +44,7 @@ public class TCPMiddlewareThread implements Runnable{
 
 		// forward command to corresponding RM and get result from the server
 		String result = sendRecvStr(request, server_host);
-		if (result.equals("<IOException>")) Trace.error("IOException from server "+server_host);
+		if (result.equals("<JSONException>")) Trace.error("IOException from server "+server_host);
 		if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
 
 		// write the result back to client

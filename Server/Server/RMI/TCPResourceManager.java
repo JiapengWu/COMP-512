@@ -34,7 +34,7 @@ public class TCPResourceManager {
 
 		ServerSocket serverSocket = new ServerSocket(port); // the server socket listens on this port
 	    while (true){
-	    	Socket mw_socket = serverSocket.accept(); // FIXME: does this socket connec to middleware?
+	    	Socket mw_socket = serverSocket.accept(); // input socket is the middleware socket
 	    	//upon receive msg from middleware, run a new thread
 	    	(new TCPServerThread(mw_socket,s_serverName, server.resourceManager)).run(); 
 	    } 

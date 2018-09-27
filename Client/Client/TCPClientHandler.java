@@ -21,7 +21,7 @@ public class TCPClientHandler{
 		writer.println(msg.toString());
 		writer.flush();
 		String res = reader.readLine();
-		if (res.equals("<IOException>")) throw new IOException();
+		if (res.equals("<JSONException>")) throw new IOException(); // server throws JSON, so it's message transporting exception
 		if (res.equals("<IllegalArgumentException>")) throw new IllegalArgumentException();
 		return res;
 	}

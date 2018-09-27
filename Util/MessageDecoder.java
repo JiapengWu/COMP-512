@@ -10,6 +10,8 @@ public class MessageDecoder{
 	private final String CONTENT = "MSG_CONTENT";
 	private final String TYPE = "SERVER_TYPE"; 
 
+	private final String JSON_EXCEPTION = "<JSONException>";
+
 	private String msg_type; // method name this message contains, eg, "addFlights","queryCar"...
 	private JSONObject args; // arguments to the message method
 
@@ -27,7 +29,7 @@ public class MessageDecoder{
 		catch (JSONException e){
 			System.err.println("ERROR:: MessageDecoder.decodeType: Cannot decode JSON message '"+msgStr+"'");
 			e.printStackTrace();
-			return "";
+			return JSON_EXCEPTION;
 		}
 	}
 
@@ -41,7 +43,7 @@ public class MessageDecoder{
 		catch (JSONException e){
 			System.err.println("ERROR:: MessageDecoder.decodeMethod: Cannot decode JSON message '"+msgStr+"'");
 			e.printStackTrace();
-			return "";
+			return JSON_EXCEPTION;
 		}
 	}
 
@@ -100,6 +102,6 @@ public class MessageDecoder{
 	}
 
 	// TODO: other messageDecoder subclasses that decodes <Car>/<Room>/<Customer> message
-	
+
 
 }

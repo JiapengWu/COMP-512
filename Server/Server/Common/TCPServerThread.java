@@ -42,23 +42,27 @@ public class TCPServerThread implements Runnable{
 						FlightMessageDecoder flightDecoder = (FlightMessageDecoder) decoder;
 						flightDecoder.decodeAddMsg(message);
 						//FIXME: On the same server, ResourceManager should be synchronized !
-						res = Boolean.toString((synchronized)rm.addFlight(flightDecoder.xid,flightDecoder.flightNum, flightDecoder.flightSeats, flightDecoder.flightPrice));
+						res = Boolean.toString(rm.addFlight(flightDecoder.xid,flightDecoder.flightNum, flightDecoder.flightSeats, flightDecoder.flightPrice));
 
 
 					case "deleteFlight":
 						FlightMessageDecoder flightDecoder = (FlightMessageDecoder) decoder;
 						flightDecoder.decodeDelMsg(message);
-						res = Boolean.toString((synchronized)rm.deleteFlight(flightDecoder.xid,flightDecoder.flightNum));
+						res = Boolean.toString(rm.deleteFlight(flightDecoder.xid,flightDecoder.flightNum));
 
 					case "queryFlight":
 						FlightMessageDecoder flightDecoder = (FlightMessageDecoder) decoder;
 						flightDecoder.decodeQueryMsg(message);
-						res = Integer.toString((synchronized)rm.deleteFlight(flightDecoder.xid,flightDecoder.flightNum));
+						res = Integer.toString(rm.deleteFlight(flightDecoder.xid,flightDecoder.flightNum));
 
 
 					// TODO: other cases for add/delete/query
 
 					// FIXME: "reserverXXX" and "CustomerXXX" should be handled a bit differently here, or handled in Middleware?
+					
+					// if command doesn't match any of the above
+					default:
+						res = "<IllegalArgumentException>";
 				}
 
 			}
