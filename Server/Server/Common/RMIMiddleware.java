@@ -105,6 +105,7 @@ public class RMIMiddleware implements IResourceManager {
   }
 
   // Writes a data item
+  /*
   protected void writeCustomer(int xid, String key, Customer value)
   {
     synchronized(customer_map) {
@@ -119,7 +120,7 @@ public class RMIMiddleware implements IResourceManager {
       customer_map.remove(key);
     }
   }
-
+*/
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
       throws RemoteException {
     return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
@@ -194,7 +195,6 @@ public class RMIMiddleware implements IResourceManager {
   @Override
   public int newCustomer(int id) throws RemoteException {
     return flightRM.newCustomer(id) + carRM.newCustomer(id) + roomRM.newCustomer(id);
-
   }
 
   @Override

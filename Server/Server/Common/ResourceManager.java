@@ -296,7 +296,7 @@ public class ResourceManager implements IResourceManager
 
 	public int newCustomer(int xid) throws RemoteException
 	{
-        	Trace.info("RM::newCustomer(" + xid + ") called");
+    Trace.info("RM::newCustomer(" + xid + ") called");
 		// Generate a globally unique ID for the new customer
 		int cid = Integer.parseInt(String.valueOf(xid) +
 			String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
@@ -357,14 +357,12 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Adds flight reservation to this customer
-	public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException
-	{
+	public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException{
 		return reserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
 	}
 
 	// Adds car reservation to this customer
-	public boolean reserveCar(int xid, int customerID, String location) throws RemoteException
-	{
+	public boolean reserveCar(int xid, int customerID, String location) throws RemoteException{
 		return reserveItem(xid, customerID, Car.getKey(location), location);
 	}
 
