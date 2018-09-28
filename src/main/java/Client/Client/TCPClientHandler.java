@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.rmi.RemoteException;
 import java.util.Vector;
 
+import main.java.Util.JSONException;
 import main.java.Util.Message;
 
 public class TCPClientHandler{
@@ -20,7 +21,8 @@ public class TCPClientHandler{
 	}
 
 	public String sendRecvStr(Message msg) throws IOException, IllegalArgumentException{
-		Socket socket = new Socket(mw_hostname, mw_port);
+		@SuppressWarnings("resource")
+    Socket socket = new Socket(mw_hostname, mw_port);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		PrintWriter writer = new PrintWriter(socket.getOutputStream(),true);
 		writer.println(msg.toString());
@@ -32,8 +34,8 @@ public class TCPClientHandler{
 	}
 
 
-	public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) 
-	throws IOException, IllegalArgumentException{
+	public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
+	throws IOException, IllegalArgumentException, JSONException {
 		Message msg = new Message("addFlight");
 		msg.addFlightCommand(id,flightNum,flightSeats,flightPrice); // sets the content of the message
 		return Boolean.parseBoolean(sendRecvStr(msg));
@@ -41,7 +43,7 @@ public class TCPClientHandler{
     
     
     public boolean addCars(int id, String location, int numCars, int price) 
-	throws IOException, IllegalArgumentException{
+	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("addCars");
 		msg.addCommand(id, location, numCars, price); // sets the content of the message
 		return Boolean.parseBoolean(sendRecvStr(msg));
@@ -50,7 +52,7 @@ public class TCPClientHandler{
    
     
     public boolean addRooms(int id, String location, int numRooms, int price) 
-	throws IOException, IllegalArgumentException{
+	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("addRooms");
 		msg.addCommand(id, location, numRooms, price); // sets the content of the message
 		return Boolean.parseBoolean(sendRecvStr(msg));
@@ -58,22 +60,22 @@ public class TCPClientHandler{
 			    
     
     public int newCustomer(int id) 
-	throws IOException, IllegalArgumentException{
+	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("newCustomer");
 		msg.addCustomerCommand(id, -1); // cid not provided case
 		return Integer.parseInt(sendRecvStr(msg));
 	}	    
     
     public boolean newCustomer(int id, int cid)
-    throws IOException, IllegalArgumentException{
+    throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("newCustomerID");
 		msg.addCustomerCommand(id, cid); // sets the content of the message
-		return Integer.parseInt(sendRecvStr(msg));
+		return Boolean.parseBoolean(sendRecvStr(msg));
 	}	    
 
     
     public boolean deleteFlight(int id, int flightNum) 
-	throws IOException, IllegalArgumentException{
+	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteFlight");
 		msg.deleteFlightCommand(id,flightNum);
 		return Boolean.parseBoolean(sendRecvStr(msg));
@@ -81,7 +83,7 @@ public class TCPClientHandler{
     
     	    
     public boolean deleteCars(int id, String location) 
-	throws IOException, IllegalArgumentException{
+	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteCars");
 		msg.deleteCommand(id,location);
 		return Boolean.parseBoolean(sendRecvStr(msg));
@@ -89,14 +91,14 @@ public class TCPClientHandler{
 
     
     public boolean deleteRooms(int id, String location) 
-	throws IOException, IllegalArgumentException{
+	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteRooms");
 		msg.deleteCommand(id,location);
 		return Boolean.parseBoolean(sendRecvStr(msg));
 	}
     
     public boolean deleteCustomer(int id, int customerID) 
-	throws IOException, IllegalArgumentException{
+	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteCustomer");
 		msg.addCustomerCommand(id,customerID);
 		return Boolean.parseBoolean(sendRecvStr(msg));
@@ -104,15 +106,15 @@ public class TCPClientHandler{
 
     
     public int queryFlight(int id, int flightNumber) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException, JSONException; 
 
     
     public int queryCars(int id, String location) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException, JSONException; 
 
     
     public int queryRooms(int id, String location) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException, JSONException; 
 
    
     public String queryCustomerInfo(int id, int customerID) 

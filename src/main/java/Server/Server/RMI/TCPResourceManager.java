@@ -1,10 +1,13 @@
 package main.java.Server.Server.RMI;
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.function.ToDoubleBiFunction;
 
 import main.java.Server.Server.Common.ResourceManager;
 import main.java.Server.Server.Common.TCPServerThread;
+import main.java.Server.Server.Common.Trace;
 
 public class TCPResourceManager {
 	private static String s_serverName = "Server";
@@ -17,7 +20,7 @@ public class TCPResourceManager {
 		args[1]: port of the server (optional)
 		
 	*/
-	public static void main(String args[])
+	public static void main(String args[]) 
 	{
 		if (args.length > 0)
 		{
@@ -28,12 +31,34 @@ public class TCPResourceManager {
 		TCPResourceManager server = new TCPResourceManager();
 		server.setRM(s_serverName);
 
-		ServerSocket serverSocket = new ServerSocket(port); // the server socket listens on this port
-	    while (true){
-	    	Socket mw_socket = serverSocket.accept(); // input socket is the middleware socket
-	    	//upon receive msg from middleware, run a new thread
-	    	(new TCPServerThread(mw_socket,s_serverName, server.resourceManager)).run(); 
-	    } 
+		ServerSocket serverSocket = null;
+    try {
+      serverSocket = new ServerSocket(port);
+    } catch (IOException e) {
+      Trace.error("Failed to initialize server socket");
+      System.exit(0);
+    } // the server socket listens on this port
+    int counter = 0;
+    while (true){
+    	Socket mw_socket = null;
+      try {
+        mw_socket = serverSocket.accept();
+      } catch (IOException e) {
+        counter += 1;
+        if(counter == 10000) {
+          break;
+        }
+      } 
+      counter = 0;
+      // input socket is the middleware socket
+    	//upon receive msg from middleware, run a new thread
+    	(new TCPServerThread(mw_socket,s_serverName, server.resourceManager)).run(); 
+    } 
+    try {
+      serverSocket.close();
+    } catch (IOException e) {
+      Trace.warn("Failed to close the server socket.");;
+    }
 
 		
 	}

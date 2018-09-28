@@ -6,9 +6,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Vector;
 
+import main.java.Util.Message;
 import main.java.Util.MessageDecoder;
+import main.java.Util.MessageDecoder.CustomerMessageDecoder;
 
 public class TCPMiddlewareThread implements Runnable{
 
@@ -16,7 +22,7 @@ public class TCPMiddlewareThread implements Runnable{
 	private HashMap<String, String> serverType2host; // {<ServerType>: <Hostname>}
 	private int server_port = 1099; // port of the servers
 	private final MessageDecoder msgDecoder; // each message per thread
-	private ArrayList<Integer> customerIdx ;
+	private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
 
 
 	public TCPMiddlewareThread(Socket client_socket, HashMap<String, String> serverType2host,ArrayList<Integer> customerIdx ){
@@ -41,12 +47,12 @@ public class TCPMiddlewareThread implements Runnable{
 		String content = msgDecoder.getContent(request);
 		Trace.info("TCPMiddlewareThread:: recieve and forward commandType '"+serverType+"'...");
 		
-		
+    String result = "";
 		String server_host = "";
 		if (serverType!="ALL"){
 			server_host = serverType2host.get(serverType);
 			// forward command to corresponding RM and get result from the server
-			String result = sendRecvStr(request, server_host);
+			result = sendRecvStr(request, server_host);
 			if (result.equals("<JSONException>")) Trace.error("IOException from server "+server_host);
 			if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
 		}
@@ -58,12 +64,13 @@ public class TCPMiddlewareThread implements Runnable{
 
 			switch (command){
 				case "newCustomer":
-					decodeCommandMsgNoCID(content);
+					msgDecoder.decodeCommandMsgNoCID(content);
+					int cid = -1;
 					synchronized (customerIdx){
-						int cid = Collections.max(customerIdx)+1;
-						customerIdx.put(cid);
+						cid = Collections.max(customerIdx)+1;
+						customerIdx.add(cid);
+						sendCustomerCommand(command, msgDecoder.id, cid);
 					}
-					sendCustomerCommand(command, id,cid);
 					result = Integer.toString(cid);
 				case "newCustomerID":
 					msgDecoder.decodeCommandMsg(content);
@@ -76,7 +83,7 @@ public class TCPMiddlewareThread implements Runnable{
 				case "deleteCustomer":
 					msgDecoder.decodeCommandMsg(content);
 					synchronized(customerIdx){
-			      		customerID.remove(cid);
+			      		customerIdx.remove(cid);
 			    	}
 					result = sendCustomerCommand(command, msgDecoder.id, msgDecoder.cid);
 
@@ -86,7 +93,7 @@ public class TCPMiddlewareThread implements Runnable{
 			}
 
 		}
-		else if (commmand="bundle"){
+		else if (command=="bundle"){
 			sendBundleCommand(content);
 		}
 
@@ -101,8 +108,8 @@ public class TCPMiddlewareThread implements Runnable{
 	public String sendBundleCommand(String content){
 		// TODO: parse {int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room}
 		Vector<String> flightNumbers;
-		int id;cid;
-		String location;car;rooms;
+		int id, cid;
+		String location, car, rooms;
 
 		boolean res = true;
 
@@ -136,11 +143,11 @@ public class TCPMiddlewareThread implements Runnable{
 		Message msg = new Message(cmd);
 		msg.addCustomerCommand(id,cid);
 		boolean res = true;
-		for (Map.Entry<<String, String>> entry : serverType2host.entrySet()){
+		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
 			Trace.info("TCPMiddlewareThread:: send command '"+cmd+"' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
-			String result = sendRecvStr(msg.toString(), entry.getValue);
-			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+server_host); return result;}
-			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+server_host);return result;}
+			String result = sendRecvStr(msg.toString(), entry.getValue());
+			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
+			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
 			res = res && Boolean.parseBoolean(result);
 		}
 		return Boolean.toString(res);
@@ -157,7 +164,9 @@ public class TCPMiddlewareThread implements Runnable{
 		String res = fromServer.readLine();
 		if (res.equals("<IOException>")) throw new IOException();
 		if (res.equals("<IllegalArgumentException>")) throw new IllegalArgumentException();
+		server_socket.close();
 		return res;
+		
 	}
 
 	// FIXME: Implement IResourceManager Interface here??? 

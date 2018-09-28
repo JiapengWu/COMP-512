@@ -3,15 +3,17 @@ package main.java.Server.Server.RMI;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import main.java.Server.Server.Common.TCPMiddlewareThread;
 import main.java.Server.Server.Common.Trace;
+import main.java.Util.MessageDecoder;
 
 public class TCPMiddleware {
 	private static String s_serverName = "TCPMiddleware"; // this is useless cuz we only need the port to start a server socket
   	private static int s_port = 1099; // port of middleware, listen to client
-  	private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
+  	private static ArrayList<Integer> customerIdx = new ArrayList<Integer>();
 
   	public TCPMiddleware(){
 
@@ -43,9 +45,10 @@ public class TCPMiddleware {
 	    Trace.info("TCPMiddleware:: server '"+s_serverName+"' start listening to clients on port "+Integer.toString(s_port));
 	    while (true){
 	    	Socket socket = serverSocket.accept(); // FIXME: does this socket connec to client?
-	    	(new TCPMiddlewareThread(socket, serverType2host,mw_serverm, customerIdx)).run();
+	    	(new TCPMiddlewareThread(socket, serverType2host, customerIdx)).run();
 	    }
 
   	}
+
 
 }

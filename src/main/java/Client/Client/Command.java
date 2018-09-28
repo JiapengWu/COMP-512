@@ -1,4 +1,4 @@
-package Client;
+package main.java.Client.Client;
 
 public enum Command {
 	Help("List all available commands", "[CommandName]"),

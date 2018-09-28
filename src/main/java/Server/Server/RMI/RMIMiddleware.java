@@ -139,7 +139,7 @@ public class RMIMiddleware implements IResourceManager {
   @Override
   public boolean deleteCustomer(int id, int customerID) throws RemoteException {
     synchronized(customerIdx){
-      customerID.remove(customerID);
+      customerIdx.remove(customerID);
     }
     return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID) && roomRM.deleteCustomer(id, customerID);
   }

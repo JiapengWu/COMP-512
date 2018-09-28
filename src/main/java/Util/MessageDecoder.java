@@ -152,6 +152,7 @@ public class MessageDecoder{
 			try{
 				JSONObejct contents = new JSONObject(msgStr);
 				id = contents.getInt(prefix+"id");
+			}
 			catch (JSONException e){
 				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
 				e.printStackTrace();

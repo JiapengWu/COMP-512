@@ -97,11 +97,15 @@ public abstract class Client
 				int flightSeats = toInt(arguments.elementAt(3));
 				int flightPrice = toInt(arguments.elementAt(4));
 
-				if (m_resourceManager.addFlight(id, flightNum, flightSeats, flightPrice)) {
-					System.out.println("Flight added");
-				} else {
-					System.out.println("Flight could not be added");
-				}
+				try {
+          if (m_resourceManager.addFlight(id, flightNum, flightSeats, flightPrice)) {
+          	System.out.println("Flight added");
+          } else {
+          	System.out.println("Flight could not be added");
+          }
+        } catch (Exception e) {          
+          e.printStackTrace();
+        }
 				break;
 			}
 			case AddCars: {
@@ -402,7 +406,7 @@ public abstract class Client
 				{
 					flightNumbers.addElement(arguments.elementAt(3+i));
 				}
-				String location = arguments.elementAt(arguments.size()-2);
+				String location = arguments.elementAt(arguments.size()-3);
 				boolean car = toBoolean(arguments.elementAt(arguments.size()-2));
 				boolean room = toBoolean(arguments.elementAt(arguments.size()-1));
 
