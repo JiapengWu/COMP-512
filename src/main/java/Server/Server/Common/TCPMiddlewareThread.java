@@ -57,7 +57,7 @@ public class TCPMiddlewareThread implements Runnable{
 		
 		String result = "";
 		String server_host = "";
-		if (serverType!="ALL"){
+		if (serverType != "ALL"){
 			server_host = serverType2host.get(serverType);
 			// forward command to corresponding RM and get result from the server
 			try {
@@ -68,38 +68,40 @@ public class TCPMiddlewareThread implements Runnable{
 			if (result.equals("<JSONException>")) Trace.error("IOException from server "+server_host);
 			if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
 		}
+		
 		else if (command!="bundle"){
 			// customer-related command
-			
-			CustomerMessageDecoder msgDecoder = (new MessageDecoder()).new CustomerMessageDecoder();
+			MessageDecoder msgDecoder = new MessageDecoder();
+			CustomerMessageDecoder customerMsgDecoder = msgDecoder.new CustomerMessageDecoder();
 
 			switch (command){
 				case "newCustomer":
-					msgDecoder.decodeCommandMsgNoCID(content);
+					customerMsgDecoder.decodeCommandMsgNoCID(content);
 					synchronized (customerIdx){
 						int cid = Collections.max(customerIdx)+1;
 						customerIdx.add(cid);
-						sendCustomerCommand(command, msgDecoder.id, cid);
+						sendCustomerCommand(command, customerMsgDecoder.id, cid);
 						result = Integer.toString(cid);
 					}
 				case "newCustomerID":
-					msgDecoder.decodeCommandMsg(content);
-					result = sendCustomerCommand("newCustomer", msgDecoder.id, msgDecoder.customerID);
+					customerMsgDecoder.decodeCommandMsg(content);
+					result = sendCustomerCommand("newCustomer", customerMsgDecoder.id, customerMsgDecoder.customerID);
 
 				case "queryCustomerInfo":
-					msgDecoder.decodeCommandMsg(content);
-					result = sendCustomerCommand(command, msgDecoder.id, msgDecoder.customerID);
+					customerMsgDecoder.decodeCommandMsg(content);
+					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
 
 				case "deleteCustomer":
-					msgDecoder.decodeCommandMsg(content);
+					customerMsgDecoder.decodeCommandMsg(content);
 					synchronized(customerIdx){
-			      		customerIdx.remove(msgDecoder.customerID);
+			      		customerIdx.remove(customerMsgDecoder.customerID);
 			    	}
-					result = sendCustomerCommand(command, msgDecoder.id, msgDecoder.customerID);
+					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
 
 				case "addFlight":
-					msgDecoder.decodeCommandMsg(content);
-					
+					customerMsgDecoder.decodeCommandMsg(content);
+					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
+
 					
 				default:
 					result = "<IllegalArgumentException>";

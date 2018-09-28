@@ -19,22 +19,11 @@ public class Message{
 
 	public Message(String msg_type){
 		this.msg_type = msg_type;
-		if(msg_type.contains("reserve") || msg_type.contains("Customer")) {
-			prefix="customer_";
-		}
-		else {			
-			if (msg_type.contains("Flight")) {
-				prefix="flight_";
-				server_type="Flight";
-			}
-			else if (msg_type.contains("Car")) {
-				prefix="car_";server_type="Car";
-			}
-			else if (msg_type.contains("Room")) {
-				prefix="room_";
-				server_type="Room";
-			}
-		}
+		if (msg_type.contains("Flight")) {prefix="flight_";server_type="Flight";}
+		else if (msg_type.contains("Car")) {prefix="car_";server_type="Car";}
+		else if (msg_type.contains("Room")) {prefix="room_";server_type="Room";}
+		else if (msg_type.contains("Customer")) {prefix="customer_";}
+		else prefix="bundle_"; 
 	}
 
 	/*
@@ -132,7 +121,6 @@ public class Message{
 						.accumulate(prefix+"customerID",customerID)
 						.accumulate(prefix+"location",location).toString();
 	}
-	// TODO: more encoding methods....
 
 
 }

@@ -22,9 +22,9 @@ public class TCPClientHandler{
 
 	public String sendRecvStr(Message msg) throws IOException, IllegalArgumentException{
 		@SuppressWarnings("resource")
-		Socket socket = new Socket(mw_hostname, mw_port);
-		BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		PrintWriter writer = new PrintWriter(socket.getOutputStream(),true);
+		Socket middleware_socket = new Socket(mw_hostname, mw_port);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(middleware_socket.getInputStream()));
+		PrintWriter writer = new PrintWriter(middleware_socket.getOutputStream(),true);
 		writer.println(msg.toString());
 		writer.flush();
 		String res = reader.readLine();
