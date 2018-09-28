@@ -14,6 +14,7 @@ public class TCPServerThread implements Runnable{
 	private Socket mw_socket;
 	private String s_serverName;
 	private ResourceManager rm;
+	private ArrayList<Integer> customerIdx;
 
 	public TCPServerThread(Socket mw_socket, String s_serverName, ResourceManager rm){
 		this.mw_socket = mw_socket;
@@ -36,31 +37,35 @@ public class TCPServerThread implements Runnable{
 			
 			try{
 				// the actual shit happening here: parse the message, call RM method, write back to middleware
-				String command = decoder.decode_Method(msg);
+				String command = decoder.decodeCommand(msg);
+				String content = decoder.getContent(msg);
 				switch (command)
 				{
 					case "addFlight":
 						FlightMessageDecoder flightDecoder = (FlightMessageDecoder) decoder;
-						flightDecoder.decodeAddMsg(message);
+						flightDecoder.decodeAddMsg(content);
 						//FIXME: On the same server, ResourceManager should be synchronized !
 						res = Boolean.toString(rm.addFlight(flightDecoder.xid,flightDecoder.flightNum, flightDecoder.flightSeats, flightDecoder.flightPrice));
 
 
 					case "deleteFlight":
 						FlightMessageDecoder flightDecoder = (FlightMessageDecoder) decoder;
-						flightDecoder.decodeDelMsg(message);
+						flightDecoder.decodeDelMsg(content);
 						res = Boolean.toString(rm.deleteFlight(flightDecoder.xid,flightDecoder.flightNum));
 
 					case "queryFlight":
 						FlightMessageDecoder flightDecoder = (FlightMessageDecoder) decoder;
-						flightDecoder.decodeQueryMsg(message);
+						flightDecoder.decodeQueryMsg(content);
 						res = Integer.toString(rm.deleteFlight(flightDecoder.xid,flightDecoder.flightNum));
 
+					case "reserveFlight":
+						FlightMessageDecoder flightDecoder = (FlightMessageDecoder) decoder;
+						flightDecoder.decodeReserveMsg(content);
+						res = Boolean.toString(rm.reserveFlight(flightDecoder.xid,flightDecoder.customerID, flightDecoder.flightNum));
 
-					// TODO: other cases for add/delete/query
-
-					// FIXME: "reserverXXX" and "CustomerXXX" should be handled a bit differently here, or handled in Middleware?
+					// TODO: other cases for add/delete/query/reserve car/room
 					
+
 					// if command doesn't match any of the above
 					default:
 						res = "<IllegalArgumentException>";
