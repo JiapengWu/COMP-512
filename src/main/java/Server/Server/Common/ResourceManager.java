@@ -382,24 +382,5 @@ public class ResourceManager implements IResourceManager
 	{
 		return m_name;
 	}
-//
-//  @Override
-//  public void decrementCount(ReservableItem item) {
-//    // TODO Auto-generated method stub
-//    
-//  }
-//
-//  @Override
-//  public void incrementReserved(ReservableItem item) {
-//    // TODO Auto-generated method stub
-//    
-//  }
-//
-//  @Override
-//  public void reserveItem(int id, int customerID, String key, String location) {
-//    // TODO Auto-generated method stub
-//    
-//  }
-//	
 }
  

@@ -19,7 +19,7 @@ public class TCPMiddleware {
 
   	}
 
-  	public static void main(String[] args) throws IOException{
+  	public static void main(String[] args){
   		/* 
   		argv[0]: middleware hostname
   		argv[1]: flight server hostname
@@ -33,22 +33,41 @@ public class TCPMiddleware {
 	    	Trace.error("RMIMiddleWare:: Expect 4 arguments. $0: hostname of MiddleWare, $1-$3: hostname of servers");
 	    	System.exit(1);
 	    }
-
-	    TCPMiddleware mw_server = new TCPMiddleware();
-
-	    HashMap<String, String> serverType2host = new HashMap<String, String>();
+	    final HashMap<String, String> serverType2host = new HashMap<String, String>();
 	    serverType2host.put("Flight",args[1]);
 	    serverType2host.put("Car",args[2]);
 	    serverType2host.put("Room",args[3]);
 
-	    ServerSocket serverSocket = new ServerSocket(s_port);
-	    Trace.info("TCPMiddleware:: server '"+s_serverName+"' start listening to clients on port "+Integer.toString(s_port));
+	    ServerSocket middlewareServerSocket = null;
+		try {
+			middlewareServerSocket = new ServerSocket(s_port);
+		} catch (IOException e) {
+			Trace.error("Failed to initialize middleware socket.");
+		}
+	    Trace.info("TCPMiddleware:: server '" + s_serverName + "' start listening to clients on port " + Integer.toString(s_port));
+	    
+	    int errorCounter = 0;
 	    while (true){
-	    	Socket socket = serverSocket.accept(); // FIXME: does this socket connec to client?
+	    	Socket socket = null;
+			try {
+				socket = middlewareServerSocket.accept();
+				errorCounter = 0;
+			} catch (IOException e) {
+				errorCounter++;
+				if(errorCounter == 10000)
+				{
+					Trace.error("Middleware cannot receive message. Quitting...");
+					break;
+				}
+			} 
+
 	    	(new TCPMiddlewareThread(socket, serverType2host, customerIdx)).run();
+	    	// FIXME: does this socket connec to client?
 	    }
-
+	    try {
+			middlewareServerSocket.close();
+		} catch (IOException e) {
+			Trace.error("Failed to close middleware socket.");
+		}
   	}
-
-
 }

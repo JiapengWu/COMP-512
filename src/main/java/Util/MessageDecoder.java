@@ -5,49 +5,45 @@ import org.json.JSONObject;
 
 
 public class MessageDecoder{
-	private final String COMMAND = "MSG_COMMAND"; 
-	private final String CONTENT = "MSG_CONTENT";
-	private final String TYPE = "SERVER_TYPE"; 
+	private final static String COMMAND = "MSG_COMMAND"; 
+	private final static String CONTENT = "MSG_CONTENT";
+	private final static String SERVER_TYPE = "SERVER_TYPE"; 
 
-	private final String JSON_EXCEPTION = "<JSONException>";
+	private final static String JSON_EXCEPTION = "<JSONException>";
 
 	private String msg_type; // method name this message contains, eg, "addFlights","queryCar"...
 	private JSONObject args; // arguments to the message method
 
-	public MessageDecoder(){
-
-	}
-
 	// return which server this command goes to
-	public String decodeType(String msgStr) throws JSONException {
+	public static String getServerType(String msgStr) throws JSONException {
 		try{
 			JSONObject obj = new JSONObject(msgStr);
-			return obj.getString(TYPE);
+			return obj.getString(SERVER_TYPE);
 		}
 		
 		catch (JSONException e){
-			System.err.println("ERROR:: MessageDecoder.decodeType: Cannot decode JSON message '"+msgStr+"'");
+			System.err.println("ERROR:: MessageDecoder.decodeType: Cannot decode JSON message '" + msgStr + "'");
 			e.printStackTrace();
 			return JSON_EXCEPTION;
 		}
 	}
 
 	// return the name of the command
-	public String decodeCommand(String msgStr){
+	public static String getCommand(String msgStr){
 		try{
 			JSONObject obj = new JSONObject(msgStr);
 			return obj.getString(COMMAND);
 		}
 		
 		catch (JSONException e){
-			System.err.println("ERROR:: MessageDecoder.decodeMethod: Cannot decode JSON message '"+msgStr+"'");
+			System.err.println("ERROR:: MessageDecoder.decodeMethod: Cannot decode JSON message '" + msgStr + "'");
 			e.printStackTrace();
 			return JSON_EXCEPTION;
 		}
 	}
 
 	// return the argument part of the command
-	public String getContent(String msgStr){
+	public static String getContent(String msgStr){
 		try{
 			JSONObject obj = new JSONObject(msgStr);
 			return obj.getString(CONTENT);
@@ -58,7 +54,6 @@ public class MessageDecoder{
 			return JSON_EXCEPTION;
 		}
 	}
-
 
 	public class FlightMessageDecoder extends MessageDecoder{
 		public int xid;
@@ -84,7 +79,7 @@ public class MessageDecoder{
 		}
 
 		// decode a "DeleteFlight" message
-		public void decodeDelMsg(String msgStr){
+		public  void decodeDelMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
 				xid = contents.getInt(prefix+"id");
@@ -134,9 +129,9 @@ public class MessageDecoder{
 
 		public void decodeCommandMsg(String msgStr){
 			try{
-				JSONObejct contents = new JSONObject(msgStr);
+				JSONObject contents = new JSONObject(msgStr);
 				id = contents.getInt(prefix+"id");
-				cid = contents.getInt(prefix+"customerID");
+				customerID = contents.getInt(prefix+"customerID");
 			}
 			catch (JSONException e){
 				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
@@ -150,7 +145,7 @@ public class MessageDecoder{
 
 		public void decodeCommandMsgNoCID(String msgStr){
 			try{
-				JSONObejct contents = new JSONObject(msgStr);
+				JSONObject contents = new JSONObject(msgStr);
 				id = contents.getInt(prefix+"id");
 			}
 			catch (JSONException e){

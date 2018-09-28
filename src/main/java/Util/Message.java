@@ -1,12 +1,15 @@
 package main.java.Util;
 import java.util.Vector;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class Message{
 
-	private final String COMMAND = "MSG_COMMAND"; 
-	private final String TYPE = "SERVER_TYPE"; 
-	private final String CONTENT = "MSG_CONTENT";
+	private final static String COMMAND = "MSG_COMMAND"; 
+	private final static String CONTENT = "MSG_CONTENT";
+	private final static String TYPE = "SERVER_TYPE"; 
 
 	private String msg_type; // method name this message contains, eg, "addFlights","queryCar"...
 	private String contents=null;
@@ -16,11 +19,22 @@ public class Message{
 
 	public Message(String msg_type){
 		this.msg_type = msg_type;
-		if (msg_type.contains("Flight")) {prefix="flight_";server_type="Flight";}
-		else if (msg_type.contains("Car")) {prefix="car_";server_type="Car";}
-		else if (msg_type.contains("Room")) {prefix="room_";server_type="Room";}
-		else if (msg_type.contains("Customer")) prefix="customer_";
-		else prefix="bundle_"; 
+		if(msg_type.contains("reserve") || msg_type.contains("Customer")) {
+			prefix="customer_";
+		}
+		else {			
+			if (msg_type.contains("Flight")) {
+				prefix="flight_";
+				server_type="Flight";
+			}
+			else if (msg_type.contains("Car")) {
+				prefix="car_";server_type="Car";
+			}
+			else if (msg_type.contains("Room")) {
+				prefix="room_";
+				server_type="Room";
+			}
+		}
 	}
 
 	/*
@@ -60,26 +74,27 @@ public class Message{
 	// encode <AddCars> or <AddRooms> command
 	public void addCommand(int id, String location, int nums, int price) throws JSONException{
 		this.contents = (new JSONObject())
-						.accumulate(prefix+"id",id)
-						.accumulate(prefix+"location",location)
-						.accumulate(prefix+"nums",nums)
-						.accumulate(prefix+"price",price).toString();
+						.accumulate(prefix+"id", id)
+						.accumulate(prefix+"location", location)
+						.accumulate(prefix+"nums", nums)
+						.accumulate(prefix+"price", price).toString();
 	}
 
 	// encode <deleteFlight> command
-	public void delFlightCommand(int id, int flightNum) throws JSONException{
+	public void delOrQueryFlightCommand(int id, int flightNum) throws JSONException{
 		this.contents = (new JSONObject())
 						.accumulate(prefix+"id",id)
 						.accumulate(prefix+"Num",flightNum).toString();
 	}
 
-	// encode <deleteCars> or <deleteRooms>
-	public void delCommand(int id, String location) throws JSONException{
+	// encode <deleteCars> or <deleteRooms>, <queryCars> or <queryRooms>, <queryCarsPrice> or <queryRPrice>
+	public void delOrQueryCommand(int id, String location) throws JSONException{
 		this.contents = (new JSONObject())
 						.accumulate(prefix+"id",id)
 						.accumulate(prefix+"location",location).toString();
 	}
-
+	
+	
 	// encode <bundle>
 	public void bundleCommand(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room)
 		throws JSONException {
@@ -93,8 +108,8 @@ public class Message{
 						.accumulate(prefix+"room",room).toString();
 	}
 
-	// encode <addCustomer> with id and cid
-	public void addCustomerCommand(int id, int cid) throws JSONException{
+	// encode <addCustomer>, <deleteCusmoter> and <queryCustomer> with id and cid
+	public void addDeleteQueryCustomerCommand(int id, int cid) throws JSONException{
 		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
 						.accumulate(prefix+"customerID",cid).toString();
 	}
@@ -104,17 +119,18 @@ public class Message{
 		this.contents = (new JSONObject()).accumulate(prefix+"id",id).toString();
 	}
 
-
+	
 	public void reserveFlightCommand(int id, int customerID, int flightNumber){
 		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
 						.accumulate(prefix+"customerID",customerID)
 						.accumulate(prefix+"flightNumber",flightNumber).toString();
 	}
+	
 
 	public void reserveCommand(int id,int customerID, String location){
 		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
 						.accumulate(prefix+"customerID",customerID)
-						.accumulate(prefix+"location",flightNumber).toString();
+						.accumulate(prefix+"location",location).toString();
 	}
 	// TODO: more encoding methods....
 

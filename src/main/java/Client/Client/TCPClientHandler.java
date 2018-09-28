@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.rmi.RemoteException;
 import java.util.Vector;
 
-import main.java.Util.JSONException;
+import org.json.JSONException;
+
 import main.java.Util.Message;
 
 public class TCPClientHandler{
@@ -22,7 +22,7 @@ public class TCPClientHandler{
 
 	public String sendRecvStr(Message msg) throws IOException, IllegalArgumentException{
 		@SuppressWarnings("resource")
-    Socket socket = new Socket(mw_hostname, mw_port);
+		Socket socket = new Socket(mw_hostname, mw_port);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		PrintWriter writer = new PrintWriter(socket.getOutputStream(),true);
 		writer.println(msg.toString());
@@ -59,17 +59,15 @@ public class TCPClientHandler{
 	}	    
 			    
     
-    public int newCustomer(int id) 
-	throws IOException, IllegalArgumentException, JSONException{
+    public int newCustomer(int id) throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("newCustomer");
-		msg.addCustomerCommand(id, -1); // cid not provided case
+		msg.addCustomerCommand(id); // cid not provided case
 		return Integer.parseInt(sendRecvStr(msg));
 	}	    
     
-    public boolean newCustomer(int id, int cid)
-    throws IOException, IllegalArgumentException, JSONException{
+    public boolean newCustomer(int id, int cid) throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("newCustomerID");
-		msg.addCustomerCommand(id, cid); // sets the content of the message
+		msg.addDeleteQueryCustomerCommand(id, cid); // sets the content of the message
 		return Boolean.parseBoolean(sendRecvStr(msg));
 	}	    
 
@@ -77,7 +75,7 @@ public class TCPClientHandler{
     public boolean deleteFlight(int id, int flightNum) 
 	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteFlight");
-		msg.deleteFlightCommand(id,flightNum);
+		msg.delOrQueryFlightCommand(id, flightNum);
 		return Boolean.parseBoolean(sendRecvStr(msg));
 	}
     
@@ -85,7 +83,7 @@ public class TCPClientHandler{
     public boolean deleteCars(int id, String location) 
 	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteCars");
-		msg.deleteCommand(id,location);
+		msg.delOrQueryCommand(id, location);
 		return Boolean.parseBoolean(sendRecvStr(msg));
 	}
 
@@ -93,49 +91,68 @@ public class TCPClientHandler{
     public boolean deleteRooms(int id, String location) 
 	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteRooms");
-		msg.deleteCommand(id,location);
+		msg.delOrQueryCommand(id,location);
 		return Boolean.parseBoolean(sendRecvStr(msg));
 	}
     
     public boolean deleteCustomer(int id, int customerID) 
 	throws IOException, IllegalArgumentException, JSONException{
 		Message msg = new Message("deleteCustomer");
-		msg.addCustomerCommand(id,customerID);
+		msg.addDeleteQueryCustomerCommand(id, customerID);
 		return Boolean.parseBoolean(sendRecvStr(msg));
 	}
 
     
     public int queryFlight(int id, int flightNumber) 
-	throws IOException, IllegalArgumentException, JSONException; 
+	throws IOException, IllegalArgumentException, JSONException{
+    	Message msg = new Message("queryFlight");
+		msg.delOrQueryFlightCommand(id, flightNumber);
+		return Integer.parseInt(sendRecvStr(msg));
+    }
 
-    
     public int queryCars(int id, String location) 
-	throws IOException, IllegalArgumentException, JSONException; 
+	throws IOException, IllegalArgumentException, JSONException{
+    	Message msg = new Message("queryCars");
+		msg.delOrQueryCommand(id, location);
+		return Integer.parseInt(sendRecvStr(msg));
+    	
+    }
 
-    
     public int queryRooms(int id, String location) 
-	throws IOException, IllegalArgumentException, JSONException; 
+	throws IOException, IllegalArgumentException, JSONException{
+    	Message msg = new Message("queryRooms");
+		msg.delOrQueryCommand(id, location);
+		return Integer.parseInt(sendRecvStr(msg));
+    	
+    }
 
-   
     public String queryCustomerInfo(int id, int customerID) 
 	throws IOException, IllegalArgumentException{
 		Message msg = new Message("queryCustomerInfo");
-		msg.addCustomerCommand(id,customerID);
-		return Boolean.parseBoolean(sendRecvStr(msg));
+		msg.addDeleteQueryCustomerCommand(id,customerID);
+		return sendRecvStr(msg);
 	}
-
-    
     
     public int queryFlightPrice(int id, int flightNumber) 
-	throws IOException, IllegalArgumentException; 
+    		throws IOException, IllegalArgumentException, JSONException{
+    	Message msg = new Message("queryFlightPrice");
+		msg.delOrQueryFlightCommand(id, flightNumber);
+		return Integer.parseInt(sendRecvStr(msg));
+    }
 
-    
     public int queryCarsPrice(int id, String location) 
-	throws IOException, IllegalArgumentException; 
-
+    		throws IOException, IllegalArgumentException, JSONException{
+	    Message msg = new Message("queryCarsPrice");
+		msg.delOrQueryCommand(id, location);
+		return Integer.parseInt(sendRecvStr(msg));
+    }
     
     public int queryRoomsPrice(int id, String location) 
-	throws IOException, IllegalArgumentException; 
+    		throws IOException, IllegalArgumentException, JSONException{
+    	Message msg = new Message("queryRoomsPrice");
+		msg.delOrQueryCommand(id, location);
+		return Integer.parseInt(sendRecvStr(msg));
+    }
 
     
     public boolean reserveFlight(int id, int customerID, int flightNumber) 

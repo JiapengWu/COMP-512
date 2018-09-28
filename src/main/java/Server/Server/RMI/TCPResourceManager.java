@@ -32,39 +32,35 @@ public class TCPResourceManager {
 		server.setRM(s_serverName);
 
 		ServerSocket serverSocket = null;
-    try {
-      serverSocket = new ServerSocket(port);
-    } catch (IOException e) {
-      Trace.error("Failed to initialize server socket");
-      System.exit(0);
-    } // the server socket listens on this port
-    int counter = 0;
-    while (true){
-    	Socket mw_socket = null;
-      try {
-        mw_socket = serverSocket.accept();
-      } catch (IOException e) {
-        counter += 1;
-        if(counter == 10000) {
-          break;
-        }
-      } 
-      counter = 0;
+	    try {
+	    	serverSocket = new ServerSocket(port);
+	    } catch (IOException e) {
+			e.printStackTrace();
+			Trace.error("Failed to initialize server socket");
+			System.exit(0);
+	    } // the server socket listens on this port
+	    int counter = 0;
+	    while (true){
+	    	Socket mw_socket = null;
+	      try {
+	        mw_socket = serverSocket.accept();
+	        counter = 0;
+	      } catch (IOException e) {
+	        counter += 1;
+	        if(counter == 10000) {
+	          break;
+	        }
+	      } 
+	    (new TCPServerThread(mw_socket,s_serverName, server.resourceManager)).run(); 
       // input socket is the middleware socket
     	//upon receive msg from middleware, run a new thread
-    	(new TCPServerThread(mw_socket,s_serverName, server.resourceManager)).run(); 
     } 
-    try {
-      serverSocket.close();
-    } catch (IOException e) {
-      Trace.warn("Failed to close the server socket.");;
-    }
-
-		
+		try {
+		  serverSocket.close();
+		} catch (IOException e) {
+		  Trace.warn("Failed to close the server socket.");;
+		}
 	}
-
-
-	public TCPResourceManager(){}
 
 	public void setRM(String name){
 		this.resourceManager = new ResourceManager(name);

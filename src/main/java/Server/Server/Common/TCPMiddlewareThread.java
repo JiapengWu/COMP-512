@@ -21,72 +21,86 @@ public class TCPMiddlewareThread implements Runnable{
 	private Socket client_socket;
 	private HashMap<String, String> serverType2host; // {<ServerType>: <Hostname>}
 	private int server_port = 1099; // port of the servers
-	private final MessageDecoder msgDecoder; // each message per thread
-	private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
+	private ArrayList<Integer> customerIdx;
 
 
-	public TCPMiddlewareThread(Socket client_socket, HashMap<String, String> serverType2host,ArrayList<Integer> customerIdx ){
+	public TCPMiddlewareThread(Socket client_socket, HashMap<String, String> serverType2host, ArrayList<Integer> customerIdx ){
 		this.client_socket = client_socket;
 		this.serverType2host = serverType2host;
-		msgDecoder = new MessageDecoder(); 
 		this.customerIdx=customerIdx;
 	}
-
-
 	
 	@Override
 	public void run(){
 		// connection with client
-		BufferedReader fromClient = new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
-		PrintWriter toClient = new PrintWriter(client_socket.getOutputStream(),true);
+		BufferedReader fromClient = null;
+		PrintWriter toClient = null;
+		try {
+			toClient = new PrintWriter(client_socket.getOutputStream(),true);
+			fromClient = new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
+		} catch (IOException e) {
+			Trace.error("Failed to start buffer reader and writer.");
+			e.printStackTrace();
+		}
 
 		// parse request into: server_to_forward; command name; command arguments
-		String request = fromClient.readLine();
-		String serverType = msgDecoder.decodeType(request);
-		String command = msgDecoder.decodeCommand(request);
-		String content = msgDecoder.getContent(request);
-		Trace.info("TCPMiddlewareThread:: recieve and forward commandType '"+serverType+"'...");
+		String request = null;
+		try {
+			request = fromClient.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		String serverType = MessageDecoder.getServerType(request);
+		String command = MessageDecoder.getCommand(request);
+		String content = MessageDecoder.getContent(request);
+		Trace.info("TCPMiddlewareThread:: recieve and forward commandType '" + serverType + "'...");
 		
-    String result = "";
+		String result = "";
 		String server_host = "";
 		if (serverType!="ALL"){
 			server_host = serverType2host.get(serverType);
 			// forward command to corresponding RM and get result from the server
-			result = sendRecvStr(request, server_host);
+			try {
+				result = sendRecvStr(request, server_host);
+			} catch (IllegalArgumentException | IOException e) {
+				e.printStackTrace();
+			}
 			if (result.equals("<JSONException>")) Trace.error("IOException from server "+server_host);
 			if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
 		}
 		else if (command!="bundle"){
 			// customer-related command
 			
-			CustomerMessageDecoder msgDecoder = (CustomerMessageDecoder) msgDecoder;
-			
+			CustomerMessageDecoder msgDecoder = (new MessageDecoder()).new CustomerMessageDecoder();
 
 			switch (command){
 				case "newCustomer":
 					msgDecoder.decodeCommandMsgNoCID(content);
-					int cid = -1;
 					synchronized (customerIdx){
-						cid = Collections.max(customerIdx)+1;
+						int cid = Collections.max(customerIdx)+1;
 						customerIdx.add(cid);
 						sendCustomerCommand(command, msgDecoder.id, cid);
+						result = Integer.toString(cid);
 					}
-					result = Integer.toString(cid);
 				case "newCustomerID":
 					msgDecoder.decodeCommandMsg(content);
-					result = sendCustomerCommand("newCustomer", msgDecoder.id, msgDecoder.cid);
+					result = sendCustomerCommand("newCustomer", msgDecoder.id, msgDecoder.customerID);
 
 				case "queryCustomerInfo":
 					msgDecoder.decodeCommandMsg(content);
-					result = sendCustomerCommand(command, msgDecoder.id, msgDecoder.cid);
+					result = sendCustomerCommand(command, msgDecoder.id, msgDecoder.customerID);
 
 				case "deleteCustomer":
 					msgDecoder.decodeCommandMsg(content);
 					synchronized(customerIdx){
-			      		customerIdx.remove(cid);
+			      		customerIdx.remove(msgDecoder.customerID);
 			    	}
-					result = sendCustomerCommand(command, msgDecoder.id, msgDecoder.cid);
+					result = sendCustomerCommand(command, msgDecoder.id, msgDecoder.customerID);
 
+				case "addFlight":
+					msgDecoder.decodeCommandMsg(content);
+					
+					
 				default:
 					result = "<IllegalArgumentException>";
 					throw new IllegalArgumentException(content);
@@ -94,58 +108,76 @@ public class TCPMiddlewareThread implements Runnable{
 
 		}
 		else if (command=="bundle"){
-			sendBundleCommand(content);
+			try {
+				sendBundleCommand(content);
+			} catch (IllegalArgumentException | IOException e) {
+				Trace.error("Failed to sent bundle command");
+				e.printStackTrace();
+			}
 		}
 
 		// write the result back to client
 		toClient.println(result);
 		toClient.flush();
-		client_socket.close();
+		try {
+			client_socket.close();
+		} catch (IOException e) {
+			Trace.error("Failed to close client socket.");
+			e.printStackTrace();
+		}
 	}
 
 
 	// handle case "bundle"	
-	public String sendBundleCommand(String content){
+	/*
+	public String sendBundleCommand(String content) throws IllegalArgumentException, IOException{
 		// TODO: parse {int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room}
-		Vector<String> flightNumbers;
+		Vector<String> flightNumbers = new Vector<String>();
 		int id, cid;
 		String location, car, rooms;
 
 		boolean res = true;
-
+		String result = "";
 		String flightServer = serverType2host.get("Flight");
 		String roomServer = serverType2host.get("Room");
 		String carServer = serverType2host.get("Car");
 		for (String fn: flightNumbers){
 			Message msg = new Message("reserveFlight");
-			msg.reserveFlightCommand(id,cid, fn);
-			String result = sendRecvStr(msg.toString(),flightServer);
+			msg.reserveFlightCommand(id, cid, Integer.parseInt(fn));
+			result = sendRecvStr(msg.toString(), flightServer);
 			res = res && Boolean.parseBoolean(result);
 		}
-		if (room=="true"){
+		if (rooms == "true"){
 			Message msg = new Message("reserveRoom");
 			msg.reserveCommand(id,cid, location);
-			String result = sendRecvStr(msg.toString(),roomServer);
+			result = sendRecvStr(msg.toString(),roomServer);
 			res = res && Boolean.parseBoolean(result);
 		}
-		if (car=="true"){
-			Message msg = new Message("reserveRoom");
+		if (car == "true"){
+			Message msg = new Message("reserveCar");
 			msg.reserveCommand(id,cid, location);
-			String result = sendRecvStr(msg.toString(),carServer);
+			result = sendRecvStr(msg.toString(),carServer);
 			res = res && Boolean.parseBoolean(result);
 		}
 		return result;
 
 	}
+	*/
 
 	// send a command that involves customer to a server
 	public String sendCustomerCommand(String cmd, int id, int cid){
 		Message msg = new Message(cmd);
-		msg.addCustomerCommand(id,cid);
+		msg.addDeleteQueryCustomerCommand(id,cid);
 		boolean res = true;
 		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
 			Trace.info("TCPMiddlewareThread:: send command '"+cmd+"' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
-			String result = sendRecvStr(msg.toString(), entry.getValue());
+			String result = "";
+			try {
+				result = sendRecvStr(msg.toString(), entry.getValue());
+			} catch (IllegalArgumentException | IOException e) {
+				Trace.error("Failed to send customer command to server.");
+				e.printStackTrace();
+			}
 			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
 			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
 			res = res && Boolean.parseBoolean(result);
@@ -154,22 +186,39 @@ public class TCPMiddlewareThread implements Runnable{
 	}
 
 
-	public String sendRecvStr(String request, String server_host) throws IOException, IllegalArgumentException{
-		Socket server_socket = new Socket(server_host, server_port);
-		BufferedReader fromServer = new BufferedReader(new InputStreamReader(server_socket.getInputStream()));
-		PrintWriter toServer = new PrintWriter(server_socket.getOutputStream(),true);
-
+	public String sendRecvStr(String request, String server_host) throws IOException{
+		// connect to the server
+		Socket server_socket = null;
+		PrintWriter toServer = null;
+		BufferedReader fromServer = null;
+		try {
+			server_socket = new Socket(server_host, server_port);
+			fromServer = new BufferedReader(new InputStreamReader(server_socket.getInputStream()));
+			toServer = new PrintWriter(server_socket.getOutputStream(),true);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		// write to server
 		toServer.println(request);
 		toServer.flush();
-		String res = fromServer.readLine();
+		
+		try {
+			server_socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		String res = null;
+		try {
+			res = fromServer.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		if (res.equals("<IOException>")) throw new IOException();
 		if (res.equals("<IllegalArgumentException>")) throw new IllegalArgumentException();
-		server_socket.close();
 		return res;
-		
 	}
-
-	// FIXME: Implement IResourceManager Interface here??? 
-
+	
+	
 	
 }

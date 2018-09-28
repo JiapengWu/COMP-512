@@ -45,7 +45,7 @@ public class TCPServerThread implements Runnable{
         	
         	try{
         		// the actual shit happening here: parse the message, call RM method, write back to middleware
-        		String command = decoder.decodeCommand(msg);
+        		String command = decoder.getCommand(msg);
         		String content = decoder.getContent(msg);
         		FlightMessageDecoder itemDecoder = null;
         		switch (command)

@@ -10,6 +10,10 @@ import java.rmi.UnmarshalException;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
+import org.json.JSONException;
+
+import main.java.Server.Server.Common.Trace;
+
 public abstract class Client
 {
 	TCPClientHandler m_resourceManager = null;
@@ -121,10 +125,14 @@ public abstract class Client
 				int numCars = toInt(arguments.elementAt(3));
 				int price = toInt(arguments.elementAt(4));
 
-				if (m_resourceManager.addCars(id, location, numCars, price)) {
-					System.out.println("Cars added");
-				} else {
-					System.out.println("Cars could not be added");
+				try {
+					if (m_resourceManager.addCars(id, location, numCars, price)) {
+						System.out.println("Cars added");
+					} else {
+						System.out.println("Cars could not be added");
+					}
+				} catch (Exception e) {
+					Trace.warn("Cars could not be added");
 				}
 				break;
 			}
@@ -141,10 +149,14 @@ public abstract class Client
 				int numRooms = toInt(arguments.elementAt(3));
 				int price = toInt(arguments.elementAt(4));
 
-				if (m_resourceManager.addRooms(id, location, numRooms, price)) {
-					System.out.println("Rooms added");
-				} else {
-					System.out.println("Rooms could not be added");
+				try {
+					if (m_resourceManager.addRooms(id, location, numRooms, price)) {
+						System.out.println("Rooms added");
+					} else {
+						System.out.println("Rooms could not be added");
+					}
+				} catch (Exception e) {
+					Trace.warn("Rooms could not be added");
 				}
 				break;
 			}
@@ -154,9 +166,13 @@ public abstract class Client
 				System.out.println("Adding a new customer [xid=" + arguments.elementAt(1) + "]");
 
 				int id = toInt(arguments.elementAt(1));
-				int customer = m_resourceManager.newCustomer(id);
-
-				System.out.println("Add customer ID: " + customer);
+				int customer;
+				try {
+					customer = m_resourceManager.newCustomer(id);
+					System.out.println("Add customer ID: " + customer);
+				} catch (Exception e) {
+					Trace.warn("Customer could not be added");
+				}
 				break;
 			}
 			case AddCustomerID: {
@@ -168,10 +184,13 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				int customerID = toInt(arguments.elementAt(2));
 
-				if (m_resourceManager.newCustomer(id, customerID)) {
-					System.out.println("Add customer ID: " + customerID);
-				} else {
-					System.out.println("Customer could not be added");
+				try {
+					if (m_resourceManager.newCustomer(id, customerID)) {
+						System.out.println("Add customer ID: " + customerID);
+					} else {
+						System.out.println("Customer could not be added");
+					}
+				} catch (Exception e) {
 				}
 				break;
 			}
@@ -184,10 +203,14 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				int flightNum = toInt(arguments.elementAt(2));
 
-				if (m_resourceManager.deleteFlight(id, flightNum)) {
-					System.out.println("Flight Deleted");
-				} else {
-					System.out.println("Flight could not be deleted");
+				try {
+					if (m_resourceManager.deleteFlight(id, flightNum)) {
+						System.out.println("Flight Deleted");
+					} else {
+						System.out.println("Flight could not be deleted");
+					}
+				} catch (Exception e) {
+					Trace.warn("Flight could not be deleted");
 				}
 				break;
 			}
@@ -200,10 +223,14 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				String location = arguments.elementAt(2);
 
-				if (m_resourceManager.deleteCars(id, location)) {
-					System.out.println("Cars Deleted");
-				} else {
-					System.out.println("Cars could not be deleted");
+				try {
+					if (m_resourceManager.deleteCars(id, location)) {
+						System.out.println("Cars Deleted");
+					} else {
+						System.out.println("Cars could not be deleted");
+					}
+				} catch (Exception e) {
+					Trace.warn("Cars could not be deleted");
 				}
 				break;
 			}
@@ -216,10 +243,14 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				String location = arguments.elementAt(2);
 
-				if (m_resourceManager.deleteRooms(id, location)) {
-					System.out.println("Rooms Deleted");
-				} else {
-					System.out.println("Rooms could not be deleted");
+				try {
+					if (m_resourceManager.deleteRooms(id, location)) {
+						System.out.println("Rooms Deleted");
+					} else {
+						System.out.println("Rooms could not be deleted");
+					}
+				} catch (Exception e) {
+					Trace.warn("Rooms could not be deleted");
 				}
 				break;
 			}
@@ -232,10 +263,14 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				int customerID = toInt(arguments.elementAt(2));
 
-				if (m_resourceManager.deleteCustomer(id, customerID)) {
-					System.out.println("Customer Deleted");
-				} else {
-					System.out.println("Customer could not be deleted");
+				try {
+					if (m_resourceManager.deleteCustomer(id, customerID)) {
+						System.out.println("Customer Deleted");
+					} else {
+						System.out.println("Customer could not be deleted");
+					}
+				} catch (Exception e) {
+					Trace.warn("Customer could not be deleted");
 				}
 				break;
 			}
@@ -248,8 +283,14 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				int flightNum = toInt(arguments.elementAt(2));
 
-				int seats = m_resourceManager.queryFlight(id, flightNum);
-				System.out.println("Number of seats available: " + seats);
+				int seats;
+				try {
+					seats = m_resourceManager.queryFlight(id, flightNum);
+					System.out.println("Number of seats available: " + seats);
+				} catch (Exception e) {
+					Trace.warn("Failed to query flight.");
+				}
+				
 				break;
 			}
 			case QueryCars: {
@@ -261,8 +302,13 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				String location = arguments.elementAt(2);
 
-				int numCars = m_resourceManager.queryCars(id, location);
-				System.out.println("Number of cars at this location: " + numCars);
+				int numCars;
+				try {
+					numCars = m_resourceManager.queryCars(id, location);
+					System.out.println("Number of cars at this location: " + numCars);
+				} catch (IllegalArgumentException | JSONException | IOException e) {
+					Trace.warn("Failed to query cars.");
+				}
 				break;
 			}
 			case QueryRooms: {
@@ -274,8 +320,13 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				String location = arguments.elementAt(2);
 
-				int numRoom = m_resourceManager.queryRooms(id, location);
-				System.out.println("Number of rooms at this location: " + numRoom);
+				int numRoom;
+				try {
+					numRoom = m_resourceManager.queryRooms(id, location);
+					System.out.println("Number of rooms at this location: " + numRoom);
+				} catch (IllegalArgumentException | JSONException | IOException e) {
+					Trace.warn("Failed to query rooms.");
+				}
 				break;
 			}
 			case QueryCustomer: {
@@ -287,8 +338,13 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				int customerID = toInt(arguments.elementAt(2));
 
-				String bill = m_resourceManager.queryCustomerInfo(id, customerID);
-				System.out.print(bill);
+				String bill;
+				try {
+					bill = m_resourceManager.queryCustomerInfo(id, customerID);
+					System.out.print(bill);
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to query customer.");
+				}
 				break;               
 			}
 			case QueryFlightPrice: {
@@ -300,8 +356,13 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				int flightNum = toInt(arguments.elementAt(2));
 
-				int price = m_resourceManager.queryFlightPrice(id, flightNum);
-				System.out.println("Price of a seat: " + price);
+				int price;
+				try {
+					price = m_resourceManager.queryFlightPrice(id, flightNum);
+					System.out.println("Price of a seat: " + price);
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to query flight price.");
+				}
 				break;
 			}
 			case QueryCarsPrice: {
@@ -313,8 +374,13 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				String location = arguments.elementAt(2);
 
-				int price = m_resourceManager.queryCarsPrice(id, location);
-				System.out.println("Price of cars at this location: " + price);
+				int price;
+				try {
+					price = m_resourceManager.queryCarsPrice(id, location);
+					System.out.println("Price of cars at this location: " + price);
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to query car price.");
+				}
 				break;
 			}
 			case QueryRoomsPrice: {
@@ -341,10 +407,14 @@ public abstract class Client
 				int customerID = toInt(arguments.elementAt(2));
 				int flightNum = toInt(arguments.elementAt(3));
 
-				if (m_resourceManager.reserveFlight(id, customerID, flightNum)) {
-					System.out.println("Flight Reserved");
-				} else {
-					System.out.println("Flight could not be reserved");
+				try {
+					if (m_resourceManager.reserveFlight(id, customerID, flightNum)) {
+						System.out.println("Flight Reserved");
+					} else {
+						System.out.println("Flight could not be reserved");
+					}
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to reserve flight.");
 				}
 				break;
 			}
@@ -359,10 +429,15 @@ public abstract class Client
 				int customerID = toInt(arguments.elementAt(2));
 				String location = arguments.elementAt(3);
 
-				if (m_resourceManager.reserveCar(id, customerID, location)) {
-					System.out.println("Car Reserved");
-				} else {
-					System.out.println("Car could not be reserved");
+				try {
+					if (m_resourceManager.reserveCar(id, customerID, location)) {
+						System.out.println("Car Reserved");
+					} else {
+						System.out.println("Car could not be reserved");
+					}
+				} catch (IllegalArgumentException | IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 				break;
 			}
