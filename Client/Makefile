@@ -15,7 +15,7 @@ FORCE: ;
 	make -C ../Server/ RMIInterface.jar
 	
 
-compile-client: ../Server/RMIInterface.jar ../Util/utils.jar
+compile-client: ../Server/RMIInterface.jar ../Util/*.java
 	javac -cp ../Server/RMIInterface.jar:../Util/utils.jar Client/*.java
 
 clean:

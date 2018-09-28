@@ -19,7 +19,7 @@ public class RMIMiddleware implements IResourceManager {
   private static IResourceManager carRM;
   private static IResourceManager roomRM;
 
-  private ArrayList<Integer> customerIdx;
+  private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
   private static int middleware_port = 3099;
   private static int server_port = 3099;
 
@@ -138,6 +138,9 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public boolean deleteCustomer(int id, int customerID) throws RemoteException {
+    synchronized(customerIdx){
+      customerID.remove(customerID);
+    }
     return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID) && roomRM.deleteCustomer(id, customerID);
   }
 
@@ -179,7 +182,7 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public int newCustomer(int id) throws RemoteException {
-    int cid = Collections.max(customerIdx);
+    int cid = Collections.max(customerIdx) + 1;
     this.newCustomer(id, cid);
     return cid;
   }

@@ -55,12 +55,16 @@ public class TCPClientHandler{
     public int newCustomer(int id) 
 	throws IOException, IllegalArgumentException{
 		Message msg = new Message("newCustomer");
-		msg.addCustomerCommand(id); // sets the content of the message
+		msg.addCustomerCommand(id, -1); // cid not provided case
 		return Integer.parseInt(sendRecvStr(msg));
 	}	    
     
     public boolean newCustomer(int id, int cid)
-        throws RemoteException;
+    throws IOException, IllegalArgumentException{
+		Message msg = new Message("newCustomerID");
+		msg.addCustomerCommand(id, cid); // sets the content of the message
+		return Integer.parseInt(sendRecvStr(msg));
+	}	    
 
     
     public boolean deleteFlight(int id, int flightNum) 
@@ -87,7 +91,11 @@ public class TCPClientHandler{
 	}
     
     public boolean deleteCustomer(int id, int customerID) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException{
+		Message msg = new Message("deleteCustomer");
+		msg.addCustomerCommand(id,customerID);
+		return Boolean.parseBoolean(sendRecvStr(msg));
+	}
 
     
     public int queryFlight(int id, int flightNumber) 
@@ -103,7 +111,12 @@ public class TCPClientHandler{
 
    
     public String queryCustomerInfo(int id, int customerID) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException{
+		Message msg = new Message("queryCustomerInfo");
+		msg.addCustomerCommand(id,customerID);
+		return Boolean.parseBoolean(sendRecvStr(msg));
+	}
+
     
     
     public int queryFlightPrice(int id, int flightNumber) 
@@ -119,15 +132,27 @@ public class TCPClientHandler{
 
     
     public boolean reserveFlight(int id, int customerID, int flightNumber) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException{
+		Message msg = new Message("reserveFlight");
+		msg.reserveFlightCommand(id, customerID, flightNumber);
+		return Boolean.parseBoolean(sendRecvStr(msg));
+	}
 
     
     public boolean reserveCar(int id, int customerID, String location) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException{
+		Message msg = new Message("reserveCar");
+		msg.reserveCommand(id, customerID, location);
+		return Boolean.parseBoolean(sendRecvStr(msg));
+	}
     
     
     public boolean reserveRoom(int id, int customerID, String location) 
-	throws IOException, IllegalArgumentException; 
+	throws IOException, IllegalArgumentException{
+		Message msg = new Message("reserveRoom");
+		msg.reserveCommand(id, customerID, location);
+		return Boolean.parseBoolean(sendRecvStr(msg));
+	}
 
     
     public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room)

@@ -90,19 +90,37 @@ public class Message{
 		throws JSONException {
 		JSONArray flightNums = new JSONArray();
 		for (String fn :flightNumbers) flightNums.put(fn);
-		this.contents = (new JSONObject()).accumulate("id",id)
+		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
 						.accumulate(prefix+"customerID",customerID)
-						.put(prefix+"flightNumbers",flightNumbers)
+						.put(prefix+"flightNumbers",flightNums)
 						.accumulate(prefix+"location",location)
 						.accumulate(prefix+"car",car)
 						.accumulate(prefix+"room",room).toString();
 	}
 
-	// encode <addCustomer> with id
+	// encode <addCustomer> with id and cid
+	public void addCustomerCommand(int id, int cid) throws JSONException{
+		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
+						.accumulate(prefix+"customerID",cid).toString();
+	}
+
+	// encode <addCustomer> with id only
 	public void addCustomerCommand(int id) throws JSONException{
 		this.contents = (new JSONObject()).accumulate(prefix+"id",id).toString();
 	}
 
+
+	public void reserveFlightCommand(int id, int customerID, int flightNumber){
+		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
+						.accumulate(prefix+"customerID",customerID)
+						.accumulate(prefix+"flightNumber",flightNumber).toString();
+	}
+
+	public void reserveCommand(int id,int customerID, String location){
+		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
+						.accumulate(prefix+"customerID",customerID)
+						.accumulate(prefix+"location",flightNumber).toString();
+	}
 	// TODO: more encoding methods....
 
 
