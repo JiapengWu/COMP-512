@@ -1,13 +1,14 @@
-package Server.Common;
+package main.java.Server.Server.Common;
 
 
-import java.util.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 
-import Server.Common.*;
-import Util.Message;
-import Util.MessageDecoder;
+import main.java.Util.MessageDecoder;
+import main.java.Util.MessageDecoder.FlightMessageDecoder;
 
 public class TCPServerThread implements Runnable{
 	private Socket mw_socket;

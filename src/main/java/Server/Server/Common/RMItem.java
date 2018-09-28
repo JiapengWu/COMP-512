@@ -3,9 +3,9 @@
 // CSE 593
 // -------------------------------
 
-package Server.Common;
+package main.java.Server.Server.Common;
 
-import java.io.*;
+import java.io.Serializable;
 
 // Resource manager data item
 public abstract class RMItem implements Serializable, Cloneable

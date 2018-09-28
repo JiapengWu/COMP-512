@@ -1,11 +1,8 @@
-package Server.Interface;
+package main.java.Server.Server.Interface;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-
-import java.util.*;
-
-import Server.Common.ReservableItem;
+import java.util.Vector;
 
 /** 
  * Simplified version from CSE 593 Univ. of Washington

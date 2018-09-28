@@ -3,7 +3,7 @@
 // CSE 593
 // -------------------------------
 
-package Server.Common;
+package main.java.Server.Server.Common;
 
 public class Flight extends ReservableItem
 {

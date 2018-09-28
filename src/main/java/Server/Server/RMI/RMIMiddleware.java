@@ -1,4 +1,4 @@
-package Server.RMI;
+package main.java.Server.Server.RMI;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Vector;
 
-import Server.Common.Trace;
-import Server.Interface.IResourceManager;
+import main.java.Server.Server.Common.Trace;
+import main.java.Server.Server.Interface.IResourceManager;
 
 public class RMIMiddleware implements IResourceManager {
   private static String s_serverName = "MiddleWare";

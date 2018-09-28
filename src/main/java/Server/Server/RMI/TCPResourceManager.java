@@ -1,14 +1,10 @@
-package Server.RMI;
+package main.java.Server.Server.RMI;
 
-import Server.Interface.*;
-import Server.Common.*;
-
-
-import java.util.*;
-import Util.*;
-import java.net.Socket;
 import java.net.ServerSocket;
-import java.io.*;
+import java.net.Socket;
+
+import main.java.Server.Server.Common.ResourceManager;
+import main.java.Server.Server.Common.TCPServerThread;
 
 public class TCPResourceManager {
 	private static String s_serverName = "Server";

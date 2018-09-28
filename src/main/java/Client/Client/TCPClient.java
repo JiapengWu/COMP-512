@@ -1,7 +1,4 @@
-package Client;
-
-import Server.Interface.*;
-
+package main.java.Client.Client;
 
 public class TCPClient extends Client{
 

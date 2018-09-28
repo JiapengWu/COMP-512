@@ -1,8 +1,7 @@
-package Util;
+package main.java.Util;
 
-import org.json.JSONObject;
-import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 
 public class MessageDecoder{

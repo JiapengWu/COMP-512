@@ -1,8 +1,14 @@
-package Client;
+package main.java.Client.Client;
 
-import Util.Message;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.rmi.RemoteException;
+import java.util.Vector;
+
+import main.java.Util.Message;
 
 public class TCPClientHandler{
 	private int mw_port;
@@ -17,7 +23,6 @@ public class TCPClientHandler{
 		Socket socket = new Socket(mw_hostname, mw_port);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		PrintWriter writer = new PrintWriter(socket.getOutputStream(),true);
-
 		writer.println(msg.toString());
 		writer.flush();
 		String res = reader.readLine();

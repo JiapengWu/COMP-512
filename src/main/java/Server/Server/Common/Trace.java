@@ -3,7 +3,7 @@
 // CSE 593
 // -------------------------------
 
-package Server.Common;
+package main.java.Server.Server.Common;
 
 // A simple wrapper around System.out.println, allows us to disable some
 // of the verbose output from RM, TM, and WC if we want

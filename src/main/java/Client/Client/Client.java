@@ -1,13 +1,14 @@
-package Client;
+package main.java.Client.Client;
 
-import Server.Interface.*;
-
-import java.util.*;
-import java.io.*;
-import java.rmi.RemoteException;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.rmi.ConnectException;
+import java.rmi.RemoteException;
 import java.rmi.ServerException;
 import java.rmi.UnmarshalException;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
 public abstract class Client
 {
@@ -17,7 +18,7 @@ public abstract class Client
 	{
 		super();
 	}
-
+	
 	public abstract void connectServer();
 
 	public void start()

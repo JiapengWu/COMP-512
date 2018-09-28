@@ -1,11 +1,12 @@
-package Server.RMI;
+package main.java.Server.Server.RMI;
 
-import Server.Common.TCPMiddlewareThread;
-import java.net.Socket;
+import java.io.IOException;
 import java.net.ServerSocket;
-import java.io.*;
-import Server.Common.Trace;
-import java.util.*;
+import java.net.Socket;
+import java.util.HashMap;
+
+import main.java.Server.Server.Common.TCPMiddlewareThread;
+import main.java.Server.Server.Common.Trace;
 
 public class TCPMiddleware {
 	private static String s_serverName = "TCPMiddleware"; // this is useless cuz we only need the port to start a server socket

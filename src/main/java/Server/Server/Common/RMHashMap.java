@@ -3,9 +3,9 @@
 // CSE 593
 // -------------------------------
 
-package Server.Common;
+package main.java.Server.Server.Common;
 
-import java.util.*;
+import java.util.HashMap;
 
 // A specialization of HashMap with some extra diagnostics
 public class RMHashMap extends HashMap<String, RMItem>

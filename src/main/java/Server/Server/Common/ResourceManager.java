@@ -3,13 +3,13 @@
 // CSE 593
 // -------------------------------
 
-package Server.Common;
+package main.java.Server.Server.Common;
 
-import Server.Interface.*;
-
-import java.util.*;
 import java.rmi.RemoteException;
-import java.io.*;
+import java.util.Calendar;
+import java.util.Vector;
+
+import main.java.Server.Server.Interface.IResourceManager;
 
 public class ResourceManager implements IResourceManager
 {

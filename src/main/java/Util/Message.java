@@ -1,11 +1,9 @@
-package Util;
-import org.json.JSONObject;
+package main.java.Util;
+import java.util.Vector;
+
 import org.json.JSONArray;
 import org.json.JSONException;
-
-
-
-import java.util.Vector;
+import org.json.JSONObject;
 
 public class Message{
 
