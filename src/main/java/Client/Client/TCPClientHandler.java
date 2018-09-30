@@ -56,7 +56,7 @@ public class TCPClientHandler{
 		Message msg = new Message("addRooms");
 		msg.addCommand(id, location, numRooms, price); // sets the content of the message
 		return Boolean.parseBoolean(sendRecvStr(msg));
-	}	    
+    }
 			    
     
     public int newCustomer(int id) throws IOException, IllegalArgumentException, JSONException{

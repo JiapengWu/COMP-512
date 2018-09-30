@@ -133,6 +133,7 @@ public abstract class Client
 					}
 				} catch (Exception e) {
 					Trace.warn("Cars could not be added");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -157,6 +158,7 @@ public abstract class Client
 					}
 				} catch (Exception e) {
 					Trace.warn("Rooms could not be added");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -172,6 +174,7 @@ public abstract class Client
 					System.out.println("Add customer ID: " + customer);
 				} catch (Exception e) {
 					Trace.warn("Customer could not be added");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -191,6 +194,8 @@ public abstract class Client
 						System.out.println("Customer could not be added");
 					}
 				} catch (Exception e) {
+					Trace.warn("Customer could not be added");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -211,6 +216,7 @@ public abstract class Client
 					}
 				} catch (Exception e) {
 					Trace.warn("Flight could not be deleted");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -231,6 +237,7 @@ public abstract class Client
 					}
 				} catch (Exception e) {
 					Trace.warn("Cars could not be deleted");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -251,6 +258,7 @@ public abstract class Client
 					}
 				} catch (Exception e) {
 					Trace.warn("Rooms could not be deleted");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -271,6 +279,7 @@ public abstract class Client
 					}
 				} catch (Exception e) {
 					Trace.warn("Customer could not be deleted");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -289,6 +298,7 @@ public abstract class Client
 					System.out.println("Number of seats available: " + seats);
 				} catch (Exception e) {
 					Trace.warn("Failed to query flight.");
+					e.printStackTrace();
 				}
 				
 				break;
@@ -326,6 +336,7 @@ public abstract class Client
 					System.out.println("Number of rooms at this location: " + numRoom);
 				} catch (IllegalArgumentException | JSONException | IOException e) {
 					Trace.warn("Failed to query rooms.");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -344,6 +355,7 @@ public abstract class Client
 					System.out.print(bill);
 				} catch (IllegalArgumentException | IOException e) {
 					Trace.warn("Failed to query customer.");
+					e.printStackTrace();
 				}
 				break;               
 			}
@@ -362,6 +374,7 @@ public abstract class Client
 					System.out.println("Price of a seat: " + price);
 				} catch (IllegalArgumentException | IOException e) {
 					Trace.warn("Failed to query flight price.");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -380,6 +393,7 @@ public abstract class Client
 					System.out.println("Price of cars at this location: " + price);
 				} catch (IllegalArgumentException | IOException e) {
 					Trace.warn("Failed to query car price.");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -392,8 +406,14 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				String location = arguments.elementAt(2);
 
-				int price = m_resourceManager.queryRoomsPrice(id, location);
-				System.out.println("Price of rooms at this location: " + price);
+				int price = 0;
+				try {
+					price = m_resourceManager.queryRoomsPrice(id, location);
+					System.out.println("Price of rooms at this location: " + price);
+				} catch (IllegalArgumentException | JSONException | IOException e) {
+					Trace.warn("Failed to query room price.");
+					e.printStackTrace();
+				}
 				break;
 			}
 			case ReserveFlight: {
@@ -414,7 +434,8 @@ public abstract class Client
 						System.out.println("Flight could not be reserved");
 					}
 				} catch (IllegalArgumentException | IOException e) {
-					Trace.warn("Failed to reserve flight.");
+					Trace.warn("Flight could not be reserved");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -436,7 +457,7 @@ public abstract class Client
 						System.out.println("Car could not be reserved");
 					}
 				} catch (IllegalArgumentException | IOException e) {
-					// TODO Auto-generated catch block
+					Trace.warn("Car could not be reserved");
 					e.printStackTrace();
 				}
 				break;
@@ -452,10 +473,15 @@ public abstract class Client
 				int customerID = toInt(arguments.elementAt(2));
 				String location = arguments.elementAt(3);
 
-				if (m_resourceManager.reserveRoom(id, customerID, location)) {
-					System.out.println("Room Reserved");
-				} else {
-					System.out.println("Room could not be reserved");
+				try {
+					if (m_resourceManager.reserveRoom(id, customerID, location)) {
+						System.out.println("Room Reserved");
+					} else {
+						System.out.println("Room could not be reserved");
+					}
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Room could not be reserved");
+					e.printStackTrace();
 				}
 				break;
 			}
@@ -485,10 +511,15 @@ public abstract class Client
 				boolean car = toBoolean(arguments.elementAt(arguments.size()-2));
 				boolean room = toBoolean(arguments.elementAt(arguments.size()-1));
 
-				if (m_resourceManager.bundle(id, customerID, flightNumbers, location, car, room)) {
-					System.out.println("Bundle Reserved");
-				} else {
+				try {
+					if (m_resourceManager.bundle(id, customerID, flightNumbers, location, car, room)) {
+						System.out.println("Bundle Reserved");
+					} else {
+						System.out.println("Bundle could not be reserved");
+					}
+				} catch (IllegalArgumentException | IOException e) {
 					System.out.println("Bundle could not be reserved");
+					e.printStackTrace();
 				}
 				break;
 			}

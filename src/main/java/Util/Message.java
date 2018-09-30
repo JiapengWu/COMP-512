@@ -91,7 +91,7 @@ public class Message{
 		for (String fn :flightNumbers) flightNums.put(fn);
 		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
 						.accumulate(prefix+"customerID",customerID)
-						.put(prefix+"flightNumbers",flightNums)
+						.put(prefix+"flightNumbers", flightNums)
 						.accumulate(prefix+"location",location)
 						.accumulate(prefix+"car",car)
 						.accumulate(prefix+"room",room).toString();

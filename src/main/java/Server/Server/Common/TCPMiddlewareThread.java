@@ -14,6 +14,7 @@ import java.util.Vector;
 
 import main.java.Util.Message;
 import main.java.Util.MessageDecoder;
+import main.java.Util.MessageDecoder.BundleMessageDecoder;
 import main.java.Util.MessageDecoder.CustomerMessageDecoder;
 
 public class TCPMiddlewareThread implements Runnable{
@@ -60,21 +61,46 @@ public class TCPMiddlewareThread implements Runnable{
 		if (serverType != "ALL"){
 			server_host = serverType2host.get(serverType);
 			// forward command to corresponding RM and get result from the server
-			try {
-				result = sendRecvStr(request, server_host);
-			} catch (IllegalArgumentException | IOException e) {
-				e.printStackTrace();
-			}
+			result = sendRecvStr(request, server_host);
 			if (result.equals("<JSONException>")) Trace.error("IOException from server "+server_host);
 			if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
 		}
 		
 		else if (command!="bundle"){
 			// customer-related command
-			MessageDecoder msgDecoder = new MessageDecoder();
-			CustomerMessageDecoder customerMsgDecoder = msgDecoder.new CustomerMessageDecoder();
-
+			CustomerMessageDecoder customerMsgDecoder = (new MessageDecoder()).new CustomerMessageDecoder();
+			
 			switch (command){
+				case "addFlight":
+					sendRecvStr(request, serverType);
+				case "addCars":
+					sendRecvStr(request, serverType);
+				case "addRooms":
+					sendRecvStr(request, serverType);
+				case "deleteFlight":
+					sendRecvStr(request, serverType);
+				case "deleteCars":
+					sendRecvStr(request, serverType);
+				case "deleteRooms":
+					sendRecvStr(request, serverType);
+				case "queryFlight":
+					sendRecvStr(request, serverType);
+				case "queryCars":
+					sendRecvStr(request, serverType);
+				case "queryRooms":
+					sendRecvStr(request, serverType);
+				case "queryFlightPrice":
+					sendRecvStr(request, serverType);
+				case "queryCarsPrice":
+					sendRecvStr(request, serverType);
+				case "queryRoomsPrice":
+					sendRecvStr(request, serverType);
+				case "reserveFlight":
+					sendRecvStr(request, serverType);
+				case "reserveCar":
+					sendRecvStr(request, serverType);
+				case "reserveRoom":
+					sendRecvStr(request, serverType);
 				case "newCustomer":
 					customerMsgDecoder.decodeCommandMsgNoCID(content);
 					synchronized (customerIdx){
@@ -97,11 +123,6 @@ public class TCPMiddlewareThread implements Runnable{
 			      		customerIdx.remove(customerMsgDecoder.customerID);
 			    	}
 					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
-
-				case "addFlight":
-					customerMsgDecoder.decodeCommandMsg(content);
-					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
-
 					
 				default:
 					result = "<IllegalArgumentException>";
@@ -110,8 +131,10 @@ public class TCPMiddlewareThread implements Runnable{
 
 		}
 		else if (command=="bundle"){
+			BundleMessageDecoder bundleMsgDecoder = (new MessageDecoder()).new BundleMessageDecoder();
+			
 			try {
-				sendBundleCommand(content);
+				sendBundleCommand(content, bundleMsgDecoder);
 			} catch (IllegalArgumentException | IOException e) {
 				Trace.error("Failed to sent bundle command");
 				e.printStackTrace();
@@ -129,42 +152,44 @@ public class TCPMiddlewareThread implements Runnable{
 		}
 	}
 
-
 	// handle case "bundle"	
-	/*
-	public String sendBundleCommand(String content) throws IllegalArgumentException, IOException{
+	public String sendBundleCommand(String content, BundleMessageDecoder bundleMsgDecoder) throws IllegalArgumentException, IOException{
 		// TODO: parse {int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room}
+		bundleMsgDecoder.decodeCommandMsg(content);
 		Vector<String> flightNumbers = new Vector<String>();
-		int id, cid;
-		String location, car, rooms;
-
+		int id = bundleMsgDecoder.id;
+		int cid = bundleMsgDecoder.customerID;
+		Vector<String> flightNumbers = bundleMsgDecoder.flightNums;
+		String location = bundleMsgDecoder.location;
+		boolean car = bundleMsgDecoder.car;
+		boolean room = bundleMsgDecoder.room;
+		
 		boolean res = true;
 		String result = "";
 		String flightServer = serverType2host.get("Flight");
 		String roomServer = serverType2host.get("Room");
 		String carServer = serverType2host.get("Car");
+		
 		for (String fn: flightNumbers){
 			Message msg = new Message("reserveFlight");
-			msg.reserveFlightCommand(id, cid, Integer.parseInt(fn));
+			msg.reserveFlightCommand(bundleMsgDecoder.id, cid, Integer.parseInt(fn));
 			result = sendRecvStr(msg.toString(), flightServer);
 			res = res && Boolean.parseBoolean(result);
 		}
-		if (rooms == "true"){
+		if (room){
 			Message msg = new Message("reserveRoom");
-			msg.reserveCommand(id,cid, location);
+			msg.reserveCommand(id, cid, location);
 			result = sendRecvStr(msg.toString(),roomServer);
 			res = res && Boolean.parseBoolean(result);
 		}
-		if (car == "true"){
+		if (car){
 			Message msg = new Message("reserveCar");
-			msg.reserveCommand(id,cid, location);
+			msg.reserveCommand(id, cid, location);
 			result = sendRecvStr(msg.toString(),carServer);
 			res = res && Boolean.parseBoolean(result);
 		}
 		return result;
-
 	}
-	*/
 
 	// send a command that involves customer to a server
 	public String sendCustomerCommand(String cmd, int id, int cid){
@@ -174,12 +199,8 @@ public class TCPMiddlewareThread implements Runnable{
 		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
 			Trace.info("TCPMiddlewareThread:: send command '"+cmd+"' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
 			String result = "";
-			try {
-				result = sendRecvStr(msg.toString(), entry.getValue());
-			} catch (IllegalArgumentException | IOException e) {
-				Trace.error("Failed to send customer command to server.");
-				e.printStackTrace();
-			}
+			result = sendRecvStr(msg.toString(), entry.getValue());
+
 			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
 			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
 			res = res && Boolean.parseBoolean(result);
@@ -188,7 +209,7 @@ public class TCPMiddlewareThread implements Runnable{
 	}
 
 
-	public String sendRecvStr(String request, String server_host) throws IOException{
+	public String sendRecvStr(String request, String server_host){
 		// connect to the server
 		Socket server_socket = null;
 		PrintWriter toServer = null;
@@ -201,7 +222,7 @@ public class TCPMiddlewareThread implements Runnable{
 			e.printStackTrace();
 		}
 		// write to server
-		toServer.println(request);
+		toServer.println(request.toString());
 		toServer.flush();
 		
 		try {
@@ -216,10 +237,12 @@ public class TCPMiddlewareThread implements Runnable{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		if (res.equals("<IOException>")) throw new IOException();
-		if (res.equals("<IllegalArgumentException>")) throw new IllegalArgumentException();
+		if (res.equals("IOException")){Trace.error("Middleware get IOException");}
+		if (res.equals("IllegalArgumentException")){Trace.error("Middleware get IllegalArgumentException");}
 		return res;
 	}
+	
+	
 	
 	
 	
