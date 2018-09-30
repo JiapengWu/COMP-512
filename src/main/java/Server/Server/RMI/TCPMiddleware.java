@@ -8,7 +8,6 @@ import java.util.HashMap;
 
 import main.java.Server.Server.Common.TCPMiddlewareThread;
 import main.java.Server.Server.Common.Trace;
-import main.java.Util.MessageDecoder;
 
 public class TCPMiddleware {
 	private static String s_serverName = "TCPMiddleware"; // this is useless cuz we only need the port to start a server socket
@@ -29,6 +28,9 @@ public class TCPMiddleware {
   		if (args.length ==4) {
 	      s_serverName = args[0];
 	    }
+  		if (args.length ==5) {
+  			s_port = Integer.parseInt(args[4]);
+  	    }
 	    else{
 	    	Trace.error("RMIMiddleWare:: Expect 4 arguments. $0: hostname of MiddleWare, $1-$3: hostname of servers");
 	    	System.exit(1);
