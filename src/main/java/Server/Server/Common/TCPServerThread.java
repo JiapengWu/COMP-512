@@ -135,9 +135,14 @@ public class TCPServerThread implements Runnable {
 								roomCarMsgDecoder.location));
 
 					case "newCustomer":
-
+						customerMsgDecoder = (CustomerMessageDecoder) decoder;
+						customerMsgDecoder.decodeCommandMsgNoCID(content);
+						
+						
 					case "newCustomerID":
-
+						customerMsgDecoder = (CustomerMessageDecoder) decoder;
+						customerMsgDecoder.decodeCommandMsg(content);
+						
 					case "deleteCustomer":
 
 						// if command doesn't match any of the above

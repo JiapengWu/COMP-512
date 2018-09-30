@@ -156,7 +156,6 @@ public class TCPMiddlewareThread implements Runnable{
 	public String sendBundleCommand(String content, BundleMessageDecoder bundleMsgDecoder) throws IllegalArgumentException, IOException{
 		// TODO: parse {int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room}
 		bundleMsgDecoder.decodeCommandMsg(content);
-		Vector<String> flightNumbers = new Vector<String>();
 		int id = bundleMsgDecoder.id;
 		int cid = bundleMsgDecoder.customerID;
 		Vector<String> flightNumbers = bundleMsgDecoder.flightNums;

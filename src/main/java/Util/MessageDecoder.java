@@ -203,7 +203,7 @@ public class MessageDecoder{
 
 		public int id;
 		public int customerID;
-		public JSONArray flightNums;
+		public Vector<String> flightNums = new Vector<String>();
 		public String location;
 		public boolean car;
 		public boolean room;
@@ -214,7 +214,12 @@ public class MessageDecoder{
 				JSONObject contents = new JSONObject(msgStr);
 				id = contents.getInt(prefix+"id");
 				customerID = contents.getInt(prefix+"customerID");
-				flightNums = contents.getJSONArray(prefix+"flightNumbers");
+				JSONArray jsonArray = contents.getJSONArray(prefix+"flightNumbers");
+				if (jsonArray != null) { 
+				   for (int i=0;i<jsonArray.length();i++){ 
+					   flightNums.add(jsonArray.getString(i));
+				   } 
+				} 
 				location = contents.getString(prefix+"location");
 				car = contents.getBoolean(prefix+"car");
 				room = contents.getBoolean(prefix+"room");
