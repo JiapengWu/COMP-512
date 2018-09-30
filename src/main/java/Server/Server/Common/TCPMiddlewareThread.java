@@ -33,6 +33,7 @@ public class TCPMiddlewareThread implements Runnable{
 	
 	@Override
 	public void run(){
+		Trace.info("TCPMiddlewareThread:: new request received");
 		// connection with client
 		BufferedReader fromClient = null;
 		PrintWriter toClient = null;

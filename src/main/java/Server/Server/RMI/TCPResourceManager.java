@@ -26,7 +26,8 @@ public class TCPResourceManager {
 		{
 			s_serverName = args[0];
 		}
-		
+		if (args.length>1) port=Integer.parseInt(args[1]);
+
 		// setup server
 		TCPResourceManager server = new TCPResourceManager();
 		server.setRM(s_serverName);
@@ -39,20 +40,22 @@ public class TCPResourceManager {
 			Trace.error("Failed to initialize server socket");
 			System.exit(0);
 	    } // the server socket listens on this port
+
+	    Trace.info("TCPResourceManager:: Connected to server '"+s_serverName+"' with port "+Integer.toString(port));
 	    int counter = 0;
 	    while (true){
-	    	Socket mw_socket = null;
-	      try {
-	        mw_socket = serverSocket.accept();
-	        counter = 0;
-	      } catch (IOException e) {
-	        counter += 1;
-	        if(counter == 10000) {
-	          break;
-	        }
-	      } 
-	    (new TCPServerThread(mw_socket,s_serverName, server.resourceManager)).run(); 
-      // input socket is the middleware socket
+			Socket mw_socket = null;
+			try {
+				mw_socket = serverSocket.accept();
+				counter = 0;
+			} catch (IOException e) {
+				counter += 1;
+			if(counter == 10000) {
+				break;
+				}
+			} 
+			(new TCPServerThread(mw_socket,s_serverName, server.resourceManager)).run(); 
+			// input socket is the middleware socket
     	//upon receive msg from middleware, run a new thread
     } 
 		try {
