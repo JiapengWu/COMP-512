@@ -5,9 +5,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.Vector;
 
 import main.java.Util.MessageDecoder;
+import main.java.Util.MessageDecoder.BundleMessageDecoder;
 import main.java.Util.MessageDecoder.CustomerMessageDecoder;
 import main.java.Util.MessageDecoder.FlightMessageDecoder;
 import main.java.Util.MessageDecoder.RoomCarMessageDecoder;
@@ -16,7 +17,6 @@ public class TCPServerThread implements Runnable {
 	private Socket mw_socket;
 	private String s_serverName;
 	private ResourceManager rm;
-	private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
 
 	public TCPServerThread(Socket mw_socket, String s_serverName, ResourceManager rm) {
 		this.mw_socket = mw_socket;
@@ -35,6 +35,7 @@ public class TCPServerThread implements Runnable {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
+		
 		MessageDecoder decoder = new MessageDecoder();
 
 		String msg = null;
@@ -51,6 +52,7 @@ public class TCPServerThread implements Runnable {
 					FlightMessageDecoder flightMsgDecoder;
 					CustomerMessageDecoder customerMsgDecoder;
 					RoomCarMessageDecoder roomCarMsgDecoder;
+					BundleMessageDecoder bundleMsgDecoder;
 					switch (command) {
 					case "addFlight":
 						flightMsgDecoder = (FlightMessageDecoder) decoder;
@@ -133,18 +135,28 @@ public class TCPServerThread implements Runnable {
 						roomCarMsgDecoder.decodeReserveMsg(content);
 						res = Boolean.toString(rm.reserveRoom(roomCarMsgDecoder.id, roomCarMsgDecoder.customerID,
 								roomCarMsgDecoder.location));
-
+						
 					case "newCustomer":
 						customerMsgDecoder = (CustomerMessageDecoder) decoder;
-						customerMsgDecoder.decodeCommandMsgNoCID(content);
-						
+						customerMsgDecoder.decodeCommandMsg(content);
+						res = Boolean.toString(rm.newCustomer(customerMsgDecoder.id, customerMsgDecoder.customerID));
 						
 					case "newCustomerID":
 						customerMsgDecoder = (CustomerMessageDecoder) decoder;
 						customerMsgDecoder.decodeCommandMsg(content);
+						res = Boolean.toString(rm.newCustomer(customerMsgDecoder.id, customerMsgDecoder.customerID));
 						
 					case "deleteCustomer":
-
+						customerMsgDecoder = (CustomerMessageDecoder) decoder;
+						customerMsgDecoder.decodeCommandMsg(content);
+						res = Boolean.toString(rm.deleteCustomer(customerMsgDecoder.id, customerMsgDecoder.customerID));
+						
+					case "bundle":
+						bundleMsgDecoder = (BundleMessageDecoder) decoder;
+						bundleMsgDecoder.decodeCommandMsg(content);
+						res = Boolean.toString(rm.bundle(bundleMsgDecoder.id, bundleMsgDecoder.customerID, bundleMsgDecoder.flightNums,
+								bundleMsgDecoder.location, bundleMsgDecoder.car, bundleMsgDecoder.room));
+						
 						// if command doesn't match any of the above
 					default:
 						res = "<IllegalArgumentException>";
