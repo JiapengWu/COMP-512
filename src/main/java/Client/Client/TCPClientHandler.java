@@ -32,8 +32,7 @@ public class TCPClientHandler{
 			StringBuffer stringBuffer = new StringBuffer("");
 			String line = null;
 			while ((line = reader.readLine()) != null) {
-				System.out.println(line);
-			    stringBuffer.append(line);
+				res += line;
 			}
 			res = stringBuffer.toString();
 		} catch (IOException e) {
