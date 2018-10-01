@@ -510,6 +510,8 @@ public abstract class Client
 				String location = arguments.elementAt(arguments.size()-3);
 				boolean car = toBoolean(arguments.elementAt(arguments.size()-2));
 				boolean room = toBoolean(arguments.elementAt(arguments.size()-1));
+				System.out.println(arguments.elementAt(arguments.size()-2));
+				System.out.println(arguments.elementAt(arguments.size()-1));
 				System.out.println(car);
 				System.out.println(room);
 				try {
