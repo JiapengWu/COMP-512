@@ -17,4 +17,4 @@ tmux new-session \; \
 	select-pane -t 3 \; \
 	send-keys "ssh -t ${MACHINES[2]} \"cd $(pwd) > /dev/null; echo -n 'Connected to '; hostname; source ./env_setup.sh; ./run_server.sh Rooms ${server_port}\"" C-m \; \
 	select-pane -t 0 \; \
-	send-keys "ssh -t ${MACHINES[3]} \"cd $(pwd) > /dev/null; echo -n 'Connected to '; hostname; source ./env_setup.sh; sleep .5s; ./run_tcpMiddleware.sh ${MACHINES[0]} ${MACHINES[1]} ${MACHINES[2]} ${MACHINES[3]} ${middleware_port} ${server_port}\"" C-m \;
+	send-keys "ssh -t ${MACHINES[3]} \"cd $(pwd) > /dev/null; echo -n 'Connected to '; hostname; source ./env_setup.sh; sleep .5s; ./run_tcpMiddleware.sh ${MACHINES[0]} ${MACHINES[1]} ${MACHINES[2]} ${middleware_port} ${server_port}\"" C-m \;
