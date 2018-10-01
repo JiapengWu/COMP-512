@@ -15,15 +15,14 @@ public class Message{
 	private String contents=null;
 	private String server_type="ALL"; // which server to execute remote interface
 
-	private String prefix="";
 
 	public Message(String msg_type){
 		this.msg_type = msg_type;
-		if (msg_type.contains("Flight")) {prefix="flight_";server_type="Flight";}
-		else if (msg_type.contains("Car")) {prefix="car_";server_type="Car";}
-		else if (msg_type.contains("Room")) {prefix="room_";server_type="Room";}
-		else if (msg_type.contains("Customer")) {prefix="customer_";}
-		else prefix="bundle_"; 
+		if (msg_type.contains("Flight")) {;server_type="Flight";}
+		else if (msg_type.contains("Car")) {server_type="Car";}
+		else if (msg_type.contains("Room")) {server_type="Room";}
+		
+
 	}
 
 	/*
@@ -54,33 +53,33 @@ public class Message{
 	// encode an <AddFlights> command
 	public void addFlightCommand(int id, int flightNum, int flightSeats, int flightPrice) throws JSONException {
 		this.contents = (new JSONObject())
-						.accumulate(prefix+"id",id)
-						.accumulate(prefix+"Num",flightNum)
-						.accumulate(prefix+"Seats",flightSeats)
-						.accumulate(prefix+"Price",flightPrice).toString();
+						.accumulate("id",id)
+						.accumulate("Num",flightNum)
+						.accumulate("Seats",flightSeats)
+						.accumulate("Price",flightPrice).toString();
 	}
 
 	// encode <AddCars> or <AddRooms> command
 	public void addCommand(int id, String location, int nums, int price) throws JSONException{
 		this.contents = (new JSONObject())
-						.accumulate(prefix+"id", id)
-						.accumulate(prefix+"location", location)
-						.accumulate(prefix+"nums", nums)
-						.accumulate(prefix+"price", price).toString();
+						.accumulate("id", id)
+						.accumulate("location", location)
+						.accumulate("nums", nums)
+						.accumulate("price", price).toString();
 	}
 
 	// encode <deleteFlight> command
 	public void delOrQueryFlightCommand(int id, int flightNum) throws JSONException{
 		this.contents = (new JSONObject())
-						.accumulate(prefix+"id",id)
-						.accumulate(prefix+"Num",flightNum).toString();
+						.accumulate("id",id)
+						.accumulate("Num",flightNum).toString();
 	}
 
 	// encode <deleteCars> or <deleteRooms>, <queryCars> or <queryRooms>, <queryCarsPrice> or <queryRPrice>
 	public void delOrQueryCommand(int id, String location) throws JSONException{
 		this.contents = (new JSONObject())
-						.accumulate(prefix+"id",id)
-						.accumulate(prefix+"location",location).toString();
+						.accumulate("id",id)
+						.accumulate("location",location).toString();
 	}
 	
 	
@@ -89,37 +88,37 @@ public class Message{
 		throws JSONException {
 		JSONArray flightNums = new JSONArray();
 		for (String fn :flightNumbers) flightNums.put(fn);
-		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
-						.accumulate(prefix+"customerID",customerID)
-						.put(prefix+"flightNumbers", flightNums)
-						.accumulate(prefix+"location",location)
-						.accumulate(prefix+"car",car)
-						.accumulate(prefix+"room",room).toString();
+		this.contents = (new JSONObject()).accumulate("id",id)
+						.accumulate("customerID",customerID)
+						.put("flightNumbers", flightNums)
+						.accumulate("location",location)
+						.accumulate("car",car)
+						.accumulate("room",room).toString();
 	}
 
 	// encode <addCustomer>, <deleteCusmoter> and <queryCustomer> with id and cid
 	public void addDeleteQueryCustomerCommand(int id, int cid) throws JSONException{
-		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
-						.accumulate(prefix+"customerID",cid).toString();
+		this.contents = (new JSONObject()).accumulate("id",id)
+						.accumulate("customerID",cid).toString();
 	}
 
 	// encode <addCustomer> with id only
 	public void addCustomerCommand(int id) throws JSONException{
-		this.contents = (new JSONObject()).accumulate(prefix+"id",id).toString();
+		this.contents = (new JSONObject()).accumulate("id",id).toString();
 	}
 
 	
 	public void reserveFlightCommand(int id, int customerID, int flightNumber){
-		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
-						.accumulate(prefix+"customerID",customerID)
-						.accumulate(prefix+"flightNumber",flightNumber).toString();
+		this.contents = (new JSONObject()).accumulate("id",id)
+						.accumulate("customerID",customerID)
+						.accumulate("flightNumber",flightNumber).toString();
 	}
 	
 
 	public void reserveCommand(int id,int customerID, String location){
-		this.contents = (new JSONObject()).accumulate(prefix+"id",id)
-						.accumulate(prefix+"customerID",customerID)
-						.accumulate(prefix+"location",location).toString();
+		this.contents = (new JSONObject()).accumulate("id",id)
+						.accumulate("customerID",customerID)
+						.accumulate("location",location).toString();
 	}
 
 

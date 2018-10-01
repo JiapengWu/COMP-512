@@ -14,8 +14,8 @@ public class MessageDecoder{
 
 	private final static String JSON_EXCEPTION = "<JSONException>";
 
-	private String msg_type; // method name this message contains, eg, "addFlights","queryCar"...
-	private JSONObject args; // arguments to the message method
+	protected String msg_type; // method name this message contains, eg, "addFlights","queryCar"...
+	protected JSONObject args; // arguments to the message method
 
 	// return which server this command goes to
 	public static String getServerType(String msgStr) throws JSONException {
@@ -64,16 +64,16 @@ public class MessageDecoder{
 		public int flightSeats;
 		public int flightPrice;
 		public int customerID;
-		public String prefix = "flight_";
+
 
 		// decode a "AddFlight" message
 		public void decodeAddMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				flightNum = contents.getInt(prefix+"Num");
-				flightSeats = contents.getInt(prefix+"Seats");
-				flightPrice = contents.getInt(prefix+"Price");
+				id = contents.getInt("id");
+				flightNum = contents.getInt("Num");
+				flightSeats = contents.getInt("Seats");
+				flightPrice = contents.getInt("Price");
 			}
 			catch (JSONException e){
 				System.err.println("ERROR:: FlightMessageDecoder.decodeAddMsg: Cannot decode JSON message '"+msgStr+"'");
@@ -85,8 +85,8 @@ public class MessageDecoder{
 		public  void decodeDelOrQueryMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				flightNum = contents.getInt(prefix+"Num");
+				id = contents.getInt("id");
+				flightNum = contents.getInt("Num");
 				
 			}
 			catch (JSONException e){
@@ -98,9 +98,9 @@ public class MessageDecoder{
 		public void decodeReserveMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				flightNum = contents.getInt(prefix+"flightNumber");
-				customerID = contents.getInt(prefix+"customerID");
+				id = contents.getInt("id");
+				flightNum = contents.getInt("flightNumber");
+				customerID = contents.getInt("customerID");
 			
 			}
 			catch (JSONException e){
@@ -118,16 +118,16 @@ public class MessageDecoder{
 		public int nums;
 		public int price;
 		public int customerID;
-		public String prefix = "flight_";
+		
 
 		// decode a "AddFlight" message
 		public void decodeAddMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				location = contents.getString(prefix+"location");
-				nums = contents.getInt(prefix+"nums");
-				price = contents.getInt(prefix+"price");
+				id = contents.getInt("id");
+				location = contents.getString("location");
+				nums = contents.getInt("nums");
+				price = contents.getInt("price");
 			}
 			catch (JSONException e){
 				System.err.println("ERROR:: FlightMessageDecoder.decodeAddMsg: Cannot decode JSON message '"+msgStr+"'");
@@ -139,8 +139,8 @@ public class MessageDecoder{
 		public  void decodeDelOrQueryMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				location = contents.getString(prefix+"location");
+				id = contents.getInt("id");
+				location = contents.getString("location");
 				
 			}
 			catch (JSONException e){
@@ -152,9 +152,9 @@ public class MessageDecoder{
 		public void decodeReserveMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				location = contents.getString(prefix+"location");
-				customerID = contents.getInt(prefix+"customerID");
+				id = contents.getInt("id");
+				location = contents.getString("location");
+				customerID = contents.getInt("customerID");
 			
 			}
 			catch (JSONException e){
@@ -168,13 +168,13 @@ public class MessageDecoder{
 	public class CustomerMessageDecoder extends MessageDecoder{
 		public int id;
 		public int customerID;
-		String prefix = "customer_";
+		
 
 		public void decodeCommandMsg(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				customerID = contents.getInt(prefix+"customerID");
+				id = contents.getInt("id");
+				customerID = contents.getInt("customerID");
 			}
 			catch (JSONException e){
 				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
@@ -189,7 +189,7 @@ public class MessageDecoder{
 		public void decodeCommandMsgNoCID(String msgStr){
 			try{
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
+				id = contents.getInt("id");
 			}
 			catch (JSONException e){
 				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
@@ -207,22 +207,22 @@ public class MessageDecoder{
 		public String location;
 		public boolean car;
 		public boolean room;
-		protected String prefix = "bundle_";
+		
 		
 		public void decodeCommandMsg(String msgStr){
 			try {				
 				JSONObject contents = new JSONObject(msgStr);
-				id = contents.getInt(prefix+"id");
-				customerID = contents.getInt(prefix+"customerID");
-				JSONArray jsonArray = contents.getJSONArray(prefix+"flightNumbers");
+				id = contents.getInt("id");
+				customerID = contents.getInt("customerID");
+				JSONArray jsonArray = contents.getJSONArray("flightNumbers");
 				if (jsonArray != null) { 
 				   for (int i=0;i<jsonArray.length();i++){ 
 					   flightNums.add(jsonArray.getString(i));
 				   } 
 				} 
-				location = contents.getString(prefix+"location");
-				car = contents.getBoolean(prefix+"car");
-				room = contents.getBoolean(prefix+"room");
+				location = contents.getString("location");
+				car = contents.getBoolean("car");
+				room = contents.getBoolean("room");
 			}catch (JSONException e){
 				System.err.println("ERROR:: BundleMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
 				e.printStackTrace();

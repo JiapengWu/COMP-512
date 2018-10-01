@@ -54,108 +54,109 @@ public class TCPServerThread implements Runnable {
 					BundleMessageDecoder bundleMsgDecoder;
 					switch (command) {
 					case "addFlight":
-						flightMsgDecoder = (FlightMessageDecoder) decoder;
+						flightMsgDecoder = decoder.new FlightMessageDecoder();
 						flightMsgDecoder.decodeAddMsg(content);
-						// FIXME: On the same server, ResourceManager should be synchronized !
+						
 						res = Boolean.toString(rm.addFlight(flightMsgDecoder.id, flightMsgDecoder.flightNum,
 								flightMsgDecoder.flightSeats, flightMsgDecoder.flightPrice));
+						break;
 
 					case "addCars":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder = decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeAddMsg(content);
 						res = Boolean.toString(rm.addCars(roomCarMsgDecoder.id, roomCarMsgDecoder.location,
 								roomCarMsgDecoder.nums, roomCarMsgDecoder.price));
-
+						break;
 					case "addRooms":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder = decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeAddMsg(content);
 						res = Boolean.toString(rm.addRooms(roomCarMsgDecoder.id, roomCarMsgDecoder.location,
 								roomCarMsgDecoder.nums, roomCarMsgDecoder.price));
-
+						break;
 					case "deleteFlight":
-						flightMsgDecoder = (FlightMessageDecoder) decoder;
+						flightMsgDecoder = decoder.new FlightMessageDecoder();
 						flightMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Boolean.toString(rm.deleteFlight(flightMsgDecoder.id, flightMsgDecoder.flightNum));
-
+						break;
 					case "deleteCars":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder =decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Boolean.toString(rm.deleteCars(roomCarMsgDecoder.id, roomCarMsgDecoder.location));
-
+						break;
 					case "deleteRooms":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder = decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Boolean.toString(rm.deleteRooms(roomCarMsgDecoder.id, roomCarMsgDecoder.location));
-
+						break;
 					case "queryFlight":
-						flightMsgDecoder = (FlightMessageDecoder) decoder;
+						flightMsgDecoder = decoder.new FlightMessageDecoder();
 						flightMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Integer.toString(rm.queryFlight(flightMsgDecoder.id, flightMsgDecoder.flightNum));
-
+						break;
 					case "queryCars":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder =decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Integer.toString(rm.queryCars(roomCarMsgDecoder.id, roomCarMsgDecoder.location));
-
+						break;
 					case "queryRooms":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder = decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Integer.toString(rm.queryRooms(roomCarMsgDecoder.id, roomCarMsgDecoder.location));
-
+						break;
 					case "queryFlightPrice":
-						flightMsgDecoder = (FlightMessageDecoder) decoder;
+						flightMsgDecoder = decoder.new FlightMessageDecoder();
 						flightMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Integer.toString(rm.queryFlightPrice(flightMsgDecoder.id, flightMsgDecoder.flightNum));
-
+						break;
 					case "queryCarsPrice":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder = decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Integer.toString(rm.queryCarsPrice(roomCarMsgDecoder.id, roomCarMsgDecoder.location));
-
+						break;
 					case "queryRoomsPrice":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder =decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeDelOrQueryMsg(content);
 						res = Integer.toString(rm.queryRoomsPrice(roomCarMsgDecoder.id, roomCarMsgDecoder.location));
-
+						break;
 					case "reserveFlight":
-						flightMsgDecoder = (FlightMessageDecoder) decoder;
+						flightMsgDecoder = decoder.new FlightMessageDecoder();
 						flightMsgDecoder.decodeReserveMsg(content);
 						res = Boolean.toString(rm.reserveFlight(flightMsgDecoder.id, flightMsgDecoder.customerID,
 								flightMsgDecoder.flightNum));
-
+						break;
 					case "reserveCar":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder = decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeReserveMsg(content);
 						res = Boolean.toString(rm.reserveCar(roomCarMsgDecoder.id, roomCarMsgDecoder.customerID,
 								roomCarMsgDecoder.location));
-
+						break;
 					case "reserveRoom":
-						roomCarMsgDecoder = (RoomCarMessageDecoder) decoder;
+						roomCarMsgDecoder = decoder.new RoomCarMessageDecoder();
 						roomCarMsgDecoder.decodeReserveMsg(content);
 						res = Boolean.toString(rm.reserveRoom(roomCarMsgDecoder.id, roomCarMsgDecoder.customerID,
 								roomCarMsgDecoder.location));
-						
+						break;
 					case "newCustomer":
-						customerMsgDecoder = (CustomerMessageDecoder) decoder;
+						customerMsgDecoder = decoder.new CustomerMessageDecoder();
 						customerMsgDecoder.decodeCommandMsg(content);
 						res = Boolean.toString(rm.newCustomer(customerMsgDecoder.id, customerMsgDecoder.customerID));
-						
+						break;
 					case "newCustomerID":
-						customerMsgDecoder = (CustomerMessageDecoder) decoder;
+						customerMsgDecoder = decoder.new CustomerMessageDecoder();
 						customerMsgDecoder.decodeCommandMsg(content);
 						res = Boolean.toString(rm.newCustomer(customerMsgDecoder.id, customerMsgDecoder.customerID));
-						
+						break;
 					case "deleteCustomer":
-						customerMsgDecoder = (CustomerMessageDecoder) decoder;
+						customerMsgDecoder = decoder.new CustomerMessageDecoder();
 						customerMsgDecoder.decodeCommandMsg(content);
 						res = Boolean.toString(rm.deleteCustomer(customerMsgDecoder.id, customerMsgDecoder.customerID));
-						
+						break;
 					case "bundle":
-						bundleMsgDecoder = (BundleMessageDecoder) decoder;
+						bundleMsgDecoder = decoder.new BundleMessageDecoder();
 						bundleMsgDecoder.decodeCommandMsg(content);
 						res = Boolean.toString(rm.bundle(bundleMsgDecoder.id, bundleMsgDecoder.customerID, bundleMsgDecoder.flightNums,
 								bundleMsgDecoder.location, bundleMsgDecoder.car, bundleMsgDecoder.room));
-						
+						break;
 						// if command doesn't match any of the above
 					default:
 						res = "<IllegalArgumentException>";
@@ -168,7 +169,7 @@ public class TCPServerThread implements Runnable {
 					Trace.error("Server " + s_serverName + " get IllegalArgumentException");
 					res = "IllegalArgumentException";
 				}
-
+				Trace.info("Command output = "+res);
 				toMW.println(res);
 				toMW.flush();
 			}
