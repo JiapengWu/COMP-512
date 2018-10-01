@@ -64,8 +64,8 @@ public class TCPMiddlewareThread implements Runnable{
 		if (!serverType.equals("ALL")){ // forward command to corresponding RM and get result from the server
 			server_host = serverType2host.get(serverType);
 			result = sendRecvStr(request, server_host);
-			if (result.equals("<JSONException>")) Trace.error("IOException from server "+server_host);
-			if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server "+server_host);
+			if (result.equals("<JSONException>")) Trace.error("IOException from server " + server_host);
+			if (result.equals("<IllegalArgumentException>")) Trace.error("IllegalArgumentException from server " + server_host);
 		}
 		
 		else if (!command.equals("bundle")){ // customer-related command
@@ -117,6 +117,7 @@ public class TCPMiddlewareThread implements Runnable{
 		// write the result back to client
 		toClient.println(result);
 		toClient.flush();
+		
 		try {
 			client_socket.close();
 		} catch (IOException e) {
@@ -160,7 +161,8 @@ public class TCPMiddlewareThread implements Runnable{
 			result = sendRecvStr(msg.toString(),carServer);
 			res = res && Boolean.parseBoolean(result);
 		}
-		return String.valueOf(res);
+		System.out.println(Boolean.toString(res));
+		return Boolean.toString(res);
 	}
 
 	// send a command that involves customer to a server
@@ -198,7 +200,6 @@ public class TCPMiddlewareThread implements Runnable{
 		// write to server
 		toServer.println(request.toString());
 		toServer.flush();
-		
 		
 		
 		String res = "";

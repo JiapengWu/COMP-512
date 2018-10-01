@@ -52,6 +52,7 @@ public class TCPMiddleware {
 			middlewareServerSocket = new ServerSocket(mw_port);
 		} catch (IOException e) {
 			Trace.error("Failed to initialize middleware socket.");
+			System.exit(0);
 		}
 	    Trace.info("TCPMiddleware:: server '" + s_serverName + "' start listening to clients on port " + Integer.toString(mw_port));
 	    for (Map.Entry<String, String> entry : serverType2host.entrySet()){
@@ -74,7 +75,6 @@ public class TCPMiddleware {
 			} 
 
 	    	(new TCPMiddlewareThread(socket, serverType2host, customerIdx, s_port)).run();
-	    	// FIXME: does this socket connec to client?
 	    }
 	    try {
 			middlewareServerSocket.close();
