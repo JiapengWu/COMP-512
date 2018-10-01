@@ -107,7 +107,7 @@ public class TCPMiddlewareThread implements Runnable{
 		else if (command.equals("bundle")){
 			BundleMessageDecoder bundleMsgDecoder = (new MessageDecoder()).new BundleMessageDecoder();
 			try {
-				sendBundleCommand(content, bundleMsgDecoder);
+				result = sendBundleCommand(content, bundleMsgDecoder);
 			} catch (IllegalArgumentException | IOException e) {
 				Trace.error("Failed to sent bundle command");
 				e.printStackTrace();
@@ -161,7 +161,6 @@ public class TCPMiddlewareThread implements Runnable{
 			result = sendRecvStr(msg.toString(),carServer);
 			res = res && Boolean.parseBoolean(result);
 		}
-		System.out.println(Boolean.toString(res));
 		return Boolean.toString(res);
 	}
 
@@ -200,7 +199,6 @@ public class TCPMiddlewareThread implements Runnable{
 		// write to server
 		toServer.println(request.toString());
 		toServer.flush();
-		
 		
 		String res = "";
 		try {
