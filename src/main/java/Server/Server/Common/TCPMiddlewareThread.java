@@ -160,7 +160,7 @@ public class TCPMiddlewareThread implements Runnable{
 			result = sendRecvStr(msg.toString(),carServer);
 			res = res && Boolean.parseBoolean(result);
 		}
-		return result;
+		return String.valueOf(res);
 	}
 
 	// send a command that involves customer to a server
