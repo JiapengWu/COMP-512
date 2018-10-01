@@ -89,7 +89,7 @@ public class TCPMiddlewareThread implements Runnable{
 					break;
 				case "queryCustomerInfo":
 					customerMsgDecoder.decodeCommandMsg(content);
-					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
+					result = sendQueryCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
 					break;
 				case "deleteCustomer":
 					customerMsgDecoder.decodeCommandMsg(content);
@@ -182,6 +182,24 @@ public class TCPMiddlewareThread implements Runnable{
 		return Boolean.toString(res);
 	}
 
+	
+	public String sendQueryCustomerCommand(String cmd, int id, int cid){
+		Message msg = new Message(cmd);
+		msg.addDeleteQueryCustomerCommand(id,cid);
+		
+		String res = "";
+		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
+			Trace.info("TCPMiddlewareThread:: send command '"+cmd+"' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
+			String result = "";
+			result = sendRecvStr(msg.toString(), entry.getValue());
+
+			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
+			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
+			if(res.isEmpty()) res = result;
+			else res = result.split("/n", 2)[1];
+		}
+		return res;
+	}
 
 	public String sendRecvStr(String request, String server_host){
 		// connect to the server

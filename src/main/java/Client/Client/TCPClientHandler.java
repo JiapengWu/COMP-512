@@ -183,10 +183,7 @@ public class TCPClientHandler{
 	throws IOException, IllegalArgumentException{
 		Message msg = new Message("bundle");
 		msg.bundleCommand(id, customerID, flightNumbers, location, car, room);
-		String res = sendRecvStr(msg);
-		System.out.println(res);
-		System.out.println(Boolean.parseBoolean(res));
-		return Boolean.parseBoolean(res);
+		return Boolean.parseBoolean(sendRecvStr(msg));
 	}
 
 }

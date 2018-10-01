@@ -151,6 +151,11 @@ public class TCPServerThread implements Runnable {
 						customerMsgDecoder.decodeCommandMsg(content);
 						res = Boolean.toString(rm.deleteCustomer(customerMsgDecoder.id, customerMsgDecoder.customerID));
 						break;
+					case "queryCustomerInfo":
+						customerMsgDecoder = decoder.new CustomerMessageDecoder();
+						customerMsgDecoder.decodeCommandMsg(content);
+						res = rm.queryCustomerInfo(customerMsgDecoder.id, customerMsgDecoder.customerID);
+						break;
 					case "bundle":
 						bundleMsgDecoder = decoder.new BundleMessageDecoder();
 						bundleMsgDecoder.decodeCommandMsg(content);
