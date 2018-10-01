@@ -510,7 +510,8 @@ public abstract class Client
 				String location = arguments.elementAt(arguments.size()-3);
 				boolean car = toBoolean(arguments.elementAt(arguments.size()-2));
 				boolean room = toBoolean(arguments.elementAt(arguments.size()-1));
-
+				System.out.println(car);
+				System.out.println(room);
 				try {
 					if (m_resourceManager.bundle(id, customerID, flightNumbers, location, car, room)) {
 						System.out.println("Bundle Reserved");

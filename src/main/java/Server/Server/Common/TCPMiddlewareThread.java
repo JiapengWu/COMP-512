@@ -144,7 +144,7 @@ public class TCPMiddlewareThread implements Runnable{
 		
 		for (String fn: flightNumbers){
 			Message msg = new Message("reserveFlight");
-			msg.reserveFlightCommand(bundleMsgDecoder.id, cid, Integer.parseInt(fn));
+			msg.reserveFlightCommand(id, cid, Integer.parseInt(fn));
 			result = sendRecvStr(msg.toString(), flightServer);
 			res = res && Boolean.parseBoolean(result);
 		}
