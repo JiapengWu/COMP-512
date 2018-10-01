@@ -224,7 +224,8 @@ public class TCPMiddlewareThread implements Runnable{
 			StringBuffer stringBuffer = new StringBuffer("");
 			String line = null;
 			while ((line = fromServer.readLine()) != null) {
-			    res += line;
+				stringBuffer.append("\n");
+			    stringBuffer.append(line);
 			}
 			res = stringBuffer.toString();
 			System.out.println(res);

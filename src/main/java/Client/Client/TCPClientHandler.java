@@ -32,7 +32,8 @@ public class TCPClientHandler{
 			StringBuffer stringBuffer = new StringBuffer("");
 			String line = null;
 			while ((line = reader.readLine()) != null) {
-				res += line;
+				stringBuffer.append("\n");
+			    stringBuffer.append(line);
 			}
 			res = stringBuffer.toString();
 		} catch (IOException e) {
