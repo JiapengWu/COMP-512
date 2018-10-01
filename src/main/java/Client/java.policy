@@ -1,3 +1,0 @@
-grant codebase "file:/home/2016/jliu164/workspace/COMP512/Client/" {
-permission java.security.AllPermission;
-};

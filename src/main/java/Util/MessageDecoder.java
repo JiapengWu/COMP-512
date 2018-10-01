@@ -221,8 +221,10 @@ public class MessageDecoder{
 				   } 
 				} 
 				location = contents.getString("location");
-				car = contents.getBoolean("car");
-				room = contents.getBoolean("room");
+				int carInt = contents.getInt("car");
+				int roomInt = contents.getInt("room");
+				car = carInt == 0? false : true;
+				room = roomInt == 0? false : true;
 			}catch (JSONException e){
 				System.err.println("ERROR:: BundleMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
 				e.printStackTrace();
