@@ -352,7 +352,7 @@ public abstract class Client
 				String bill;
 				try {
 					bill = m_resourceManager.queryCustomerInfo(id, customerID);
-					System.out.print(bill);
+					System.out.print(bill.replace(';', '\n'));
 				} catch (IllegalArgumentException | IOException e) {
 					Trace.warn("Failed to query customer.");
 					e.printStackTrace();

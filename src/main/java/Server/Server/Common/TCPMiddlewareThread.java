@@ -197,7 +197,7 @@ public class TCPMiddlewareThread implements Runnable{
 			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
 			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
 			if(res.isEmpty()) res = result;
-			else if(result.split("/n", 2).length > 1) res += result.split("/n", 2)[1];
+			else res += ';' + result.substring(21);
 		}
 		return res;
 	}
@@ -224,11 +224,9 @@ public class TCPMiddlewareThread implements Runnable{
 			StringBuffer stringBuffer = new StringBuffer("");
 			String line = null;
 			while ((line = fromServer.readLine()) != null) {
-				stringBuffer.append("\n");
 			    stringBuffer.append(line);
 			}
 			res = stringBuffer.toString();
-			System.out.println(res);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
