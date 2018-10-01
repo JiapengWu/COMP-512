@@ -155,6 +155,7 @@ public class TCPServerThread implements Runnable {
 						customerMsgDecoder = decoder.new CustomerMessageDecoder();
 						customerMsgDecoder.decodeCommandMsg(content);
 						res = rm.queryCustomerInfo(customerMsgDecoder.id, customerMsgDecoder.customerID);
+						System.out.println(res);
 						break;
 					case "bundle":
 						bundleMsgDecoder = decoder.new BundleMessageDecoder();
@@ -177,6 +178,7 @@ public class TCPServerThread implements Runnable {
 				Trace.info("Command output = "+res);
 				toMW.println(res);
 				toMW.flush();
+				toMW.close();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

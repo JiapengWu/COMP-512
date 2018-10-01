@@ -110,7 +110,6 @@ public class MessageDecoder{
 		}
 
 	}
-
 	
 	public class RoomCarMessageDecoder extends MessageDecoder{
 		public int id;

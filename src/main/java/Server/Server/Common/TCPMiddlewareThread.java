@@ -117,6 +117,7 @@ public class TCPMiddlewareThread implements Runnable{
 		// write the result back to client
 		toClient.println(result);
 		toClient.flush();
+		toClient.close();
 		
 		try {
 			client_socket.close();
@@ -189,14 +190,14 @@ public class TCPMiddlewareThread implements Runnable{
 		
 		String res = "";
 		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
-			Trace.info("TCPMiddlewareThread:: send command '"+cmd+"' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
+			Trace.info("TCPMiddlewareThread:: send command '" + cmd + "' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
 			String result = "";
 			result = sendRecvStr(msg.toString(), entry.getValue());
-
+			System.out.println(result);
 			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
 			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
 			if(res.isEmpty()) res = result;
-			else res = result.split("/n", 2)[1];
+			else if(result.split("/n", 2).length > 1) res += result.split("/n", 2)[1];
 		}
 		return res;
 	}
@@ -220,7 +221,14 @@ public class TCPMiddlewareThread implements Runnable{
 		
 		String res = "";
 		try {
-			res = fromServer.readLine();
+			StringBuffer stringBuffer = new StringBuffer("");
+			String line = null;
+			while ((line = fromServer.readLine()) != null) {
+				System.out.println(line);
+			    stringBuffer.append(line);
+			}
+			res = stringBuffer.toString();
+			System.out.println(res);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -234,9 +242,4 @@ public class TCPMiddlewareThread implements Runnable{
 		}
 		return res;
 	}
-	
-	
-	
-	
-	
 }

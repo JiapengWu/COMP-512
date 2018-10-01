@@ -27,7 +27,18 @@ public class TCPClientHandler{
 		PrintWriter writer = new PrintWriter(middleware_socket.getOutputStream(),true);
 		writer.println(msg.toString());
 		writer.flush();
-		String res = reader.readLine();
+		String res = "";
+		try {
+			StringBuffer stringBuffer = new StringBuffer("");
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				System.out.println(line);
+			    stringBuffer.append(line);
+			}
+			res = stringBuffer.toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		if (res.equals("<JSONException>")) throw new IOException(); // server throws JSON, so it's message transporting exception
 		if (res.equals("<IllegalArgumentException>")) throw new IllegalArgumentException();
 		return res;
