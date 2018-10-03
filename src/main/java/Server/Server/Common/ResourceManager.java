@@ -404,11 +404,11 @@ public class ResourceManager implements IResourceManager
 		return"Flight summary: ;" + querySummary(id);
 	}
 
-	public String queryCarSummary(int id) {
+	public String queryCarsSummary(int id) {
 		return"Cars summary: ;" + querySummary(id);
 	}
 
-	public String queryRoomSummary(int id) {
+	public String queryRoomsSummary(int id) {
 		return"Rooms summary: ;" + querySummary(id);
 	}
 }

@@ -503,8 +503,7 @@ public abstract class Client
 				int id = toInt(arguments.elementAt(1));
 				int customerID = toInt(arguments.elementAt(2));
 				Vector<String> flightNumbers = new Vector<String>();
-				for (int i = 0; i < arguments.size() - 6; ++i)
-				{
+				for (int i = 0; i < arguments.size() - 6; ++i){
 					flightNumbers.addElement(arguments.elementAt(3+i));
 				}
 				String location = arguments.elementAt(arguments.size()-3);
@@ -544,7 +543,6 @@ public abstract class Client
 				checkArgumentsCount(2, arguments.size());
 
 				System.out.println("Querying flight summary [xid=" + arguments.elementAt(1) + "]");
-				System.out.println("-Customer ID: " + arguments.elementAt(2));
 
 				int id = toInt(arguments.elementAt(1));
 
@@ -558,7 +556,7 @@ public abstract class Client
 				}
 				break;               
 			}
-			case QueryRoomSummary: {
+			case QueryRoomsSummary: {
 				checkArgumentsCount(2, arguments.size());
 
 				System.out.println("Querying room summary [xid=" + arguments.elementAt(1) + "]");
@@ -567,7 +565,7 @@ public abstract class Client
 
 				String bill;
 				try {
-					bill = m_resourceManager.queryRoomSummary(id);
+					bill = m_resourceManager.queryRoomsSummary(id);
 					System.out.print(bill.replace(';', '\n'));
 				} catch (IllegalArgumentException | IOException e) {
 					Trace.warn("Failed to query customer.");
@@ -575,7 +573,7 @@ public abstract class Client
 				}
 				break;               
 			}
-			case QueryCarSummary: {
+			case QueryCarsSummary: {
 				checkArgumentsCount(2, arguments.size());
 
 				System.out.println("Querying car summary [xid=" + arguments.elementAt(1) + "]");
@@ -584,7 +582,7 @@ public abstract class Client
 				
 				String bill;
 				try {
-					bill = m_resourceManager.queryCarSummary(id);
+					bill = m_resourceManager.queryCarsSummary(id);
 					System.out.print(bill.replace(';', '\n'));
 				} catch (IllegalArgumentException | IOException e) {
 					Trace.warn("Failed to query customer.");

@@ -166,16 +166,16 @@ public class TCPServerThread implements Runnable {
 						res = rm.queryFlightSummary(summaryMsgDecoder.id);
 						System.out.println(res);
 						break;
-					case "queryRoomSummary":
+					case "queryRoomsSummary":
 						summaryMsgDecoder = decoder.new SummaryMessageDecoder();
 						summaryMsgDecoder.decodeCommandMsg(content);
-						res = rm.queryRoomSummary(summaryMsgDecoder.id);
+						res = rm.queryRoomsSummary(summaryMsgDecoder.id);
 						System.out.println(res);
 						break;
-					case "queryCarSummary":
+					case "queryCarsSummary":
 						summaryMsgDecoder = decoder.new SummaryMessageDecoder();
 						summaryMsgDecoder.decodeCommandMsg(content);
-						res = rm.queryCarSummary(summaryMsgDecoder.id);
+						res = rm.queryCarsSummary(summaryMsgDecoder.id);
 						System.out.println(res);
 					case "bundle":
 						bundleMsgDecoder = decoder.new BundleMessageDecoder();

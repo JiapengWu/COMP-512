@@ -186,13 +186,13 @@ public class TCPClientHandler {
 		return sendRecvStr(msg);
 	}
 	
-	public String queryRoomSummary(int id) throws IOException, IllegalArgumentException, JSONException {
+	public String queryRoomsSummary(int id) throws IOException, IllegalArgumentException, JSONException {
 		Message msg = new Message("queryRoomSummary");
 		msg.summaryCommand(id);
 		return sendRecvStr(msg);
 	}
 	
-	public String queryCarSummary(int id) throws IOException, IllegalArgumentException, JSONException {
+	public String queryCarsSummary(int id) throws IOException, IllegalArgumentException, JSONException {
 		Message msg = new Message("queryCarSummary");
 		msg.summaryCommand(id);
 		return sendRecvStr(msg);
