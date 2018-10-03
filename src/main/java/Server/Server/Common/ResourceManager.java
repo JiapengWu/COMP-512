@@ -398,12 +398,13 @@ public class ResourceManager implements IResourceManager
 		synchronized (m_data) {
 			String summary = "";
 			for(String key: m_data.keySet()) {
-				RMItem customer = m_data.get(key);
-				if(customer instanceof Customer) {
-					RMHashMap reservations = ((Customer) customer).getReservations();
-					
+				RMItem item = m_data.get(key);
+				if(item instanceof ReservableItem) {
+					String info = ((ReservableItem) item).getSummaryInfo();
+					summary += info;
 				}
 			}
+			System.out.println(summary);
 			return summary;
 		}
 	}

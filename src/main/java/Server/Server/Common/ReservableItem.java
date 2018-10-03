@@ -100,8 +100,8 @@ public abstract class ReservableItem extends RMItem implements Serializable
 		return (HashMap<Integer, Integer>) this.m_customers.clone();
 	}
 	
-	public String getSummaryInfo(String key) {
-		String info = key + ":;Price: " + m_nPrice + ";Location: " + m_location + "Customer reservations :;";
+	public String getSummaryInfo() {
+		String info = this.getKey() + ":;Price: " + m_nPrice + ";Location: " + m_location + "Customer reservations :;";
 		
 		for(Integer cid: m_customers.keySet()) {
 			int n_reservation = m_customers.get(cid);
