@@ -5,6 +5,7 @@
 
 package main.java.Server.Server.Common;
 
+import java.awt.event.ItemEvent;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -17,7 +18,6 @@ public class ResourceManager implements IResourceManager
 {
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
-	protected HashMap<Integer, ReservedItem> m_reservation = new HashMap<Integer, ReservedItem>();
 
 	public ResourceManager(String p_name)
 	{
@@ -392,9 +392,11 @@ public class ResourceManager implements IResourceManager
 		synchronized (m_data) {
 			String summary = "";
 			for(String key: m_data.keySet()) {
-				ReservedItem item = (ReservedItem) m_data.get(key);
-				String info = item.getSummaryInfo();
-				summary += info;
+				RMItem item = m_data.get(key);
+				if(item instanceof ReservedItem) {
+					String info = ((ReservedItem) item).getSummaryInfo();
+					summary += info;
+				}
 			}
 			return summary;
 		}
