@@ -101,17 +101,19 @@ public abstract class ReservableItem extends RMItem implements Serializable
 	}
 	
 	public String getSummaryInfo() {
-		String info = this.getKey() + ":;Price: " + m_nPrice + ";Location: " + m_location + ";";
-		if(m_customers.isEmpty()) {
-			info = "No reservations.;";
-		}
-		else {			
-			for(Integer cid: m_customers.keySet()) {
-				int n_reservation = m_customers.get(cid);
-				info += "Customer " + cid + ": " + n_reservation + " revervations;";
+		synchronized (m_customers) {
+			String info = this.getKey() + ":;Price: " + m_nPrice + ";Location: " + m_location + ";";
+			if(m_customers.isEmpty()) {
+				info += "No reservations.;";
 			}
+			else {			
+				for(Integer cid: m_customers.keySet()) {
+					int n_reservation = m_customers.get(cid);
+					info += "Customer " + cid + ": " + n_reservation + " revervations;";
+				}
+			}
+			return info;
 		}
-		return info;
 	}
 	
 	public String toString(){
