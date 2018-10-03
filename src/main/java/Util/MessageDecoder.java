@@ -176,11 +176,11 @@ public class MessageDecoder{
 				customerID = contents.getInt("customerID");
 			}
 			catch (JSONException e){
-				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
+				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommandMsg: Cannot decode JSON message '"+msgStr+"'");
 				e.printStackTrace();
 			}
 			catch (NullPointerException e){
-				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommand: NullPointerException '"+msgStr+"'");
+				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommandMsg: NullPointerException '"+msgStr+"'");
 				e.printStackTrace();
 			}
 		}
@@ -191,7 +191,7 @@ public class MessageDecoder{
 				id = contents.getInt("id");
 			}
 			catch (JSONException e){
-				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
+				System.err.println("ERROR:: CustomerMessageDecoder.decodeCommandMsgNoCID: Cannot decode JSON message '"+msgStr+"'");
 				e.printStackTrace();
 				}
 			}
@@ -223,16 +223,31 @@ public class MessageDecoder{
 				car = contents.getBoolean("car");
 				room = contents.getBoolean("room");
 			}catch (JSONException e){
-				System.err.println("ERROR:: BundleMessageDecoder.decodeCommand: Cannot decode JSON message '"+msgStr+"'");
+				System.err.println("ERROR:: BundleMessageDecoder.decodeCommandMsg: Cannot decode JSON message '"+msgStr+"'");
 				e.printStackTrace();
 			}
 			catch (NullPointerException e){
-				System.err.println("ERROR:: BundleMessageDecoder.decodeCommand: NullPointerException '"+msgStr+"'");
+				System.err.println("ERROR:: BundleMessageDecoder.decodeCommandMsg: NullPointerException '"+msgStr+"'");
 				e.printStackTrace();
 			}
 		}
 	}
 	
-
-
+	public class SummaryMessageDecoder extends MessageDecoder{
+		public int id;
+		public void decodeCommandMsg(String msgStr){
+			try {
+				JSONObject contents = new JSONObject(msgStr);
+				id = contents.getInt("id");
+			}catch (JSONException e){
+				System.err.println("ERROR:: summaryMessageDecoder.decodeCommandMsg: Cannot decode JSON message '"+msgStr+"'");
+				e.printStackTrace();
+			}
+			catch (NullPointerException e){
+				System.err.println("ERROR:: summaryMessageDecoder.decodeCommandMsg: NullPointerException '"+msgStr+"'");
+				e.printStackTrace();
+			}
+			
+		}
+	}
 }

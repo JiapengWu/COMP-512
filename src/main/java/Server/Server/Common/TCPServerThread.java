@@ -6,19 +6,21 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import main.java.Util.Message;
 import main.java.Util.MessageDecoder;
 import main.java.Util.MessageDecoder.BundleMessageDecoder;
 import main.java.Util.MessageDecoder.CustomerMessageDecoder;
 import main.java.Util.MessageDecoder.FlightMessageDecoder;
 import main.java.Util.MessageDecoder.RoomCarMessageDecoder;
+import main.java.Util.MessageDecoder.SummaryMessageDecoder;
 
 public class TCPServerThread implements Runnable {
 	private Socket mw_socket;
 	private String s_serverName;
 	private ResourceManager rm;
 
-	public TCPServerThread(Socket mw_socket, String s_serverName, ResourceManager rm) {
-		this.mw_socket = mw_socket;
+	public TCPServerThread(Socket middleware_socket, String s_serverName, ResourceManager rm) {
+		this.mw_socket = middleware_socket;
 		this.s_serverName = s_serverName;
 		this.rm = rm;
 	}
@@ -26,11 +28,11 @@ public class TCPServerThread implements Runnable {
 	@Override
 	public void run() {
 
-		BufferedReader fromMW = null;
-		PrintWriter toMW = null;
+		BufferedReader middleware_reader = null;
+		PrintWriter middleware_writer = null;
 		try {
-			fromMW = new BufferedReader(new InputStreamReader(mw_socket.getInputStream()));
-			toMW = new PrintWriter(mw_socket.getOutputStream(), true);
+			middleware_reader = new BufferedReader(new InputStreamReader(mw_socket.getInputStream()));
+			middleware_writer = new PrintWriter(mw_socket.getOutputStream(), true);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
@@ -40,7 +42,7 @@ public class TCPServerThread implements Runnable {
 		String msg = null;
 		// listen to middleware
 		try {
-			while ((msg = fromMW.readLine()) != null) {
+			while ((msg = middleware_reader.readLine()) != null) {
 				String res = "";
 
 				try {
@@ -52,6 +54,7 @@ public class TCPServerThread implements Runnable {
 					CustomerMessageDecoder customerMsgDecoder;
 					RoomCarMessageDecoder roomCarMsgDecoder;
 					BundleMessageDecoder bundleMsgDecoder;
+					SummaryMessageDecoder summaryMsgDecoder;
 					switch (command) {
 					case "addFlight":
 						flightMsgDecoder = decoder.new FlightMessageDecoder();
@@ -157,6 +160,23 @@ public class TCPServerThread implements Runnable {
 						res = rm.queryCustomerInfo(customerMsgDecoder.id, customerMsgDecoder.customerID);
 						System.out.println(res);
 						break;
+					case "queryFlightSummary":
+						summaryMsgDecoder = decoder.new SummaryMessageDecoder();
+						summaryMsgDecoder.decodeCommandMsg(content);
+						res = rm.queryFlightSummary(summaryMsgDecoder.id);
+						System.out.println(res);
+						break;
+					case "queryRoomSummary":
+						summaryMsgDecoder = decoder.new SummaryMessageDecoder();
+						summaryMsgDecoder.decodeCommandMsg(content);
+						res = rm.queryRoomSummary(summaryMsgDecoder.id);
+						System.out.println(res);
+						break;
+					case "queryCarSummary":
+						summaryMsgDecoder = decoder.new SummaryMessageDecoder();
+						summaryMsgDecoder.decodeCommandMsg(content);
+						res = rm.queryCarSummary(summaryMsgDecoder.id);
+						System.out.println(res);
 					case "bundle":
 						bundleMsgDecoder = decoder.new BundleMessageDecoder();
 						bundleMsgDecoder.decodeCommandMsg(content);
@@ -176,9 +196,9 @@ public class TCPServerThread implements Runnable {
 					res = "IllegalArgumentException";
 				}
 				Trace.info("Command output = "+res);
-				toMW.println(res);
-				toMW.flush();
-				toMW.close();
+				middleware_writer.println(res);
+				middleware_writer.flush();
+				middleware_writer.close();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

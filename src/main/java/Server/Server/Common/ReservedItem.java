@@ -5,6 +5,8 @@
 
 package main.java.Server.Server.Common;
 
+import java.util.HashMap;
+
 // Represents a customer's "reserved item" (e.g. Flight, Car, or Room)
 // NOTE: if a customer reserves more than one item of the same kind, this is stored as a single
 // instance of ReservedItem reflecting the *latest price*
@@ -14,6 +16,7 @@ public class ReservedItem extends RMItem
 	private int m_nPrice;
 	private String m_strReservableItemKey;
 	private String m_strLocation;
+	private HashMap<Integer, Integer> m_customers = new HashMap<Integer, Integer>();
 
 	ReservedItem(String key, String location, int count, int price)
 	{
@@ -52,6 +55,40 @@ public class ReservedItem extends RMItem
 	public int getPrice()
 	{
 		return m_nPrice;
+	}
+	
+
+	public void addReservation(int cid) {
+		synchronized (m_customers) {
+			Integer n_reservation = m_customers.get(cid);
+			if(n_reservation != null) {
+				m_customers.put(cid, n_reservation + 1);
+			}
+			else {
+				m_customers.put(cid, 1);
+			}
+		}
+	}
+	
+	public void deleteCustomer(int cid) {
+		synchronized (m_customers) {
+			m_customers.remove(cid);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public HashMap<Integer, Integer> getReservedCustomers() {
+		return (HashMap<Integer, Integer>) this.m_customers.clone();
+	}
+	
+	public String getSummaryInfo() {
+		String info = m_strReservableItemKey + ":;Price: " + m_nPrice + ";Location: " + m_strLocation + "Customer reservations :;";
+		
+		for(Integer cid: m_customers.keySet()) {
+			int n_reservation = m_customers.get(cid);
+			info += "Customer " + cid + ": " + n_reservation + "revervations;";
+		}
+		return info;
 	}
 
 	public String toString()

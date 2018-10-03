@@ -16,6 +16,7 @@ import main.java.Util.Message;
 import main.java.Util.MessageDecoder;
 import main.java.Util.MessageDecoder.BundleMessageDecoder;
 import main.java.Util.MessageDecoder.CustomerMessageDecoder;
+import main.java.Util.MessageDecoder.SummaryMessageDecoder;
 
 public class TCPMiddlewareThread implements Runnable{
 
@@ -36,11 +37,11 @@ public class TCPMiddlewareThread implements Runnable{
 	public void run(){
 		Trace.info("TCPMiddlewareThread:: new request received");
 		// connection with client
-		BufferedReader fromClient = null;
-		PrintWriter toClient = null;
+		BufferedReader client_reader = null;
+		PrintWriter client_writer = null;
 		try {
-			toClient = new PrintWriter(client_socket.getOutputStream(),true);
-			fromClient = new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
+			client_writer = new PrintWriter(client_socket.getOutputStream(),true);
+			client_reader = new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
 		} catch (IOException e) {
 			Trace.error("Failed to start buffer reader and writer.");
 			e.printStackTrace();
@@ -49,7 +50,7 @@ public class TCPMiddlewareThread implements Runnable{
 		// parse request into: server_to_forward; command name; command arguments
 		String request = null;
 		try {
-			request = fromClient.readLine();
+			request = client_reader.readLine();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -98,6 +99,10 @@ public class TCPMiddlewareThread implements Runnable{
 			    	}
 					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
 					break;
+				case "queryCustomerSummary":
+					SummaryMessageDecoder summaryMsgDecoder = (new MessageDecoder()).new SummaryMessageDecoder(); 
+					result = sendQuerySummaryCustomerCommand(summaryMsgDecoder.id);
+					break;
 				default:
 					result = "<IllegalArgumentException>";
 					throw new IllegalArgumentException(content);
@@ -115,9 +120,9 @@ public class TCPMiddlewareThread implements Runnable{
 		}
 
 		// write the result back to client
-		toClient.println(result);
-		toClient.flush();
-		toClient.close();
+		client_writer.println(result);
+		client_writer.flush();
+		client_writer.close();
 		
 		try {
 			client_socket.close();
@@ -188,42 +193,51 @@ public class TCPMiddlewareThread implements Runnable{
 		Message msg = new Message(cmd);
 		msg.addDeleteQueryCustomerCommand(id,cid);
 		
-		String res = "";
+		String res = "Bill for customer " + cid;
 		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
 			Trace.info("TCPMiddlewareThread:: send command '" + cmd + "' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
 			String result = "";
 			result = sendRecvStr(msg.toString(), entry.getValue());
-			System.out.println(result);
 			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
 			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
-			if(res.isEmpty()) res = result;
-			else res += ';' + result.substring(21);
+			res += result.substring(21) + ";";
 		}
 		return res;
 	}
+	
+	
+	public String sendQuerySummaryCustomerCommand(int id){
+		String res = "";
+		for(int cid: customerIdx) {
+			String result = sendQueryCustomerCommand("queryCustomerInfo", id, cid);
+			res += result; }
+		return res;
+	}
 
+	
 	public String sendRecvStr(String request, String server_host){
 		// connect to the server
 		Socket server_socket = null;
-		PrintWriter toServer = null;
-		BufferedReader fromServer = null;
+		PrintWriter server_writer = null;
+		BufferedReader server_reader = null;
 		try {
 			server_socket = new Socket(server_host, server_port);
-			fromServer = new BufferedReader(new InputStreamReader(server_socket.getInputStream()));
-			toServer = new PrintWriter(server_socket.getOutputStream(),true);
+			server_reader = new BufferedReader(new InputStreamReader(server_socket.getInputStream()));
+			server_writer = new PrintWriter(server_socket.getOutputStream(),true);
 		} catch (Exception e) {
 			Trace.error("TCPMiddlewareThread:: Cannot open socket @"+server_host+":"+Integer.toString(server_port));
 			e.printStackTrace();
 		}
 		// write to server
-		toServer.println(request.toString());
-		toServer.flush();
+		server_writer.println(request.toString());
+		server_writer.flush();
+		
 		
 		String res = "";
 		try {
 			StringBuffer stringBuffer = new StringBuffer("");
 			String line = null;
-			while ((line = fromServer.readLine()) != null) {
+			while ((line = server_reader.readLine()) != null) {
 			    stringBuffer.append(line);
 			}
 			res = stringBuffer.toString();
@@ -235,6 +249,8 @@ public class TCPMiddlewareThread implements Runnable{
 
 		try {
 			server_socket.close();
+			server_writer.close();
+			server_reader.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

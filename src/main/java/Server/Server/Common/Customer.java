@@ -34,6 +34,7 @@ public class Customer extends RMItem
 		{
 			// Customer doesn't already have a reservation for this resource, so create a new one now
 			reservedItem = new ReservedItem(key, location, 1, price);
+			
 		}
 		else
 		{
@@ -41,6 +42,7 @@ public class Customer extends RMItem
 			// NOTE: latest price overrides existing price
 			reservedItem.setPrice(price);
 		}
+		reservedItem.addReservation(m_ID);
 		m_reservations.put(reservedItem.getKey(), reservedItem);
 	}
 

@@ -522,6 +522,76 @@ public abstract class Client
 				}
 				break;
 			}
+			// extra functionality 
+			case QueryCustomerSummary: {
+				checkArgumentsCount(1, arguments.size());
+
+				System.out.println("Querying all customer information [xid=" + arguments.elementAt(1) + "]");
+
+				int id = toInt(arguments.elementAt(1));
+
+				String bill;
+				try {
+					bill = m_resourceManager.queryCustomerSummary(id);
+					System.out.print(bill.replace(';', '\n'));
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to query customer.");
+					e.printStackTrace();
+				}
+				break;               
+			}
+			case QueryFlightSummary: {
+				checkArgumentsCount(1, arguments.size());
+
+				System.out.println("Querying flight summary [xid=" + arguments.elementAt(1) + "]");
+				System.out.println("-Customer ID: " + arguments.elementAt(2));
+
+				int id = toInt(arguments.elementAt(1));
+
+				String bill;
+				try {
+					bill = m_resourceManager.queryFlightSummary(id);
+					System.out.print(bill.replace(';', '\n'));
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to query customer.");
+					e.printStackTrace();
+				}
+				break;               
+			}
+			case QueryRoomSummary: {
+				checkArgumentsCount(1, arguments.size());
+
+				System.out.println("Querying room summary [xid=" + arguments.elementAt(1) + "]");
+
+				int id = toInt(arguments.elementAt(1));
+
+				String bill;
+				try {
+					bill = m_resourceManager.queryRoomSummary(id);
+					System.out.print(bill.replace(';', '\n'));
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to query customer.");
+					e.printStackTrace();
+				}
+				break;               
+			}
+			case QueryCarSummary: {
+				checkArgumentsCount(1, arguments.size());
+
+				System.out.println("Querying car summary [xid=" + arguments.elementAt(1) + "]");
+
+				int id = toInt(arguments.elementAt(1));
+				
+				String bill;
+				try {
+					bill = m_resourceManager.queryCarSummary(id);
+					System.out.print(bill.replace(';', '\n'));
+				} catch (IllegalArgumentException | IOException e) {
+					Trace.warn("Failed to query customer.");
+					e.printStackTrace();
+				}
+				break;               
+			}
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
 

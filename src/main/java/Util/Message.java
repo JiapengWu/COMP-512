@@ -21,8 +21,6 @@ public class Message{
 		if (msg_type.contains("Flight")) {;server_type="Flight";}
 		else if (msg_type.contains("Car")) {server_type="Car";}
 		else if (msg_type.contains("Room")) {server_type="Room";}
-		
-
 	}
 
 	/*
@@ -121,5 +119,8 @@ public class Message{
 						.accumulate("location",location).toString();
 	}
 
+	public void summaryCommand(int id) {
+		this.contents = (new JSONObject()).accumulate("id",id).toString();
+	}
 
 }

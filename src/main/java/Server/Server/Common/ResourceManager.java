@@ -7,6 +7,8 @@ package main.java.Server.Server.Common;
 
 import java.rmi.RemoteException;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 import main.java.Server.Server.Interface.IResourceManager;
@@ -15,6 +17,7 @@ public class ResourceManager implements IResourceManager
 {
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
+	protected HashMap<Integer, ReservedItem> m_reservation = new HashMap<Integer, ReservedItem>();
 
 	public ResourceManager(String p_name)
 	{
@@ -103,6 +106,8 @@ public class ResourceManager implements IResourceManager
 		Trace.info("RM::queryPrice(" + xid + ", " + key + ") returns cost=$" + value);
 		return value;        
 	}
+	
+	
 
 	// Reserve an item
 	protected boolean reserveItem(int xid, int customerID, String key, String location)
@@ -381,6 +386,30 @@ public class ResourceManager implements IResourceManager
 	public String getName() throws RemoteException
 	{
 		return m_name;
+	}
+
+	public String querySummary(int id) {
+		synchronized (m_data) {
+			String summary = "";
+			for(String key: m_data.keySet()) {
+				ReservedItem item = (ReservedItem) m_data.get(key);
+				String info = item.getSummaryInfo();
+				summary += info;
+			}
+			return summary;
+		}
+	}
+	
+	public String queryFlightSummary(int id) {
+		return"Flight summary: ;" + querySummary(id);
+	}
+
+	public String queryCarSummary(int id) {
+		return"Cars summary: ;" + querySummary(id);
+	}
+
+	public String queryRoomSummary(int id) {
+		return"Rooms summary: ;" + querySummary(id);
 	}
 }
  

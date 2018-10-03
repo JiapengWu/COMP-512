@@ -18,11 +18,16 @@ public enum Command {
 	QueryCars("Query the number of available cars at a location", "<xid>,<Location>"),
 	QueryRooms("Query the number of available rooms at a location", "<xid>,<Location>"),
 	QueryCustomer("Query a customer's bill", "<xid>,<CustomerID>"),
-
+	QueryCustomerSummary("Query the bill for all customers", "<xid>"),
+	
 	QueryFlightPrice("Query the price per seat on a flight number", "<xid>,<FlightNumber>"),
 	QueryCarsPrice("Query the price per car at a location", "<xid>,<Location>"),
 	QueryRoomsPrice("Query the price per room at a location", "<xid>,<Location>"),
-
+	
+	QueryFlightSummary("Query the flight number, price, number of available seats and reservation information of all flights", "<xid>"), 
+	QueryRoomSummary("Query the location, price, number of available rooms and reservation information of all rooms", "<xid>"), 
+	QueryCarSummary("Query the location, price, number of available cars and reservation information of all cars", "<xid>"),
+	
 	ReserveFlight("Reserve a flight number for a customer", "<xid>,<CustomerID>,<FlightNumber>"),
 	ReserveCar("Reserve a car for a customer at a location", "<xid>,<CustomerID>,<Location>"),
 	ReserveRoom("Reserve a room for a customer at a location", "<xid>,<CustomerID>,<Location>"),
@@ -30,6 +35,7 @@ public enum Command {
 	Bundle("Book N flight numbers, and optionally a room and/or car at a location", "<xid>,<CustomerID>,<FlightNumber1>...<FlightNumberN>,<Location>,<Car-Y/N>,<Room-Y/N>"),
 
 	Quit("Exit the client application", "");
+	
 
 	String m_description;
 	String m_args;
