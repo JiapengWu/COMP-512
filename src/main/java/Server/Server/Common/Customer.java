@@ -42,7 +42,6 @@ public class Customer extends RMItem
 			// NOTE: latest price overrides existing price
 			reservedItem.setPrice(price);
 		}
-		reservedItem.addReservation(m_ID);
 		m_reservations.put(reservedItem.getKey(), reservedItem);
 	}
 

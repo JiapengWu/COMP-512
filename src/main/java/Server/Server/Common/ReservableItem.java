@@ -6,6 +6,7 @@
 package main.java.Server.Server.Common;
 
 import java.io.Serializable;
+import java.util.HashMap;
 
 // Superclass for the three reservable items: Flight, Car, and Room
 public abstract class ReservableItem extends RMItem implements Serializable
@@ -14,6 +15,7 @@ public abstract class ReservableItem extends RMItem implements Serializable
 	private int m_nPrice;
 	private int m_nReserved;
 	private String m_location;
+	private HashMap<Integer, Integer> m_customers = new HashMap<Integer, Integer>();
 
 	public ReservableItem(String location, int count, int price)
 	{
@@ -56,7 +58,57 @@ public abstract class ReservableItem extends RMItem implements Serializable
 	public String getLocation(){
 		return m_location;
 	}
+	
+	public void addReservation(int cid) {
+		synchronized (m_customers) {
+			Integer n_reservation = m_customers.get(cid);
+			if(n_reservation != null) {
+				m_customers.put(cid, n_reservation + 1);
+			}
+			else {
+				m_customers.put(cid, 1);
+			}
+		}
+	}
+	
+	public void cancelReservation(int cid) throws Exception {
+		synchronized (m_customers) {
+			Integer n_reservation = m_customers.get(cid);
+			if(n_reservation != null) {
+				if(n_reservation - 1 == 0) {
+					this.deleteCustomer(cid);
+				}
+				else {
+					m_customers.put(cid, n_reservation - 1);
+				}
+			}
+			else{
+				throw new IllegalArgumentException("Customer " + cid + " has no reservation for item " + m_location);
+			}
+		}
+	}
+	
 
+	public void deleteCustomer(int cid) {
+		synchronized (m_customers) {
+			m_customers.remove(cid);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public HashMap<Integer, Integer> getReservedCustomers() {
+		return (HashMap<Integer, Integer>) this.m_customers.clone();
+	}
+	
+	public String getSummaryInfo(String key) {
+		String info = key + ":;Price: " + m_nPrice + ";Location: " + m_location + "Customer reservations :;";
+		
+		for(Integer cid: m_customers.keySet()) {
+			int n_reservation = m_customers.get(cid);
+			info += "Customer " + cid + ": " + n_reservation + "revervations;";
+		}
+		return info;
+	}
 	
 	public String toString(){
 		return "RESERVABLEITEM key='" + getKey() + "', location='" + getLocation() +

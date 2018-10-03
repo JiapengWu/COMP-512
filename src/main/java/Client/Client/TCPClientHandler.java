@@ -187,13 +187,13 @@ public class TCPClientHandler {
 	}
 	
 	public String queryRoomsSummary(int id) throws IOException, IllegalArgumentException, JSONException {
-		Message msg = new Message("queryRoomSummary");
+		Message msg = new Message("queryRoomsSummary");
 		msg.summaryCommand(id);
 		return sendRecvStr(msg);
 	}
 	
 	public String queryCarsSummary(int id) throws IOException, IllegalArgumentException, JSONException {
-		Message msg = new Message("queryCarSummary");
+		Message msg = new Message("queryCarsSummary");
 		msg.summaryCommand(id);
 		return sendRecvStr(msg);
 	}
