@@ -311,7 +311,7 @@ public class ResourceManager implements IResourceManager
 				Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditem.getKey() + " " +  reserveditem.getCount() +  " times");
 				ReservableItem item  = (ReservableItem)readData(xid, reserveditem.getKey());
 				Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditem.getKey() + " which is reserved " +  item.getReserved() +  " times and is still available " + item.getCount() + " times");
-				item.deleteCustomer(customerID);
+				item.deleteCustomer(customerID); // delete info related to this customer in the item
 				item.setReserved(item.getReserved() - reserveditem.getCount());
 				item.setCount(item.getCount() + reserveditem.getCount());
 				writeData(xid, item.getKey(), item);
