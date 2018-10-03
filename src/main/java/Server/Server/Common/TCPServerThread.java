@@ -177,6 +177,7 @@ public class TCPServerThread implements Runnable {
 						summaryMsgDecoder.decodeCommandMsg(content);
 						res = rm.queryCarsSummary(summaryMsgDecoder.id);
 						System.out.println(res);
+						break;
 					case "bundle":
 						bundleMsgDecoder = decoder.new BundleMessageDecoder();
 						bundleMsgDecoder.decodeCommandMsg(content);

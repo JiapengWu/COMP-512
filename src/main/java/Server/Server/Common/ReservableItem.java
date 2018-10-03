@@ -71,7 +71,7 @@ public abstract class ReservableItem extends RMItem implements Serializable
 		}
 	}
 	
-	public void cancelReservation(int cid) throws Exception {
+	public void cancelReservation(int cid, int cancels) throws Exception {
 		synchronized (m_customers) {
 			Integer n_reservation = m_customers.get(cid);
 			if(n_reservation != null) {
@@ -102,10 +102,14 @@ public abstract class ReservableItem extends RMItem implements Serializable
 	
 	public String getSummaryInfo() {
 		String info = this.getKey() + ":;Price: " + m_nPrice + ";Location: " + m_location + ";";
-		
-		for(Integer cid: m_customers.keySet()) {
-			int n_reservation = m_customers.get(cid);
-			info += "Customer " + cid + ": " + n_reservation + " revervations;";
+		if(m_customers.isEmpty()) {
+			info = "No reservations.;";
+		}
+		else {			
+			for(Integer cid: m_customers.keySet()) {
+				int n_reservation = m_customers.get(cid);
+				info += "Customer " + cid + ": " + n_reservation + " revervations;";
+			}
 		}
 		return info;
 	}
