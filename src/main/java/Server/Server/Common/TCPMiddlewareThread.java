@@ -193,14 +193,16 @@ public class TCPMiddlewareThread implements Runnable{
 		Message msg = new Message(cmd);
 		msg.addDeleteQueryCustomerCommand(id,cid);
 		
-		String res = "Bill for customer " + cid;
+		String res = "Bill for customer " + cid + ";";
 		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
 			Trace.info("TCPMiddlewareThread:: send command '" + cmd + "' to server "+entry.getKey()+" with hostname '"+entry.getValue()+"'");
 			String result = "";
 			result = sendRecvStr(msg.toString(), entry.getValue());
 			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
 			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
-			res += result.substring(21) + ";";
+			System.out.println(result);
+			result = result.split(";", 2).length == 1? "":result.split(";", 2)[1];
+			res += result;
 		}
 		return res;
 	}
@@ -208,10 +210,14 @@ public class TCPMiddlewareThread implements Runnable{
 	
 	public String sendQuerySummaryCustomerCommand(int id){
 		String res = "";
-		for(int cid: customerIdx) {
-			String result = sendQueryCustomerCommand("queryCustomerInfo", id, cid);
-			res += result; }
-		return res;
+		synchronized (customerIdx) {
+			for(int cid: customerIdx) {
+				System.out.println(cid);
+				String result = sendQueryCustomerCommand("queryCustomerInfo", id, cid);
+				res += result; }
+			return res;
+		}
+
 	}
 
 	

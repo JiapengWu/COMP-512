@@ -524,7 +524,7 @@ public abstract class Client
 			}
 			// extra functionality 
 			case QueryCustomerSummary: {
-				checkArgumentsCount(1, arguments.size());
+				checkArgumentsCount(2, arguments.size());
 
 				System.out.println("Querying all customer information [xid=" + arguments.elementAt(1) + "]");
 
@@ -541,7 +541,7 @@ public abstract class Client
 				break;               
 			}
 			case QueryFlightSummary: {
-				checkArgumentsCount(1, arguments.size());
+				checkArgumentsCount(2, arguments.size());
 
 				System.out.println("Querying flight summary [xid=" + arguments.elementAt(1) + "]");
 				System.out.println("-Customer ID: " + arguments.elementAt(2));
@@ -559,7 +559,7 @@ public abstract class Client
 				break;               
 			}
 			case QueryRoomSummary: {
-				checkArgumentsCount(1, arguments.size());
+				checkArgumentsCount(2, arguments.size());
 
 				System.out.println("Querying room summary [xid=" + arguments.elementAt(1) + "]");
 
@@ -576,7 +576,7 @@ public abstract class Client
 				break;               
 			}
 			case QueryCarSummary: {
-				checkArgumentsCount(1, arguments.size());
+				checkArgumentsCount(2, arguments.size());
 
 				System.out.println("Querying car summary [xid=" + arguments.elementAt(1) + "]");
 

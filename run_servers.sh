@@ -3,8 +3,8 @@
 #TODO: SPECIFY THE HOSTNAMES OF 4 CS MACHINES (lab1-1, cs-2, etc...)
 MACHINES=(cs-2 cs-11 cs-4 cs-9)
 
-server_port=1102
-middleware_port=1103
+server_port=1100
+middleware_port=1101
 tmux new-session \; \
 	split-window -h \; \
 	split-window -v \; \
