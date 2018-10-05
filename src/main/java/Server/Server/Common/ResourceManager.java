@@ -398,7 +398,7 @@ public class ResourceManager implements IResourceManager
 				RMItem item = m_data.get(key);
 				if(item instanceof ReservableItem) {
 					String info = ((ReservableItem) item).getSummaryInfo();
-					summary += info;
+					summary += info + ";";
 				}
 			}
 			System.out.println(summary);

@@ -80,11 +80,9 @@ public class TCPMiddlewareThread implements Runnable{
 						int cid;
 						if (customerIdx.size()==0) cid=1;
 						else cid = Collections.max(customerIdx) + 1;
-						System.out.println(cid);
 						customerIdx.add(cid);
 						sendCustomerCommand(command, customerMsgDecoder.id, cid);
 						result = Integer.toString(cid);
-						System.out.println(Arrays.toString(customerIdx.toArray()));
 					}
 					
 					break;
@@ -95,7 +93,6 @@ public class TCPMiddlewareThread implements Runnable{
 						if(!customerIdx.contains(cid)) {
 							customerIdx.add(cid);
 						}
-						System.out.println(Arrays.toString(customerIdx.toArray()));
 					}
 					result = sendCustomerCommand("newCustomer", customerMsgDecoder.id, cid);
 					break;
@@ -111,7 +108,6 @@ public class TCPMiddlewareThread implements Runnable{
 					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
 					break;
 				case "queryCustomerSummary":
-					System.out.println("queryCustomerSummary");
 					SummaryMessageDecoder summaryMsgDecoder = (new MessageDecoder()).new SummaryMessageDecoder(); 
 					result = sendQuerySummaryCustomerCommand(summaryMsgDecoder.id);
 					break;
@@ -221,13 +217,12 @@ public class TCPMiddlewareThread implements Runnable{
 	
 	public String sendQuerySummaryCustomerCommand(int id){
 		String res = "";
-		System.out.println("sendQuerySummaryCustomerCommand");
 		synchronized (customerIdx) {
 			System.out.println("loop");
 			for(Integer cid: customerIdx) {
 				System.out.println(cid);
 				String result = sendQueryCustomerCommand("queryCustomerInfo", id, cid);
-				res += result; 
+				res += result + ";"; 
 				}
 			return res;
 		}
