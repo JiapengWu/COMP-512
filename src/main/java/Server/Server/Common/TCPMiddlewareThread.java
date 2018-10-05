@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,18 +79,25 @@ public class TCPMiddlewareThread implements Runnable{
 					synchronized (customerIdx){
 						int cid;
 						if (customerIdx.size()==0) cid=1;
-						else cid = Collections.max(customerIdx)+1;
+						else cid = Collections.max(customerIdx) + 1;
+						System.out.println(cid);
 						customerIdx.add(cid);
 						sendCustomerCommand(command, customerMsgDecoder.id, cid);
 						result = Integer.toString(cid);
+						System.out.println(Arrays.toString(customerIdx.toArray()));
 					}
+					
 					break;
 				case "newCustomerID":
 					customerMsgDecoder.decodeCommandMsg(content);
+					int cid = customerMsgDecoder.customerID;
 					synchronized (customerIdx) {
-						customerIdx.add(customerMsgDecoder.customerID);
+						if(!customerIdx.contains(cid)) {
+							customerIdx.add(cid);
+						}
+						System.out.println(Arrays.toString(customerIdx.toArray()));
 					}
-					result = sendCustomerCommand("newCustomer", customerMsgDecoder.id, customerMsgDecoder.customerID);
+					result = sendCustomerCommand("newCustomer", customerMsgDecoder.id, cid);
 					break;
 				case "queryCustomerInfo":
 					customerMsgDecoder.decodeCommandMsg(content);
