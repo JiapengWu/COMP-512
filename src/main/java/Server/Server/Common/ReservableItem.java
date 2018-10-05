@@ -15,7 +15,7 @@ public abstract class ReservableItem extends RMItem implements Serializable
 	private int m_nPrice;
 	private int m_nReserved;
 	private String m_location;
-	private HashMap<Integer, Integer> m_customers = new HashMap<Integer, Integer>();
+	protected HashMap<Integer, Integer> m_customers = new HashMap<Integer, Integer>();
 
 	public ReservableItem(String location, int count, int price)
 	{
@@ -95,14 +95,10 @@ public abstract class ReservableItem extends RMItem implements Serializable
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
-	public HashMap<Integer, Integer> getReservedCustomers() {
-		return (HashMap<Integer, Integer>) this.m_customers.clone();
-	}
-	
 	public String getSummaryInfo() {
+		String location = this instanceof Flight?"Flight Number: ":"Location: ";
 		synchronized (m_customers) {
-			String info = this.getKey() + ":;Price: " + m_nPrice + ";Location: " + m_location + ";";
+			String info = this.getKey() + ":;Price: " + m_nPrice + ";" + location + m_location + ";";
 			if(m_customers.isEmpty()) {
 				info += "No reservations.;";
 			}
