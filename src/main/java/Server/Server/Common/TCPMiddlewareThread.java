@@ -82,10 +82,13 @@ public class TCPMiddlewareThread implements Runnable{
 						customerIdx.add(cid);
 						sendCustomerCommand(command, customerMsgDecoder.id, cid);
 						result = Integer.toString(cid);
-					break;
 					}
+					break;
 				case "newCustomerID":
 					customerMsgDecoder.decodeCommandMsg(content);
+					synchronized (customerIdx) {
+						customerIdx.add(customerMsgDecoder.customerID);
+					}
 					result = sendCustomerCommand("newCustomer", customerMsgDecoder.id, customerMsgDecoder.customerID);
 					break;
 				case "queryCustomerInfo":
@@ -100,6 +103,7 @@ public class TCPMiddlewareThread implements Runnable{
 					result = sendCustomerCommand(command, customerMsgDecoder.id, customerMsgDecoder.customerID);
 					break;
 				case "queryCustomerSummary":
+					System.out.println("queryCustomerSummary");
 					SummaryMessageDecoder summaryMsgDecoder = (new MessageDecoder()).new SummaryMessageDecoder(); 
 					result = sendQuerySummaryCustomerCommand(summaryMsgDecoder.id);
 					break;
@@ -191,7 +195,7 @@ public class TCPMiddlewareThread implements Runnable{
 	
 	public String sendQueryCustomerCommand(String cmd, int id, int cid){
 		Message msg = new Message(cmd);
-		msg.addDeleteQueryCustomerCommand(id,cid);
+		msg.addDeleteQueryCustomerCommand(id, cid);
 		
 		String res = "Bill for customer " + cid + ";";
 		for (Map.Entry<String, String> entry : serverType2host.entrySet()){
@@ -200,7 +204,6 @@ public class TCPMiddlewareThread implements Runnable{
 			result = sendRecvStr(msg.toString(), entry.getValue());
 			if (result.equals("<JSONException>")) {Trace.error("IOException from server "+entry.getValue()); return result;}
 			if (result.equals("<IllegalArgumentException>")) {Trace.error("IllegalArgumentException from server "+entry.getValue());return result;}
-			System.out.println(result);
 			result = result.split(";", 2).length == 1? "":result.split(";", 2)[1];
 			res += result;
 		}
@@ -210,11 +213,14 @@ public class TCPMiddlewareThread implements Runnable{
 	
 	public String sendQuerySummaryCustomerCommand(int id){
 		String res = "";
+		System.out.println("sendQuerySummaryCustomerCommand");
 		synchronized (customerIdx) {
-			for(int cid: customerIdx) {
+			System.out.println("loop");
+			for(Integer cid: customerIdx) {
 				System.out.println(cid);
 				String result = sendQueryCustomerCommand("queryCustomerInfo", id, cid);
-				res += result; }
+				res += result; 
+				}
 			return res;
 		}
 
