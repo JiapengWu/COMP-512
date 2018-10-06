@@ -29,11 +29,11 @@ public class RMIMiddleware implements IResourceManager {
   public static void main(String args[]) {
   	try{
 
-	    if (args.length == 5) {
+	    if (args.length == 4) {
 	      s_serverName = args[0];
 	    }
 	    else{
-	    	Trace.error("RMIMiddleWare:: Expect 5 arguments. $0: hostname of MiddleWare, $1-$4: hostname of servers");
+	    	Trace.error("RMIMiddleWare:: Expect 4 arguments. $0: hostname of MiddleWare, $1-$3: hostname of servers");
 	    	System.exit(1);
 	    }
 
