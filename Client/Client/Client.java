@@ -1,17 +1,21 @@
 package Client;
 
-import Server.Interface.*;
-
-import java.util.*;
-import java.io.*;
-import java.rmi.RemoteException;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.rmi.ConnectException;
+import java.rmi.RemoteException;
 import java.rmi.ServerException;
 import java.rmi.UnmarshalException;
+import java.util.StringTokenizer;
+import java.util.Vector;
+
+import Server.Interface.IResourceManager;
 
 public abstract class Client
 {
-	TCPClientHandler m_resourceManager = null;
+	
+	IResourceManager m_resourceManager = null;
 
 	public Client()
 	{
@@ -391,8 +395,9 @@ public abstract class Client
 				{
 					System.out.println("-Flight Number: " + arguments.elementAt(3+i));
 				}
-				System.out.println("-Car Location: " + arguments.elementAt(arguments.size()-2));
-				System.out.println("-Room Location: " + arguments.elementAt(arguments.size()-1));
+				System.out.println("-Location for Car/Room: " + arguments.elementAt(arguments.size()-3));
+				System.out.println("-Book Car: " + arguments.elementAt(arguments.size()-2));
+				System.out.println("-Book Room: " + arguments.elementAt(arguments.size()-1));
 
 				int id = toInt(arguments.elementAt(1));
 				int customerID = toInt(arguments.elementAt(2));
@@ -401,7 +406,7 @@ public abstract class Client
 				{
 					flightNumbers.addElement(arguments.elementAt(3+i));
 				}
-				String location = arguments.elementAt(arguments.size()-2);
+				String location = arguments.elementAt(arguments.size()-3);
 				boolean car = toBoolean(arguments.elementAt(arguments.size()-2));
 				boolean room = toBoolean(arguments.elementAt(arguments.size()-1));
 

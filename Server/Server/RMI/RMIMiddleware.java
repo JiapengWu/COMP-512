@@ -19,7 +19,7 @@ public class RMIMiddleware implements IResourceManager {
   private static IResourceManager carRM;
   private static IResourceManager roomRM;
 
-  private ArrayList<Integer> customerIdx;
+  private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
   private static int middleware_port = 3099;
   private static int server_port = 3099;
 
@@ -29,25 +29,31 @@ public class RMIMiddleware implements IResourceManager {
   public static void main(String args[]) {
   	try{
 
-	    if (args.length == 5) {
+	    if (args.length == 4) {
 	      s_serverName = args[0];
 	    }
 	    else{
-	    	Trace.error("RMIMiddleWare:: Expect 5 arguments. $0: hostname of MiddleWare, $1-$4: hostname of servers");
+	    	Trace.error("RMIMiddleWare:: Expect 4 arguments. $0: hostname of MiddleWare, $1-$3: hostname of servers");
 	    	System.exit(1);
 	    }
 
 	    // Create a new Server object
-	    RMIMiddleware mw = new RMIMiddleware(s_serverName);
-	    // Dynamically generate the stub (MiddleWare proxy
-	    IResourceManager mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
+	    IResourceManager mw_RM = null;
+	    try {
+		    RMIMiddleware mw = new RMIMiddleware(s_serverName);
+		    // Dynamically generate the stub (MiddleWare proxy
+		    mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
+	    }
+	    catch(Exception e){
+	    	e.printStackTrace();
+	    }
 
 	    Registry client_registry;
 	   	try {
 	       client_registry = LocateRegistry.createRegistry(middleware_port);
 	    } catch (RemoteException e) {
 	       client_registry = LocateRegistry.getRegistry(middleware_port);
-
+	       e.printStackTrace();
 	    }
 	    final Registry registry = client_registry;
 	    registry.rebind(s_rmiPrefix + s_serverName, mw_RM); //group6_MiddleWare
@@ -69,7 +75,7 @@ public class RMIMiddleware implements IResourceManager {
 					}
 				}
 			});
-			System.out.println("'" + s_serverName + "' Middleware server ready and bound to '" + s_rmiPrefix + s_serverName + "'" + "at port:"+String.valueOf(middleware_port));
+		System.out.println("'" + s_serverName + "' Middleware server ready and bound to '" + s_rmiPrefix + s_serverName + "'" + "at port:"+String.valueOf(middleware_port));
 	}
     catch (Exception e) {
 			System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
