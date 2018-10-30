@@ -3,30 +3,86 @@
 // CSE 593
 // -------------------------------
 
-package Server.Common;
+package main.java.Server.Server.Common;
 
 import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.Vector;
 
-import Server.Interface.IResourceManager;
+
+import server.LockManager.DeadlockException;
+import server.LockManager.LockManager;
+import server.LockManager.TransactionLockObject;
+
+import main.java.Server.Server.Interface.IResourceManager;
 
 public class ResourceManager implements IResourceManager
 {
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
 
+	protected LockManager lm = new LockManager();
+	// Transaction history record from start to commit, to handle abort
+	protected HashMap<Integer, RMHashMap> xCopies = new HashMap<Integer, RMHashMap>();
+    protected HashMap<Integer, RMHashMap> xWrites = new HashMap<Integer, RMHashMap>();
+    protected HashMap<Integer, RMHashMap> xDeletes = new HashMap<Integer, RMHashMap>();
+
+
+
 	public ResourceManager(String p_name)
 	{
 		m_name = p_name;
 	}
 
-	// Reads a data item
-	protected RMItem readData(int xid, String key)
+
+	/*
+	Transaction related operations
+	*/
+	public void abort(int xid) throws DeadlockException
 	{
+		xCopies.remove(xid);
+		xWrites.remove(xid);
+		xDeletes.remove(xid);
+		lm.UnlockAll(xid);
+	}
+
+	public void commit(int xid) throws DeadlockException
+	{
+		// Apply writes (including deletes)
+		synchronized(m_data){
+			RMHashMap writes = xWrites.get(xid);
+			Set<String> keys = writes.keySet();
+			for(String key: keys) {
+				m_data.put(key, writes.get(key));
+			}
+			RMHashMap deletes = xDeletes.get(txnID);
+			keys = deletes.keySet();
+			for(String key: keys) {
+				m_itemHT.remove(key);
+			}
+		}
+		// empty history
+		xWrites.remove(xid);
+		xDeletes.remove(xid);
+		xCopies.remove(xid);
+	}
+
+	public void start(int xid) throws DeadlockException
+	{
+		xCopies.put(xid,m_data.deep_copy());
+		xWrites.put(xid, new RMHashMap());
+		xDeletes.put(xid, new RMHashMap());
+	}
+
+	// Reads a data item
+	protected RMItem readData(int xid, String key) throws DeadlockException
+	{
+		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+		RMHashMap copy = xCopies.get(xid);
 		synchronized(m_data) {
 			RMItem item = m_data.get(key);
 			if (item != null) {
+				copy.put(key,item);
 				return (RMItem)item.clone();
 			}
 			return null;
@@ -36,16 +92,25 @@ public class ResourceManager implements IResourceManager
 	// Writes a data item
 	protected void writeData(int xid, String key, RMItem value)
 	{
-		synchronized(m_data) {
-			m_data.put(key, value);
+		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
+		RMHashMap copy = xCopies.get(xid);
+		synchronized(copy) {
+			copy.put(key, value);
+		}
+		RMHashMap writes = xWrites.get(xid);
+		synchronized(writes) {
+			writes.put(key,value);
 		}
 	}
 
 	// Remove the item out of storage
 	protected void removeData(int xid, String key)
 	{
-		synchronized(m_data) {
-			m_data.remove(key);
+		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
+		deletes = xDeletes.get(xid);
+		synchronized(delete) {
+			deletes.put(key,null)
+			copy.remove(key);
 		}
 	}
 
@@ -103,6 +168,46 @@ public class ResourceManager implements IResourceManager
 		Trace.info("RM::queryPrice(" + xid + ", " + key + ") returns cost=$" + value);
 		return value;        
 	}
+
+	// unReserve an Item
+	protected boolean unReserveItem(int xid, int customerID, String key, String location)
+	{
+		Trace.info("RM::unReserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called" );        
+		// Read customer object if it exists (and read lock it)
+		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+		if (customer == null)
+		{
+			Trace.warn("RM::unReserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ")  failed--customer doesn't exist");
+			return false;
+		} 
+
+		// Check if the item is available
+		ReservableItem item = (ReservableItem)readData(xid, key);
+		if (item == null)
+		{
+			Trace.warn("RM::unReserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--item doesn't exist");
+			return false;
+		}
+		else if (item.getCount() == 0)
+		{
+			Trace.warn("RM::unReserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--No more items");
+			return false;
+		}
+		else
+		{            
+			customer.unReserve(key, location, item.getPrice());        
+			writeData(xid, customer.getKey(), customer);
+
+			// Increase the number of available items in the storage
+			item.setCount(item.getCount() + 1);
+			item.setReserved(item.getReserved() - 1);
+			writeData(xid, item.getKey(), item);
+
+			Trace.info("RM::unReserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
+			return true;
+		} 
+	}
+
 
 	// Reserve an item
 	protected boolean reserveItem(int xid, int customerID, String key, String location)
@@ -372,6 +477,22 @@ public class ResourceManager implements IResourceManager
 		return reserveItem(xid, customerID, Room.getKey(location), location);
 	}
 
+
+	// undo reserve
+	public boolean unReserveFlight(int xid, int customerID, int flightNum) throws RemoteException{
+		return unReserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
+	}
+
+	public boolean unReserveCar(int xid, int customerID, String location) throws RemoteException{
+		return unReserveItem(xid, customerID, Car.getKey(location), location);
+	}
+
+	public boolean unReserveRoom(int xid, int customerID, String location) throws RemoteException
+	{
+		return unReserveItem(xid, customerID, Room.getKey(location), location);
+	}
+
+
 	// Reserve bundle 
 	public boolean bundle(int xid, int customerId, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException
 	{
@@ -382,24 +503,5 @@ public class ResourceManager implements IResourceManager
 	{
 		return m_name;
 	}
-//
-//  @Override
-//  public void decrementCount(ReservableItem item) {
-//    // TODO Auto-generated method stub
-//    
-//  }
-//
-//  @Override
-//  public void incrementReserved(ReservableItem item) {
-//    // TODO Auto-generated method stub
-//    
-//  }
-//
-//  @Override
-//  public void reserveItem(int id, int customerID, String key, String location) {
-//    // TODO Auto-generated method stub
-//    
-//  }
-//	
 }
  
