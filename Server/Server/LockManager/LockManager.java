@@ -1,9 +1,9 @@
-package Server.LockManager;
+package main.java.Server.LockManager;
 
 import java.util.BitSet;
 import java.util.Vector;
 
-import Server.Common.Trace;
+import main.java.Server.Server.Common.Trace;
 
 public class LockManager
 {
@@ -19,6 +19,7 @@ public class LockManager
 		super();
 	}
 
+	
 	public boolean Lock(int xid, String data, TransactionLockObject.LockType lockType) throws DeadlockException
 	{
 		// if any parameter is invalid, then return false
@@ -103,8 +104,9 @@ public class LockManager
 
 		TransactionLockObject lockQuery = new TransactionLockObject(xid, "", TransactionLockObject.LockType.LOCK_UNKNOWN); // Only used in elements() call below.
 		synchronized(this.lockTable) {
+			// all transactions objects with the same xid as lockQuery, that is all locks this transactions holds
 			Vector vect = this.lockTable.elements(lockQuery);
-
+			
 			TransactionLockObject xLockObject;
 			Vector waitVector;
 			WaitLockObject waitLockObject;
@@ -112,28 +114,33 @@ public class LockManager
 
 			for (int i = (size - 1); i >= 0; i--)
 			{
+				// get a data lock
 				xLockObject = (TransactionLockObject)vect.elementAt(i);
 				this.lockTable.remove(xLockObject);
 
 				Trace.info("LM::unlock(" + xid + ", " + xLockObject.getDataName() + ", " + xLockObject.getLockType() + ") unlocked");
-
+				
+				// why do we need to remove again with the same xid?
 				DataLockObject dataLockObject = new DataLockObject(xLockObject.getXId(), xLockObject.getDataName(), xLockObject.getLockType());
 				this.lockTable.remove(dataLockObject);
 
 				// Check if there are any waiting transactions
 				synchronized(this.waitTable) {
-					// Get all the transactions waiting on this dataLock
+					// Get all the transactions waiting on this dataLock (wait list on X in the wating table)
 					waitVector = this.waitTable.elements(dataLockObject);
 					int waitSize = waitVector.size();
 					for (int j = 0; j < waitSize; j++)
 					{
+						// wait lock 
 						waitLockObject = (WaitLockObject)waitVector.elementAt(j);
+						// if the current lock is a write lock
 						if (waitLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE)
 						{
+							// AND it is the first clock in the wait list, grant only if no other lock is on the current resource
 							if (j == 0)
 							{
 								// Get all other transactions which have locks on the
-								// data item just unlocked
+								// data item just unlocked (T3 may have write lock on X)
 								Vector vect1 = this.lockTable.elements(dataLockObject);
 								int vectlSize = vect1.size();
 
@@ -166,11 +173,12 @@ public class LockManager
 									System.out.println("Exception on unlock\n" + e.getMessage());
 								}        
 							}
-
+							// if j != 0 we know that we have granted at least one read lock. Stop here when we find a write lock
 							// Stop granting READ locks as soon as you find a WRITE lock
 							// request in the queue of requests
 							break;
 						}
+						// case read lock, grant it
 						else if (waitLockObject.getLockType() == TransactionLockObject.LockType.LOCK_READ)
 						{
 							// Remove interrupted thread from waitTable
@@ -228,6 +236,14 @@ public class LockManager
 					// Seeing the comments at the top of this function might be helpful
 
 					//TODO: Lock conversion
+					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE){
+						throw new RedundantLockRequestException(dataLockObject.getXId(), "redundant WRITE lock request");
+					}
+					else if (size >1){
+						Trace.info("want to convert "+dataLockObject.getDataName()+" lock to WRITE but someone already had a lock");
+						return true;
+					}
+
 				}
 			} 
 			else if (dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_READ)
@@ -259,7 +275,6 @@ public class LockManager
 		Trace.info("LM::waitLock(" + dataLockObject.getXId() + ", " + dataLockObject.getDataName() + ", " + dataLockObject.getLockType() + ") called");
 
 		// Check timestamp or add a new one.
-		//
 		// Will always add new timestamp for each new lock request since
 		// the timeObject is deleted each time the transaction succeeds in
 		// getting a lock (see Lock())
@@ -334,4 +349,6 @@ public class LockManager
 		}
 		throw new DeadlockException(waitLockObject.getXId(), "Sleep timeout: deadlocked");
 	}
+	
+
 }
