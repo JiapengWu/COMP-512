@@ -31,6 +31,13 @@ public enum Command {
 
 	Quit("Exit the client application", "");
 
+	/*
+	Command for transactions
+	*/
+	Start("Start a transaction","");
+	Commit("Commit a transaction","<xid>");
+	Abort("Abort a transaction","<xid>")
+
 	String m_description;
 	String m_args;
 

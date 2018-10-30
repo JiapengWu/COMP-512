@@ -417,6 +417,39 @@ public abstract class Client
 				}
 				break;
 			}
+
+			// Transactions:
+			case Start:{
+				System.out.println("Starting a transaction");
+				int xid = m_resourceManager.start();
+				if (xid >-1) System.out.println("Transaction started, xid="+(char)xid);
+				else System.out.println("Cannot transaction");
+				break;
+			}
+			case Commit:{
+				if (arguments.size() >1) {
+					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mCommit command expects 1 arg, xid");
+					break;
+				}
+				System.out.println("Committing to a transaction");
+				int xid = toInt(arguments.elementAt(1));
+				boolean c = m_resourceManager.commit(xid);
+				if (c) System.out.println("Transaction commited");
+				else System.out.println("Cannot commit");
+				break;
+			}
+			case Abort:{
+				if (arguments.size() >1) {
+					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mAbort command expects 1 arg, xid");
+					break;
+				}
+				System.out.println("Aborting a transaction");
+				int xid = toInt(arguments.elementAt(1));
+				m_resourceManager.abort(xid);
+				System.out.println("Transaction aborted");
+				break;
+			}
+
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
 
