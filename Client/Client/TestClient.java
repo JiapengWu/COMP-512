@@ -1,21 +1,27 @@
 package Client;
 
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-
+import java.rmi.RemoteException;
 import LockManager.DeadlockException;
-
+import server.ResInterface.IMiddleWare;
 
 public class TestClient
 {
 	
 	static float LOAD = 20; // transactions per second
 	static int PERIOD = (int) (1 / LOAD * 1000); // transaction period in milliseconds
-	static int ROUNDS = 10; // number of transactions to test
+	static int NUM_CLIENTS = 5;
+	static int TPERIOD = PERIOD * NUM_CLIENTS; // transaction period of each client
+
 	
 	private static String s_serverHost = "localhost";
 	private static int s_serverPort = 3099;
-	private static String s_serverName = "Server";
+	private static String s_serverName = "RMIMiddleware";
+	private statis String s_rmiPrefix = "group6_"
 
 	RMIClient client;
 
@@ -23,11 +29,17 @@ public class TestClient
 
 	public static void main(String args[])
 	{
-		client = new RMIClient();
-		client.connect_server(s_serverHost, s_serverPort, s_serverName);
-		// load all commands
+		if (args.length > 0) {
+	      s_serverHost = args[0];
+	    }
+	    if (args.length > 1) {
+	      s_serverPort = Integer.parseInt(args[1]);
+	    }
+	    setUps(s_serverHost, s_serverPort, s_serverName);
+
+	    // load all commands
 		Vector<Command> commands = new Vector<Command>();
-		FileInputStream fstream = new FileInputStream("textfile.txt");
+		FileInputStream fstream = new FileInputStream("commands.txt");
 		BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
 		String strLine;
 		while ((strLine = br.readLine()) != null)   {
@@ -35,36 +47,63 @@ public class TestClient
 		}
 		br.close();
 
-		// execute transactions in loop
-		for (int i=0; i<ROUNDS;i++){
-			Random rand = new Random();
-			long waitTime = (long) rand.nextInt(period);
-      		try {
-        		Thread.sleep(waitTime * 2);
-      		} catch (InterruptedException e) {
-        		e.printStackTrace();
-      		}
-      
-      		long start = System.nanoTime() / 1000;
-      		try {
-        		//TODO: execute commands
-      			executeCmds(commands);
-        		long duration = System.nanoTime() / 1000 - start;
-        		System.out.println(duration);
-			} catch (Exception e) {
-				System.out.println("Test failed");
-				e.printStackTrace();
-			}
-    
+		
+		
+		ExecutorService es = Executors.newCachedThreadPool();
+		for (int i = 0; i < NUM_CLIENTS; i++) {
+			client = new RMIClient();
+			client.connect_server(s_serverHost, s_serverPort, s_serverName);
+			TestClientThread ct = new TestClientThread(client, commands, TPERIOD);
+			es.execute(ct);
 		}
 
-		// TODO
-		public static void executeCmds(Vector<Command> commands)
-		{
-
+		es.shutdown();
+		try {
+			es.awaitTermination(30, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
-
-
 	}
+		
+		
+
+	// setup middleware and server, initialize some flight/room/cars
+	public void setUps(String server, int port, String name) 
+		throws RemoteException, DeadlockException
+	{
+		IResourceManager mw;
+		try {
+			boolean first = true;
+			while (true) {
+				try {
+					Registry registry = LocateRegistry.getRegistry(server, port);
+					mw = (IResourceManager)registry.lookup(s_rmiPrefix + name);
+					System.out.println("TestClient::Connected to '" + name + "' middleware [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
+					break;
+				}
+				catch (NotBoundException|RemoteException e) {
+					if (first) {
+						System.out.println("TestClient:: Waiting for '" + name + "' middleware [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
+						first = false;
+					}
+				}
+				Thread.sleep(500);
+			}
+		}
+		catch (Exception e) {
+			System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+			e.printStackTrace();
+			System.exit(1);
+		}
+
+		// Initialize servers
+		int txnId = mw.start();
+    	mw.addCars(txnId, "TRT", 1000, 100);
+	    mw.addFlight(txnId, 300, 2000, 200);
+	    mw.addFlight(txnId, 200, 1000, 100);
+	    mw.addRooms(txnId, "MTL", 500, 300);
+	    mw.commit(txnId);
+	}
+
 
  }
