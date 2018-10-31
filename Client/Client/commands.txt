@@ -1,0 +1,7 @@
+start
+addFlight
+addCars
+addRoom
+newCustomer
+reserveFlight
+commit
