@@ -4,10 +4,11 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.io.FileInputStream;
 
 import java.rmi.RemoteException;
-import LockManager.DeadlockException;
-import server.ResInterface.IMiddleWare;
+import Server.LockManager.DeadlockException;
+import Server.Interface.IResourceManager;
 
 public class TestClient
 {
@@ -21,7 +22,7 @@ public class TestClient
 	private static String s_serverHost = "localhost";
 	private static int s_serverPort = 3099;
 	private static String s_serverName = "RMIMiddleware";
-	private statis String s_rmiPrefix = "group6_"
+	private static String s_rmiPrefix = "group6_";
 
 	RMIClient client;
 
@@ -68,7 +69,7 @@ public class TestClient
 		
 
 	// setup middleware and server, initialize some flight/room/cars
-	public void setUps(String server, int port, String name) 
+	public static void setUps(String server, int port, String name) 
 		throws RemoteException, DeadlockException
 	{
 		IResourceManager mw;

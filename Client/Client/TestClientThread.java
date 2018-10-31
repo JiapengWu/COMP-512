@@ -4,7 +4,7 @@ import java.util.Vector;
 import java.util.Random;
 
 import java.rmi.RemoteException;
-import LockManager.DeadlockException;
+import Server.LockManager.DeadlockException;
 
 
 public class TestClientThread implements Runnable
@@ -16,9 +16,9 @@ public class TestClientThread implements Runnable
 	Vector<Command> commands; // arguments?
 
 	public TestClientThread(RMIClient client, Vector<Command> commands, int period){
-		this.client = client
+		this.client = client;
 		this.commands = commands;
-		this.period = period
+		this.period = period;
 
 	}
 
@@ -57,7 +57,7 @@ public class TestClientThread implements Runnable
 	}
 
 	// TODO
-	public static void executeCmds(Vector<Command> commands) throws RemoteException, DeadlockException
+	public static boolean executeCmds(Vector<Command> commands) throws RemoteException, DeadlockException
 	{
 		int txnId = mw.start();
 		try {
