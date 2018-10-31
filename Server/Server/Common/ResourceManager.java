@@ -509,6 +509,12 @@ public class ResourceManager implements IResourceManager
 	}
 
 
+	@Override
+	public int start() throws RemoteException {
+		return 0;
+	}
+
+
 
 }
  

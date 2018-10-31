@@ -246,15 +246,17 @@ public class RMIMiddleware implements IResourceManager {
   public String getName() throws RemoteException {
     return roomRM.getName();
   }
-
-	  public void start() throws RemoteException {
-		  int id = 0;
-		  try {			  
-			  id = Collections.max(transactionIxd);
-		  }catch(Exception e) {
-		  }
-		  start(id);
+  
+  @Override
+  public int start() throws RemoteException {
+	  int id = 0;
+	  try {			  
+		  id = Collections.max(transactionIxd);
+	  }catch(Exception e) {
 	  }
+	  start(id);
+	  return id;
+  }
 	  
 	@Override
 	public void start(int txnId) throws RemoteException {

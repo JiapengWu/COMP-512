@@ -219,7 +219,8 @@ public interface IResourceManager extends Remote
     public void commit (int txnId) throws RemoteException;
 
     public void start (int txnId) throws RemoteException;
-    
+
+    public int start() throws RemoteException;
     
     public void abort(int txnID) throws RemoteException;
 
