@@ -11,7 +11,7 @@ FORCE: ;
 ../Server/RMIInterface.jar: ../Server/Server/Interface/IResourceManager.java
 	make -C ../Server/ RMIInterface.jar
 
-../Server/DeadLockException.jar: ../Server/Server/LockManager/DeadLockException.java
+../Server/DeadLockException.jar: ../Server/Server/LockManager/*.java
 	make -C ../Server/ DeadLockException.jar
 
 compile-client: ../Server/RMIInterface.jar ../Server/DeadLockException.jar
