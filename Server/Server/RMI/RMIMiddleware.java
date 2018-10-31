@@ -23,6 +23,7 @@ public class RMIMiddleware implements IResourceManager {
   private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
   private static int middleware_port = 3099;
   private static int server_port = 3099;
+  private ArrayList<Integer> transactionIxd = new ArrayList<Integer>();
 
   public RMIMiddleware(String s_serverName2) {
   }
@@ -217,10 +218,28 @@ public class RMIMiddleware implements IResourceManager {
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location,
       boolean car, boolean room) throws RemoteException, DeadlockException {
     	boolean res = true;
-		for (String fn:flightNumbers) res &=reserveFlight(id,customerID,Integer.parseInt(fn));
-		if (car) res &= reserveCar(id, customerID, location);
-		if (room) res &= reserveRoom(id, customerID, location);
-		return res; // return False if any of the above failed
+    	Vector<String> history = new Vector<String>();
+		for (String fn:flightNumbers) {
+			if(reserveFlight(id,customerID,Integer.parseInt(fn))) history.add(fn);
+			else {
+				unReserveFlights(id, customerID, history);
+				return false;
+			}
+		}
+		if (car) {
+			if(!reserveCar(id, customerID, location)) {
+				unReserveFlights(id, customerID, history);
+				return false;
+			}
+		}
+		if (room) {
+			if(!reserveRoom(id, customerID, location)){
+				unReserveFlights(id, customerID, history);
+				if(car) unReserveCar(id, customerID, location);
+				return false;
+			}
+		}
+		return true; // return False if any of the above failed
   }
 
   @Override
@@ -228,14 +247,19 @@ public class RMIMiddleware implements IResourceManager {
     return roomRM.getName();
   }
 
-	  public void start() {
-		  start();
+	  public void start() throws RemoteException {
+		  int id = 0;
+		  try {			  
+			  id = Collections.max(transactionIxd);
+		  }catch(Exception e) {
+		  }
+		  start(id);
 	  }
 	  
 	@Override
 	public void start(int txnId) throws RemoteException {
+		transactionIxd.add(txnId);
 		roomRM.start(txnId);carRM.start(txnId);flightRM.start(txnId);
-		
 	}
 	
 	@Override
@@ -246,26 +270,31 @@ public class RMIMiddleware implements IResourceManager {
 	
 	@Override
 	public void abort(int txnID) throws RemoteException {
-		roomRM.abort(txnId);carRM.abort(txnId);flightRM.abort(txnId);
+		roomRM.abort(txnID);carRM.abort(txnID);flightRM.abort(txnID);
 		
+	}
+	
+	public boolean unReserveFlights(int id, int customerID, Vector<String> history) throws RemoteException, DeadlockException {
+		boolean res = true;
+		for(String fn: history) {
+			res &= unReserveFlight(id, customerID, Integer.parseInt(fn));
+		}
+		return res;
 	}
 	
 	@Override
 	public boolean unReserveFlight(int id, int customerID, int flightNumber) throws RemoteException, DeadlockException {
-		// TODO Auto-generated method stub
-		return false;
+		return flightRM.unReserveFlight(id, customerID, flightNumber);
 	}
 	
 	@Override
 	public boolean unReserveCar(int id, int customerID, String location) throws RemoteException, DeadlockException {
-		// TODO Auto-generated method stub
-		return false;
+		return carRM.unReserveCar(id, customerID, location);
 	}
 	
 	@Override
 	public boolean unReserveRoom(int id, int customerID, String location) throws RemoteException, DeadlockException {
-		// TODO Auto-generated method stub
-		return false;
+		return roomRM.unReserveRoom(id, customerID, location);
 	}
 
 }

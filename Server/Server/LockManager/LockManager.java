@@ -14,8 +14,7 @@ public class LockManager
 	private static TPHashTable stampTable = new TPHashTable(LockManager.TABLE_SIZE);
 	private static TPHashTable waitTable = new TPHashTable(LockManager.TABLE_SIZE);
 
-	public LockManager()
-	{
+	public LockManager(){
 		super();
 	}
 	

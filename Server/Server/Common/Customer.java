@@ -43,13 +43,24 @@ public class Customer extends RMItem
 		}
 		m_reservations.put(reservedItem.getKey(), reservedItem);
 	}
+	
+	public void unReserve(String key, String location, int price)
+	{
+		ReservedItem reservedItem = getReservedItem(key);
+		if (reservedItem == null) return;
+		else
+		{
+			reservedItem.setCount(reservedItem.getCount() - 1);
+			reservedItem.setPrice(price);
+			m_reservations.put(reservedItem.getKey(), reservedItem);
+		}
+	}
 
 	public ReservedItem getReservedItem(String key){
 		return (ReservedItem)m_reservations.get(key);
 	}
 
-	public String getBill()
-	{
+	public String getBill(){
 		String s = "Bill for customer " + m_ID + "\n";
 		for (String key : m_reservations.keySet())
 		{
