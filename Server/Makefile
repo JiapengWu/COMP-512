@@ -1,4 +1,4 @@
-all: java.policy compile-server-rmi compile-lock-manager
+all: java.policy compile-lock-manager compile-server-rmi 
 
 java.policy: FORCE
 	@echo "Creating server java policy"
@@ -18,8 +18,9 @@ compile-server-rmi: Server/RMI/*.java Server/Interface/IResourceManager.java Ser
 
 compile-lock-manager: Server/LockManager/*.java
 	javac Server/LockManager/*.java
+	jar cvf DeadLockException.jar Server/LockManager/*.class
 
 clean:
 	rm -f Server/Interface/*.class Server/Common/*.class Server/RMI/*.class Server/LockManager/*.class
 	rm -f RMIInterface.jar
-	rm -f java.policy 
+	rm -f java.policy

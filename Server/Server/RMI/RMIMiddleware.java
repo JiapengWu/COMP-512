@@ -10,6 +10,7 @@ import java.util.Vector;
 
 import Server.Common.Trace;
 import Server.Interface.IResourceManager;
+import Server.LockManager.DeadlockException;
 
 public class RMIMiddleware implements IResourceManager {
   private static String s_serverName = "MiddleWare";
@@ -22,6 +23,7 @@ public class RMIMiddleware implements IResourceManager {
   private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
   private static int middleware_port = 3099;
   private static int server_port = 3099;
+  private ArrayList<Integer> transactionIxd = new ArrayList<Integer>();
 
   public RMIMiddleware(String s_serverName2) {
   }
@@ -112,119 +114,189 @@ public class RMIMiddleware implements IResourceManager {
   }
 
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
-      throws RemoteException {
+      throws RemoteException, DeadlockException {
     return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
   }
 
   @Override
-  public boolean addCars(int id, String location, int numCars, int price) throws RemoteException {
+  public boolean addCars(int id, String location, int numCars, int price) throws RemoteException, DeadlockException {
     return carRM.addCars(id, location, numCars, price);
   }
 
   @Override
-  public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException {
+  public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException, DeadlockException {
     return roomRM.addRooms(id, location, numRooms, price);
   }
 
 
   @Override
-  public boolean deleteFlight(int id, int flightNum) throws RemoteException {
+  public boolean deleteFlight(int id, int flightNum) throws RemoteException, DeadlockException {
     return flightRM.deleteFlight(id, flightNum);
   }
 
   @Override
-  public boolean deleteCars(int id, String location) throws RemoteException {
+  public boolean deleteCars(int id, String location) throws RemoteException, DeadlockException {
     return carRM.deleteCars(id, location);
   }
 
   @Override
-  public boolean deleteRooms(int id, String location) throws RemoteException {
+  public boolean deleteRooms(int id, String location) throws RemoteException, DeadlockException {
     return roomRM.deleteRooms(id, location);
   }
 
   @Override
-  public boolean deleteCustomer(int id, int customerID) throws RemoteException {
+  public boolean deleteCustomer(int id, int customerID) throws RemoteException, DeadlockException {
     return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID) && roomRM.deleteCustomer(id, customerID);
   }
 
   @Override
-  public int queryFlight(int id, int flightNumber) throws RemoteException {
+  public int queryFlight(int id, int flightNumber) throws RemoteException, DeadlockException {
     return flightRM.queryFlight(id, flightNumber);
   }
 
   @Override
-  public int queryCars(int id, String location) throws RemoteException {
+  public int queryCars(int id, String location) throws RemoteException, DeadlockException {
     return carRM.queryCars(id, location);
   }
 
   @Override
-  public int queryRooms(int id, String location) throws RemoteException {
+  public int queryRooms(int id, String location) throws RemoteException, DeadlockException {
     return roomRM.queryRooms(id, location);
   }
 
   @Override
-  public String queryCustomerInfo(int id, int customerID) throws RemoteException {
+  public String queryCustomerInfo(int id, int customerID) throws RemoteException, DeadlockException {
     return flightRM.queryCustomerInfo(id, customerID)
         + carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1] + roomRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
   }
 
   @Override
-  public int queryFlightPrice(int id, int flightNumber) throws RemoteException {
+  public int queryFlightPrice(int id, int flightNumber) throws RemoteException, DeadlockException {
     return flightRM.queryFlightPrice(id, flightNumber);
   }
 
   @Override
-  public int queryCarsPrice(int id, String location) throws RemoteException {
+  public int queryCarsPrice(int id, String location) throws RemoteException, DeadlockException {
     return carRM.queryCarsPrice(id, location);
   }
 
   @Override
-  public int queryRoomsPrice(int id, String location) throws RemoteException {
+  public int queryRoomsPrice(int id, String location) throws RemoteException, DeadlockException {
     return roomRM.queryRoomsPrice(id, location);
   }
 
   @Override
-  public int newCustomer(int id) throws RemoteException {
+  public int newCustomer(int id) throws RemoteException , DeadlockException{
     int cid = Collections.max(customerIdx);
     this.newCustomer(id, cid);
     return cid;
   }
 
   @Override
-  public boolean newCustomer(int id, int cid) throws RemoteException {
+  public boolean newCustomer(int id, int cid) throws RemoteException, DeadlockException {
     this.customerIdx.add(cid);
     return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
   }
 
   @Override
-  public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException {
+  public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException, DeadlockException {
     return flightRM.reserveFlight(id, customerID, flightNumber);
   }
 
   @Override
-  public boolean reserveCar(int id, int customerID, String location) throws RemoteException {
+  public boolean reserveCar(int id, int customerID, String location) throws RemoteException, DeadlockException {
     return carRM.reserveCar(id, customerID, location);
   }
 
   @Override
-  public boolean reserveRoom(int id, int customerID, String location) throws RemoteException {
+  public boolean reserveRoom(int id, int customerID, String location) throws RemoteException, DeadlockException {
     return roomRM.reserveRoom(id, customerID, location);
   }
 
 
   @Override
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location,
-      boolean car, boolean room) throws RemoteException {
+      boolean car, boolean room) throws RemoteException, DeadlockException {
     	boolean res = true;
-		for (String fn:flightNumbers) res &=reserveFlight(id,customerID,Integer.parseInt(fn));
-		if (car) res &= reserveCar(id, customerID, location);
-		if (room) res &= reserveRoom(id, customerID, location);
-		return res; // return False if any of the above failed
+    	Vector<String> history = new Vector<String>();
+		for (String fn:flightNumbers) {
+			if(reserveFlight(id,customerID,Integer.parseInt(fn))) history.add(fn);
+			else {
+				unReserveFlights(id, customerID, history);
+				return false;
+			}
+		}
+		if (car) {
+			if(!reserveCar(id, customerID, location)) {
+				unReserveFlights(id, customerID, history);
+				return false;
+			}
+		}
+		if (room) {
+			if(!reserveRoom(id, customerID, location)){
+				unReserveFlights(id, customerID, history);
+				if(car) unReserveCar(id, customerID, location);
+				return false;
+			}
+		}
+		return true; // return False if any of the above failed
   }
 
   @Override
   public String getName() throws RemoteException {
     return roomRM.getName();
   }
+  
+  @Override
+  public int start() throws RemoteException {
+	  int id = 0;
+	  try {			  
+		  id = Collections.max(transactionIxd);
+	  }catch(Exception e) {
+	  }
+	  start(id);
+	  return id;
+  }
+	  
+	@Override
+	public void start(int txnId) throws RemoteException {
+		transactionIxd.add(txnId);
+		roomRM.start(txnId);carRM.start(txnId);flightRM.start(txnId);
+	}
+	
+	@Override
+	public void commit(int txnId) throws RemoteException {
+		roomRM.commit(txnId);carRM.commit(txnId);flightRM.commit(txnId);
+		
+	}
+	
+	@Override
+	public void abort(int txnID) throws RemoteException {
+		roomRM.abort(txnID);carRM.abort(txnID);flightRM.abort(txnID);
+		
+	}
+	
+	public boolean unReserveFlights(int id, int customerID, Vector<String> history) throws RemoteException, DeadlockException {
+		boolean res = true;
+		for(String fn: history) {
+			res &= unReserveFlight(id, customerID, Integer.parseInt(fn));
+		}
+		return res;
+	}
+	
+	@Override
+	public boolean unReserveFlight(int id, int customerID, int flightNumber) throws RemoteException, DeadlockException {
+		return flightRM.unReserveFlight(id, customerID, flightNumber);
+	}
+	
+	@Override
+	public boolean unReserveCar(int id, int customerID, String location) throws RemoteException, DeadlockException {
+		return carRM.unReserveCar(id, customerID, location);
+	}
+	
+	@Override
+	public boolean unReserveRoom(int id, int customerID, String location) throws RemoteException, DeadlockException {
+		return roomRM.unReserveRoom(id, customerID, location);
+	}
 
 }

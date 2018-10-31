@@ -1,9 +1,9 @@
-package main.java.Server.LockManager;
+package Server.LockManager;
 
 import java.util.BitSet;
 import java.util.Vector;
 
-import main.java.Server.Server.Common.Trace;
+import Server.Common.Trace;
 
 public class LockManager
 {
@@ -14,11 +14,9 @@ public class LockManager
 	private static TPHashTable stampTable = new TPHashTable(LockManager.TABLE_SIZE);
 	private static TPHashTable waitTable = new TPHashTable(LockManager.TABLE_SIZE);
 
-	public LockManager()
-	{
+	public LockManager(){
 		super();
 	}
-
 	
 	public boolean Lock(int xid, String data, TransactionLockObject.LockType lockType) throws DeadlockException
 	{
@@ -31,7 +29,7 @@ public class LockManager
 			return false;
 		}
 
-		if (lockType == TransactionLockObject.LockType.LOCK_UNKNOWN) { 
+		if (lockType == TransactionLockObject.LockType.LOCK_UNKNOWN) {
 			return false;
 		}
 
@@ -92,7 +90,6 @@ public class LockManager
 
 		return true;
 	}
-
 
 	// Remove all locks for this transaction in the lock table
 	public boolean UnlockAll(int xid)

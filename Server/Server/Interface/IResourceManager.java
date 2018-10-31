@@ -1,10 +1,10 @@
-package main.java.Server.Server.Interface;
+package Server.Interface;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Vector;
 
-import server.LockManager.DeadlockException;
+import Server.LockManager.DeadlockException;
 
 /** 
  * Simplified version from CSE 593 Univ. of Washington
@@ -73,7 +73,7 @@ public interface IResourceManager extends Remote
      * @return Success
      */
     public boolean newCustomer(int id, int cid)
-        throws RemoteException;
+        throws RemoteException , DeadlockException;
 
     /**
      * Delete the flight.
@@ -110,9 +110,10 @@ public interface IResourceManager extends Remote
      * Delete a customer and associated reservations.
      *
      * @return Success
+     * @throws DeadlockException 
      */
     public boolean deleteCustomer(int id, int customerID) 
-    throws RemoteException; 
+    throws RemoteException, DeadlockException; 
 
     /**
      * Query the status of a flight.
@@ -213,10 +214,13 @@ public interface IResourceManager extends Remote
 
     /**
      * For start/commit/abort transactions
+     * @throws  
      */
+    public void commit (int txnId) throws RemoteException;
+
+    public void start (int txnId) throws RemoteException;
+
     public int start() throws RemoteException;
-    
-    public boolean commit(int txnId) throws RemoteException;
     
     public void abort(int txnID) throws RemoteException;
 
