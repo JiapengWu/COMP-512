@@ -92,7 +92,7 @@ public class ResourceManager implements IResourceManager
 		xCopies.put(xid, (RMHashMap) m_data.clone());
 		xWrites.put(xid, new RMHashMap());
 		xDeletes.put(xid, new RMHashMap());
-		printMem(xid);
+		//printMem(xid);
 	}
 
 	// Reads a data item
@@ -108,7 +108,7 @@ public class ResourceManager implements IResourceManager
 				return (RMItem)item.clone();
 			}
 		}
-		printMem(xid);
+		//printMem(xid);
 		return null;
 	}
 
@@ -124,7 +124,7 @@ public class ResourceManager implements IResourceManager
 		synchronized(writes) {
 			writes.put(key,value);
 		}
-		printMem(xid);
+		//printMem(xid);
 	}
 
 	// Remove the item out of storage
@@ -137,6 +137,7 @@ public class ResourceManager implements IResourceManager
 			deletes.put(key, null);
 			copy.remove(key);
 		}
+		//printMem(xid);
 	}
 
 	// Deletes the encar item

@@ -191,7 +191,7 @@ public class RMIMiddleware implements IResourceManager {
   public int newCustomer(int id) throws RemoteException , DeadlockException{
   	int cid;
   	if (customerIdx.size()==0) cid=0;
-    else cid = Collections.max(customerIdx);
+    else cid = Collections.max(customerIdx)+1;
     this.newCustomer(id, cid);
     return cid;
   }
