@@ -92,15 +92,16 @@ public class ResourceManager implements IResourceManager {
 
 		RMHashMap copy = xCopies.get(xid);
 		synchronized (m_data) {
-			RMItem item = m_data.get(key);
+			RMItem item = copy.get(key);
 			if (item != null) {
 				lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-				copy.put(key, item);
+				
 				return (RMItem) item.clone();
 			} else {
-				item = copy.get(key);
+				item = m_data.get(key);
 				if (item != null) {
 					lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+					copy.put(key, item);
 					return (RMItem) item.clone();
 				}
 				return null;
