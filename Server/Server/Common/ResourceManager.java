@@ -22,7 +22,6 @@ public class ResourceManager implements IResourceManager {
 
 	protected LockManager lm = new LockManager();
 	// Transaction history record from start to commit, to handle abort
-	protected HashMap<Integer, RMHashMap> xCopies = new HashMap<Integer, RMHashMap>();
 	protected HashMap<Integer, RMHashMap> xWrites = new HashMap<Integer, RMHashMap>();
 	protected HashMap<Integer, RMHashMap> xDeletes = new HashMap<Integer, RMHashMap>();
 
@@ -36,7 +35,6 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public void abort(int xid) {
 		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
-		xCopies.remove(xid);
 		xWrites.remove(xid);
 		xDeletes.remove(xid);
 		lm.UnlockAll(xid);
@@ -61,7 +59,6 @@ public class ResourceManager implements IResourceManager {
 		// empty history
 		xWrites.remove(xid);
 		xDeletes.remove(xid);
-		xCopies.remove(xid);
 		lm.UnlockAll(xid);
 	}
 
@@ -70,8 +67,6 @@ public class ResourceManager implements IResourceManager {
 		System.out.println(">>> Server memory info for xid=" + Integer.toString(xid));
 		System.out.println("==== m_data.keys() ====");
 		System.out.println(m_data.keySet());
-		System.out.println("==== xCopies[" + Integer.toString(xid) + "] ====");
-		System.out.println(xCopies.get(xid).keySet());
 		System.out.println("==== xWrites[" + Integer.toString(xid) + "].key() ====");
 		System.out.println(xWrites.get(xid).keySet());
 		System.out.println("==== xDeletes[" + Integer.toString(xid) + "].key() ====");
@@ -81,40 +76,46 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public void start(int xid) {
 		Trace.info("ResourceManager_" + m_name + ":: transtaction start with id " + Integer.toString(xid));
-		xCopies.put(xid, (RMHashMap) m_data.clone());
 		xWrites.put(xid, new RMHashMap());
 		xDeletes.put(xid, new RMHashMap());
 		// printMem(xid);
 	}
 
-	// Reads a data item
+	// Reads a data item. The 
 	protected RMItem readData(int xid, String key) throws DeadlockException {
-
-		RMHashMap copy = xCopies.get(xid);
+		// if we haven deleted it, then we don't return anything
+		RMHashMap deletes = xDeletes.get(xid);
+		synchronized (xDeletes) {
+			if(deletes.containsKey(xid)) {
+				return null;
+			}
+		}
+		//if we have written it, read the newest version
+		RMHashMap writes = xWrites.get(xid);
+		synchronized (writes) {
+			// find it we 
+			RMItem item = writes.get(key);
+			if (item != null) {
+				// only lock it if we found the item
+				lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+				return (RMItem) item.clone();
+			}
+		}
+		
+		// if we have neither written it nor deleted it, then we read it from m_data
 		synchronized (m_data) {
 			RMItem item = m_data.get(key);
 			if (item != null) {
 				lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-				copy.put(key, item);
 				return (RMItem) item.clone();
-			} else {
-				item = copy.get(key);
-				if (item != null) {
-					lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-					return (RMItem) item.clone();
-				}
-				return null;
 			}
 		}
+		return null;
 	}
 
-	// Writes a data item
+	// Writes a data item. If it is called by reserveItem, then we made sure that the item exits.
 	protected void writeData(int xid, String key, RMItem value) throws DeadlockException {
 		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-		RMHashMap copy = xCopies.get(xid);
-		synchronized (copy) {
-			copy.put(key, value);
-		}
 		RMHashMap writes = xWrites.get(xid);
 		synchronized (writes) {
 			writes.put(key, value);
@@ -126,10 +127,8 @@ public class ResourceManager implements IResourceManager {
 	protected void removeData(int xid, String key) throws DeadlockException {
 		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
 		RMHashMap deletes = xDeletes.get(xid);
-		RMHashMap copy = xCopies.get(xid);
 		synchronized (deletes) {
 			deletes.put(key, null);
-			copy.remove(key);
 		}
 		// printMem(xid);
 	}
