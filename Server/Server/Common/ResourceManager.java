@@ -85,7 +85,7 @@ public class ResourceManager implements IResourceManager {
 	protected RMItem readData(int xid, String key) throws DeadlockException {
 		// if we haven deleted it, then we don't return anything
 		RMHashMap deletes = xDeletes.get(xid);
-		synchronized (xDeletes) {
+		synchronized (deletes) {
 			if(deletes.containsKey(xid)) {
 				return null;
 			}
