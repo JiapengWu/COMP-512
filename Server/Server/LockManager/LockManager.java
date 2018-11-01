@@ -14,6 +14,15 @@ public class LockManager
 	private static TPHashTable stampTable = new TPHashTable(LockManager.TABLE_SIZE);
 	private static TPHashTable waitTable = new TPHashTable(LockManager.TABLE_SIZE);
 
+	
+	public static void main(String[] args) throws DeadlockException {
+		LockManager lm = new LockManager();
+		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_READ);
+//		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
+		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_WRITE);
+		System.out.println(lockTable.allElements().toString());
+	}
+	
 	public LockManager(){
 		super();
 	}
@@ -62,8 +71,7 @@ public class LockManager
 						}
 
 						if (bConvert.get(0) == true) {
-							//TODO: Lock conversion 
-							// Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") converted");
+							 Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") converted");
 						} else {
 							// Lock request that is not lock conversion
 							this.lockTable.add(xLockObject);
@@ -236,11 +244,19 @@ public class LockManager
 					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE){
 						throw new RedundantLockRequestException(dataLockObject.getXId(), "redundant WRITE lock request");
 					}
-					else if (size >1){
-						Trace.info("want to convert "+dataLockObject.getDataName()+" lock to WRITE but someone already had a lock");
-						return true;
-					}
+					else{ 
+						if (size >1) {
+							Trace.info("want to convert "+dataLockObject.getDataName()+" lock to WRITE but someone already had a lock");
+							return true;
+						}
+						else {
+							l_dataLockObject.setLockType(TransactionLockObject.LockType.LOCK_WRITE);
+							bitset.set(0);
+							return false;
+						}
 
+					}
+					
 				}
 			} 
 			else if (dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_READ)

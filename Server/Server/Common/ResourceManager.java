@@ -88,7 +88,13 @@ public class ResourceManager implements IResourceManager
 				copy.put(key,item);
 				return (RMItem)item.clone();
 			}
-			return null;
+			else {
+				item = copy.get(key);
+				if (item != null) {
+					return (RMItem)item.clone();
+				}
+				return null;
+			}
 		}
 	}
 
