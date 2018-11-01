@@ -17,9 +17,8 @@ public class LockManager
 	
 	public static void main(String[] args) throws DeadlockException {
 		LockManager lm = new LockManager();
-		        
 		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_READ);
-		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
+//		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
 		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_WRITE);
 		System.out.println(lockTable.allElements().toString());
 	}
