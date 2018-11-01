@@ -23,7 +23,9 @@ public class RMIMiddleware implements IResourceManager {
   private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
   private static int middleware_port = 3099;
   private static int server_port = 3099;
-  private ArrayList<Integer> transactionIxd = new ArrayList<Integer>();
+  //private ArrayList<Integer> transactionIxd = new ArrayList<Integer>();
+
+  private int txnIdCounter = 0;
 
   public RMIMiddleware(String s_serverName2) {
   }
@@ -187,7 +189,9 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public int newCustomer(int id) throws RemoteException , DeadlockException{
-    int cid = Collections.max(customerIdx);
+  	int cid;
+  	if (customerIdx.size()==0) cid=0;
+    else cid = Collections.max(customerIdx)+1;
     this.newCustomer(id, cid);
     return cid;
   }
@@ -249,18 +253,13 @@ public class RMIMiddleware implements IResourceManager {
   
   @Override
   public int start() throws RemoteException {
-	  int id = 0;
-	  try {			  
-		  id = Collections.max(transactionIxd);
-	  }catch(Exception e) {
-	  }
-	  start(id);
-	  return id;
+	  txnIdCounter+=1;
+	  start(txnIdCounter);
+	  return txnIdCounter;
   }
 	  
 	@Override
 	public void start(int txnId) throws RemoteException {
-		transactionIxd.add(txnId);
 		roomRM.start(txnId);carRM.start(txnId);flightRM.start(txnId);
 	}
 	

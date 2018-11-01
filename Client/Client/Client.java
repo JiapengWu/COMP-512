@@ -629,12 +629,12 @@ public abstract class Client
 			case Start:{
 				System.out.println("Starting a transaction");
 				int xid = m_resourceManager.start();
-				if (xid >-1) System.out.println("Transaction started, xid="+(char)xid);
+				if (xid >-1) System.out.println("Transaction started, xid="+Integer.toString(xid));
 				else System.out.println("Cannot transaction");
 				break;
 			}
 			case Commit:{
-				if (arguments.size() >1) {
+				if (arguments.size() >2) {
 					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mCommit command expects 1 arg, xid");
 					break;
 				}
@@ -645,7 +645,7 @@ public abstract class Client
 				break;
 			}
 			case Abort:{
-				if (arguments.size() >1) {
+				if (arguments.size() >2) {
 					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mAbort command expects 1 arg, xid");
 					break;
 				}
