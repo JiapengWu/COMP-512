@@ -251,11 +251,8 @@ public class LockManager
 						else {
 							l_dataLockObject.setLockType(TransactionLockObject.LockType.LOCK_WRITE);
 							bitset.set(0);
-							return false;
 						}
-
 					}
-					
 				}
 			} 
 			else if (dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_READ)

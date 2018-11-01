@@ -86,7 +86,7 @@ public class ResourceManager implements IResourceManager {
 		// if we haven deleted it, then we don't return anything
 		RMHashMap deletes = xDeletes.get(xid);
 		synchronized (deletes) {
-			if(deletes.containsKey(xid)) {
+			if(deletes.containsKey(key)) {
 				return null;
 			}
 		}
