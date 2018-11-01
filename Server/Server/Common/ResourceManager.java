@@ -115,8 +115,6 @@ public class ResourceManager implements IResourceManager
 				return null;
 			}
 		}
-		//printMem(xid);
-		return null;
 	}
 
 	// Writes a data item
