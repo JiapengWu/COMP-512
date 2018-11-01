@@ -240,12 +240,11 @@ public class LockManager
 					// (2) transaction already had a WRITE lock
 					// Seeing the comments at the top of this function might be helpful
 
-					//TODO: Lock conversion
 					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE){
 						throw new RedundantLockRequestException(dataLockObject.getXId(), "redundant WRITE lock request");
 					}
 					else{ 
-						if (size >1) {
+						if (size > 1) {
 							Trace.info("want to convert "+dataLockObject.getDataName()+" lock to WRITE but someone already had a lock");
 							return true;
 						}
