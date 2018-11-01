@@ -9,14 +9,16 @@ java.policy: FORCE
 FORCE: ;
 
 ../Server/RMIInterface.jar: ../Server/Server/Interface/IResourceManager.java
-	make -C ../Server/ RMIInterface.jar
+	make -C ../Server RMIInterface.jar
 
-../Server/DeadLockException.jar: ../Server/Server/LockManager/DeadLockException.java
-	make -C ../Server/ DeadLockException.jar
 
-compile-client: ../Server/RMIInterface.jar ../Server/DeadLockException.jar
-	javac -cp ../Server/RMIInterface.jar:../Server/DeadLockException.jar Client/*.java
-	
+../Server/LockManager.jar: ../Server/Server/LockManager/*.java
+	make -C ../Server LockManager.jar
+
+
+compile-client: ../Server/RMIInterface.jar ../Server/LockManager.jar
+	javac -cp ../Server/RMIInterface.jar:../Server/LockManager.jar Client/*.java
+
 
 clean:
 	rm -f Client/*.class

@@ -41,6 +41,7 @@ public class ResourceManager implements IResourceManager
 	@Override
 	public void abort(int xid)
 	{
+		Trace.info("ResourceManager_"+m_name+":: transtaction Abort with id "+Integer.toString(xid));
 		xCopies.remove(xid);
 		xWrites.remove(xid);
 		xDeletes.remove(xid);
@@ -50,6 +51,7 @@ public class ResourceManager implements IResourceManager
 	@Override
 	public void commit(int xid)
 	{
+		Trace.info("ResourceManager_"+m_name+":: transtaction commit with id "+Integer.toString(xid));
 		// Apply writes (including deletes)
 		synchronized(m_data){
 			RMHashMap writes = xWrites.get(xid);
@@ -67,19 +69,36 @@ public class ResourceManager implements IResourceManager
 		xWrites.remove(xid);
 		xDeletes.remove(xid);
 		xCopies.remove(xid);
+		lm.UnlockAll(xid);
+	}
+
+	// helper to debug
+	private void printMem(int xid){
+		System.out.println(">>> Server memory info for xid="+Integer.toString(xid));
+		System.out.println("==== m_data.keys() ====");
+		System.out.println(m_data.keySet());
+		System.out.println("==== xCopies["+Integer.toString(xid)+"] ====");
+		System.out.println(xCopies.get(xid).keySet());
+		System.out.println("==== xWrites["+Integer.toString(xid)+"].key() ====");
+		System.out.println(xWrites.get(xid).keySet());
+		System.out.println("==== xDeletes["+Integer.toString(xid)+"].key() ====");
+		System.out.println(xDeletes.get(xid).keySet());
 	}
 
 	@Override
 	public void start(int xid)
 	{
+		Trace.info("ResourceManager_"+m_name+":: transtaction start with id "+Integer.toString(xid));
 		xCopies.put(xid, (RMHashMap) m_data.clone());
 		xWrites.put(xid, new RMHashMap());
 		xDeletes.put(xid, new RMHashMap());
+		//printMem(xid);
 	}
 
 	// Reads a data item
 	protected RMItem readData(int xid, String key) throws DeadlockException
 	{
+		
 		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
 		RMHashMap copy = xCopies.get(xid);
 		synchronized(m_data) {
@@ -88,8 +107,9 @@ public class ResourceManager implements IResourceManager
 				copy.put(key,item);
 				return (RMItem)item.clone();
 			}
-			return null;
 		}
+		//printMem(xid);
+		return null;
 	}
 
 	// Writes a data item
@@ -104,6 +124,7 @@ public class ResourceManager implements IResourceManager
 		synchronized(writes) {
 			writes.put(key,value);
 		}
+		//printMem(xid);
 	}
 
 	// Remove the item out of storage
@@ -116,6 +137,7 @@ public class ResourceManager implements IResourceManager
 			deletes.put(key, null);
 			copy.remove(key);
 		}
+		//printMem(xid);
 	}
 
 	// Deletes the encar item
