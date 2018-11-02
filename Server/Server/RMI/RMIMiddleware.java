@@ -16,7 +16,7 @@ import Server.Common.TransactionAbortedException;
 public class RMIMiddleware implements IResourceManager {
 	private static String s_serverName = "MiddleWare";
 	private static final String s_rmiPrefix = "group6_";
-	private static final int TIMEOUT_IN_SEC = 50;
+	private static final int TIMEOUT_IN_SEC = 20;
 
 	static RMIMiddleware mw;
 
@@ -116,9 +116,12 @@ public class RMIMiddleware implements IResourceManager {
 				return;
 			}
 			try {
+				System.out.println(Integer.toString(xid) + " timeout, aborting...");
 				abort(this.xid);
-			} catch (RemoteException | InvalidTransactionException e) {
-				System.out.println(Integer.toString(xid) + " abort failed.");
+			} catch (InvalidTransactionException e) {
+				System.out.println(Integer.toString(xid) + " abort invalid transaction.");
+			} catch (RemoteException e) {
+				System.out.println(Integer.toString(xid) + " abort remote exception.");
 			}
 		}
 	}

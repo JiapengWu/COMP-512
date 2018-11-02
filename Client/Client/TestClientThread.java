@@ -36,9 +36,14 @@ public class TestClientThread implements Runnable {
 
 			long start_execution = System.currentTimeMillis();
 			
-			try {
 				// Do one set of transaction
-				executeCmds();
+				try {
+					executeCmds();
+				} catch (RemoteException | DeadlockException | InvalidTransactionException
+						| TransactionAbortedException e1) {
+					e1.printStackTrace();
+					Thread.currentThread().interrupt();
+				}
 				long duration = System.currentTimeMillis() - start_execution;
 				if(duration > waitTime) {
 					System.out.println("Execution time longer than specified time interval. Existing...");
@@ -50,13 +55,6 @@ public class TestClientThread implements Runnable {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-			} catch (Exception e) {
-				System.out.println("Test failed");
-				e.printStackTrace();
-			}
-			
-			
-
 		}
 	}
 

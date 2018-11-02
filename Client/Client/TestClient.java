@@ -8,7 +8,7 @@ public class TestClient
 {
 	
 	static float LOAD = 1; // transactions per second
-	static int NUM_CLIENTS = 1;
+	static int NUM_CLIENTS = 3;
 	static float FREQ = LOAD/NUM_CLIENTS ; // num transaction per sec per client
 	
 
