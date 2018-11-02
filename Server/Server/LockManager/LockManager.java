@@ -239,9 +239,7 @@ public class LockManager
 					// (1) transaction already had a READ lock
 					// (2) transaction already had a WRITE lock
 					// Seeing the comments at the top of this function might be helpful
-					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_READ){
-						bitset.set(0);
-					}
+					
 
 					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE){
 						throw new RedundantLockRequestException(dataLockObject.getXId(), "redundant WRITE lock request");
@@ -251,11 +249,11 @@ public class LockManager
 							Trace.info("want to convert "+dataLockObject.getDataName()+" lock to WRITE but someone already had a lock");
 							return true;
 						}
-						//else {
+						else {
 							//l_dataLockObject.setLockType(TransactionLockObject.LockType.LOCK_WRITE);
-							//bitset.set(0);
+							bitset.set(0);
 							//return false;
-						//}
+						}
 
 					}
 					

@@ -89,7 +89,14 @@ public class ResourceManager implements IResourceManager {
 
 	// Reads a data item
 	protected RMItem readData(int xid, String key) throws DeadlockException {
-
+		// if we haven deleted it, then we don't return anything
+		RMHashMap deletes = xDeletes.get(xid);
+		synchronized (deletes) {
+			if(deletes.containsKey(key)) {
+				printMem(xid);
+				return null;
+			}
+		}
 		RMHashMap copy = xCopies.get(xid);
 		synchronized (m_data) {
 			RMItem item = copy.get(key);
@@ -119,6 +126,10 @@ public class ResourceManager implements IResourceManager {
 		RMHashMap writes = xWrites.get(xid);
 		synchronized (writes) {
 			writes.put(key, value);
+		}
+		RMHashMap deletes = xDeletes.get(xid);
+		synchronized (deletes) {
+			if (deletes.containsKey(key)) deletes.remove(key);
 		}
 		// printMem(xid);
 	}
@@ -385,7 +396,7 @@ public class ResourceManager implements IResourceManager {
 			return customer.getBill();
 		}
 	}
-
+	
 	public int newCustomer(int xid) throws RemoteException, DeadlockException {
 		Trace.info("RM::newCustomer(" + xid + ") called");
 		// Generate a globally unique ID for the new customer

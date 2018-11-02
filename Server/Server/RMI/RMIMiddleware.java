@@ -4,9 +4,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Vector;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import Server.Common.Trace;
 import Server.Interface.IResourceManager;
@@ -15,6 +14,9 @@ import Server.LockManager.DeadlockException;
 public class RMIMiddleware implements IResourceManager {
   private static String s_serverName = "MiddleWare";
   private static final String s_rmiPrefix = "group6_";
+  private static final int TIMEOUT_IN_SEC = 50;
+
+  static RMIMiddleware mw;
 
   private static IResourceManager flightRM;
   private static IResourceManager carRM;
@@ -23,9 +25,9 @@ public class RMIMiddleware implements IResourceManager {
   private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
   private static int middleware_port = 3099;
   private static int server_port = 3099;
-  //private ArrayList<Integer> transactionIxd = new ArrayList<Integer>();
 
   private int txnIdCounter = 0;
+  private ConcurrentHashMap<Integer, Date> startTimes = new ConcurrentHashMap<Integer, Date>(); // stores the last operation time for each transaction
 
   public RMIMiddleware(String s_serverName2) {
   }
@@ -44,7 +46,7 @@ public class RMIMiddleware implements IResourceManager {
 	    // Create a new Server object
 	    IResourceManager mw_RM = null;
 	    try {
-		    RMIMiddleware mw = new RMIMiddleware(s_serverName);
+		    mw = new RMIMiddleware(s_serverName);
 		    // Dynamically generate the stub (MiddleWare proxy
 		    mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
 	    }
@@ -94,6 +96,24 @@ public class RMIMiddleware implements IResourceManager {
 			System.setSecurityManager(new SecurityManager());
 		}
 
+    // use a thread to check timeout transactions
+    Thread t1 = new Thread(new Runnable() {
+      public void run() {
+      while(true){
+        try {
+          mw.checkLive();
+          Date currentTime = new Date();
+          System.out.println(currentTime);
+          Thread.sleep(TIMEOUT_IN_SEC*900);
+
+          } catch (Exception e) {
+            e.printStackTrace();
+          } 
+        }
+      }
+    });  
+    t1.start();  
+
   }
 
   public static void getResourceManagers(String args[]) throws Exception {
@@ -117,73 +137,94 @@ public class RMIMiddleware implements IResourceManager {
 
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
       throws RemoteException, DeadlockException {
+    resetStart(id);
     return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
   }
 
   @Override
   public boolean addCars(int id, String location, int numCars, int price) throws RemoteException, DeadlockException {
+    resetStart(id);
     return carRM.addCars(id, location, numCars, price);
   }
 
   @Override
   public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException, DeadlockException {
+    resetStart(id);
     return roomRM.addRooms(id, location, numRooms, price);
   }
 
 
   @Override
   public boolean deleteFlight(int id, int flightNum) throws RemoteException, DeadlockException {
+    resetStart(id);
     return flightRM.deleteFlight(id, flightNum);
   }
 
   @Override
   public boolean deleteCars(int id, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return carRM.deleteCars(id, location);
   }
 
   @Override
   public boolean deleteRooms(int id, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return roomRM.deleteRooms(id, location);
   }
 
   @Override
   public boolean deleteCustomer(int id, int customerID) throws RemoteException, DeadlockException {
+    resetStart(id);
     return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID) && roomRM.deleteCustomer(id, customerID);
   }
 
   @Override
   public int queryFlight(int id, int flightNumber) throws RemoteException, DeadlockException {
+    resetStart(id);
     return flightRM.queryFlight(id, flightNumber);
   }
 
   @Override
   public int queryCars(int id, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return carRM.queryCars(id, location);
   }
 
   @Override
   public int queryRooms(int id, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return roomRM.queryRooms(id, location);
   }
 
   @Override
+  
   public String queryCustomerInfo(int id, int customerID) throws RemoteException, DeadlockException {
-    return flightRM.queryCustomerInfo(id, customerID)
-        + carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1] + roomRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
+    String carSummary = "";
+    try {
+      carSummary = carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
+    }catch(ArrayIndexOutOfBoundsException e) {}
+    String roomSummary = "";
+    try {
+      roomSummary = roomRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
+    }catch(ArrayIndexOutOfBoundsException e) {}
+      return flightRM.queryCustomerInfo(id, customerID) + carSummary + roomSummary;
   }
 
   @Override
   public int queryFlightPrice(int id, int flightNumber) throws RemoteException, DeadlockException {
+    resetStart(id);
     return flightRM.queryFlightPrice(id, flightNumber);
   }
 
   @Override
   public int queryCarsPrice(int id, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return carRM.queryCarsPrice(id, location);
   }
 
   @Override
   public int queryRoomsPrice(int id, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return roomRM.queryRoomsPrice(id, location);
   }
 
@@ -193,27 +234,32 @@ public class RMIMiddleware implements IResourceManager {
   	if (customerIdx.size()==0) cid=0;
     else cid = Collections.max(customerIdx)+1;
     this.newCustomer(id, cid);
+    resetStart(id);
     return cid;
   }
 
   @Override
   public boolean newCustomer(int id, int cid) throws RemoteException, DeadlockException {
     this.customerIdx.add(cid);
+    resetStart(id);
     return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
   }
 
   @Override
   public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException, DeadlockException {
+    resetStart(id);
     return flightRM.reserveFlight(id, customerID, flightNumber);
   }
 
   @Override
   public boolean reserveCar(int id, int customerID, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return carRM.reserveCar(id, customerID, location);
   }
 
   @Override
   public boolean reserveRoom(int id, int customerID, String location) throws RemoteException, DeadlockException {
+    resetStart(id);
     return roomRM.reserveRoom(id, customerID, location);
   }
 
@@ -221,6 +267,7 @@ public class RMIMiddleware implements IResourceManager {
   @Override
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location,
       boolean car, boolean room) throws RemoteException, DeadlockException {
+    resetStart(id);
     	boolean res = true;
     	Vector<String> history = new Vector<String>();
 		for (String fn:flightNumbers) {
@@ -260,23 +307,26 @@ public class RMIMiddleware implements IResourceManager {
 	  
 	@Override
 	public void start(int txnId) throws RemoteException {
+    initStart(txnId);
 		roomRM.start(txnId);carRM.start(txnId);flightRM.start(txnId);
 	}
 	
 	@Override
 	public void commit(int txnId) throws RemoteException {
 		roomRM.commit(txnId);carRM.commit(txnId);flightRM.commit(txnId);
+    removeTxn(txnId);
 		
 	}
 	
 	@Override
 	public void abort(int txnID) throws RemoteException {
 		roomRM.abort(txnID);carRM.abort(txnID);flightRM.abort(txnID);
-		
+    removeTxn(txnID);
 	}
 	
 	public boolean unReserveFlights(int id, int customerID, Vector<String> history) throws RemoteException, DeadlockException {
-		boolean res = true;
+		resetStart(id);
+    boolean res = true;
 		for(String fn: history) {
 			res &= unReserveFlight(id, customerID, Integer.parseInt(fn));
 		}
@@ -285,17 +335,62 @@ public class RMIMiddleware implements IResourceManager {
 	
 	@Override
 	public boolean unReserveFlight(int id, int customerID, int flightNumber) throws RemoteException, DeadlockException {
-		return flightRM.unReserveFlight(id, customerID, flightNumber);
+		resetStart(id);
+    return flightRM.unReserveFlight(id, customerID, flightNumber);
 	}
 	
 	@Override
 	public boolean unReserveCar(int id, int customerID, String location) throws RemoteException, DeadlockException {
-		return carRM.unReserveCar(id, customerID, location);
+		resetStart(id);
+    return carRM.unReserveCar(id, customerID, location);
 	}
 	
 	@Override
 	public boolean unReserveRoom(int id, int customerID, String location) throws RemoteException, DeadlockException {
-		return roomRM.unReserveRoom(id, customerID, location);
+		resetStart(id);
+    return roomRM.unReserveRoom(id, customerID, location);
 	}
+
+
+  /*
+  functions for timeout transactions
+  */
+  private void initStart(int xid)
+  {
+    Calendar now = Calendar.getInstance();
+    Date startTime = now.getTime();
+    startTimes.put(xid, startTime);
+  }
+
+  private void resetStart(int xid)
+  {
+    if (startTimes.get(xid)!=null) initStart(xid);
+    else Trace.error("RMIMW::Transaction "+Integer.toString(xid)+" doesn't exist");
+  }
+
+  private void removeTxn(int xid)
+  {
+    startTimes.remove(xid);
+  }
+
+  private void checkLive() throws RemoteException
+  {
+    Iterator it = startTimes.entrySet().iterator();
+    while(it.hasNext()){
+        Date currentTime = new Date();
+        ConcurrentHashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
+        long compare = (currentTime.getTime()-((Date)pair.getValue()).getTime())/1000;
+        Trace.info("CheckLive: compare = "+Long.toString(compare));
+        if(compare> TIMEOUT_IN_SEC)
+        {
+          int txnIDtoKill = (int) pair.getKey();
+          System.out.println("Transaction " + txnIDtoKill + " timed out");
+          abort(txnIDtoKill);
+          it.remove();
+        }
+      }
+
+  }
+
 
 }
