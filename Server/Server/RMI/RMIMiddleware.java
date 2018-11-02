@@ -111,7 +111,7 @@ public class RMIMiddleware implements IResourceManager {
 			try {
 				Thread.sleep(TIMEOUT_IN_SEC * 1000);
 			} catch (InterruptedException e) {
-				System.out.println(Integer.toString(xid) + " interrupted.");
+//				System.out.println(Integer.toString(xid) + " interrupted.");
 				Thread.currentThread().interrupt();
 				return;
 			}
@@ -423,7 +423,7 @@ public class RMIMiddleware implements IResourceManager {
 		Thread cur = new Thread(new TimeOutThread(xid));
 		cur.start();
 		timeTable.put(xid, cur);
-		System.out.println(Integer.toString(xid) + " initiated timer...");
+//		System.out.println(Integer.toString(xid) + " initiated timer...");
 	}
 
 	private void resetTimer(int xid) throws InvalidTransactionException, TransactionAbortedException {
@@ -443,7 +443,7 @@ public class RMIMiddleware implements IResourceManager {
 		Thread cur = timeTable.get(id);
 		if (cur != null) {
 			cur.interrupt();
-			System.out.println(Integer.toString(id) + " interrupted timer...");
+//			System.out.println(Integer.toString(id) + " interrupted timer...");
 		}
 	}
 	

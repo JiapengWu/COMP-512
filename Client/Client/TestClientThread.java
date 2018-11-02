@@ -8,7 +8,7 @@ import Server.Common.TransactionAbortedException;
 import Server.LockManager.DeadlockException;
 
 public class TestClientThread implements Runnable {
-	static int ROUNDS = 10; // number of transactions to test
+	static int ROUNDS = 1; // number of transactions to test
 	float freq; // number of transactions to test
 	private Thread t;
 	private RMIClient client;
