@@ -333,7 +333,7 @@ public class RMIMiddleware implements IResourceManager {
 	}
 
 	@Override
-	public int start() throws RemoteException {
+	public synchronized int start() throws RemoteException {
 		txnIdCounter += 1;
 		start(txnIdCounter);
 		return txnIdCounter;

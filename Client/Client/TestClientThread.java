@@ -33,7 +33,6 @@ public class TestClientThread implements Runnable {
 			Random random = new Random();
 			long offset = random.nextInt(41) - 20; 
 			long waitTime = (long) (1 / freq * 1000) + offset;
-
 			long start_execution = System.currentTimeMillis();
 			
 				// Do one set of transaction
@@ -41,7 +40,7 @@ public class TestClientThread implements Runnable {
 					executeCmds();
 				} catch (RemoteException | DeadlockException | InvalidTransactionException
 						| TransactionAbortedException e1) {
-					e1.printStackTrace();
+					System.out.println(String.format("Test failed at round %d", i));
 					Thread.currentThread().interrupt();
 				}
 				long duration = System.currentTimeMillis() - start_execution;
