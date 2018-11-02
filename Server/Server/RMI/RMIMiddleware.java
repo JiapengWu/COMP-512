@@ -429,14 +429,13 @@ public class RMIMiddleware implements IResourceManager {
 //		System.out.println(Integer.toString(xid) + " initiated timer...");
 	}
 
-	private void resetTimer(int xid) throws InvalidTransactionException, TransactionAbortedException {
+	private synchronized void resetTimer(int xid) throws InvalidTransactionException, TransactionAbortedException {
 		if (timeTable.get(xid) != null) {
 			killTimer(xid);
 			initTimer(xid);
 		} else {
-			synchronized (abortedTXN) {
-				if (abortedTXN.contains(xid))
-					throw new TransactionAbortedException(xid);
+			if (abortedTXN.contains(xid)) {
+				throw new TransactionAbortedException(xid);				
 			}
 			throw new InvalidTransactionException(xid);
 		}
