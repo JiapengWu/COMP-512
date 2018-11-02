@@ -11,6 +11,7 @@ import Server.Common.Trace;
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
 import Server.Common.InvalidTransactionException;
+import Server.Common.TransactionAbortedException;
 
 public class RMIMiddleware implements IResourceManager {
   private static String s_serverName = "MiddleWare";
@@ -29,6 +30,7 @@ public class RMIMiddleware implements IResourceManager {
 
   private int txnIdCounter = 0;
   private ConcurrentHashMap<Integer, Date> startTimes = new ConcurrentHashMap<Integer, Date>(); // stores the last operation time for each transaction
+  private HashSet<Integer> abortedTXN = new HashSet<Integer>();
 
   public RMIMiddleware(String s_serverName2) {
   }
@@ -136,21 +138,21 @@ public class RMIMiddleware implements IResourceManager {
   }
 
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
-      throws RemoteException, DeadlockException, InvalidTransactionException {
+      throws RemoteException, DeadlockException, InvalidTransactionException ,TransactionAbortedException{
     resetStart(id);
     return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
   }
 
   @Override
   public boolean addCars(int id, String location, int numCars, int price) 
-    throws RemoteException, DeadlockException, InvalidTransactionException {
+    throws RemoteException, DeadlockException, InvalidTransactionException ,TransactionAbortedException{
     resetStart(id);
     return carRM.addCars(id, location, numCars, price);
   }
 
   @Override
   public boolean addRooms(int id, String location, int numRooms, int price) 
-    throws RemoteException, DeadlockException,InvalidTransactionException {
+    throws RemoteException, DeadlockException,InvalidTransactionException ,TransactionAbortedException{
     resetStart(id);
     return roomRM.addRooms(id, location, numRooms, price);
   }
@@ -158,49 +160,49 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public boolean deleteFlight(int id, int flightNum) 
-    throws RemoteException, DeadlockException,InvalidTransactionException{
+    throws RemoteException, DeadlockException,InvalidTransactionException,TransactionAbortedException{
     resetStart(id);
     return flightRM.deleteFlight(id, flightNum);
   }
 
   @Override
   public boolean deleteCars(int id, String location)
-    throws RemoteException, DeadlockException,InvalidTransactionException {
+    throws RemoteException, DeadlockException,InvalidTransactionException,TransactionAbortedException {
     resetStart(id);
     return carRM.deleteCars(id, location);
   }
 
   @Override
   public boolean deleteRooms(int id, String location) 
-    throws RemoteException, DeadlockException,InvalidTransactionException {
+    throws RemoteException, DeadlockException,InvalidTransactionException ,TransactionAbortedException{
     resetStart(id);
     return roomRM.deleteRooms(id, location);
   }
 
   @Override
   public boolean deleteCustomer(int id, int customerID) 
-    throws RemoteException, DeadlockException,InvalidTransactionException{
+    throws RemoteException, DeadlockException,InvalidTransactionException,TransactionAbortedException{
     resetStart(id);
     return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID) && roomRM.deleteCustomer(id, customerID);
   }
 
   @Override
   public int queryFlight(int id, int flightNumber) 
-    throws RemoteException, DeadlockException, InvalidTransactionException {
+    throws RemoteException, DeadlockException, InvalidTransactionException,TransactionAbortedException {
     resetStart(id);
     return flightRM.queryFlight(id, flightNumber);
   }
 
   @Override
   public int queryCars(int id, String location) 
-    throws RemoteException, DeadlockException,InvalidTransactionException {
+    throws RemoteException, DeadlockException,InvalidTransactionException ,TransactionAbortedException{
     resetStart(id);
     return carRM.queryCars(id, location);
   }
 
   @Override
   public int queryRooms(int id, String location) 
-    throws RemoteException, DeadlockException ,InvalidTransactionException{
+    throws RemoteException, DeadlockException ,InvalidTransactionException, TransactionAbortedException{
     resetStart(id);
     return roomRM.queryRooms(id, location);
   }
@@ -208,7 +210,7 @@ public class RMIMiddleware implements IResourceManager {
   @Override
   
   public String queryCustomerInfo(int id, int customerID) 
-    throws RemoteException, DeadlockException ,InvalidTransactionException{
+    throws RemoteException, DeadlockException ,InvalidTransactionException, TransactionAbortedException{
     String carSummary = "";
     try {
       carSummary = carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
@@ -222,28 +224,28 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public int queryFlightPrice(int id, int flightNumber)
-     throws RemoteException, DeadlockException,InvalidTransactionException {
+     throws RemoteException, DeadlockException,InvalidTransactionException ,TransactionAbortedException{
     resetStart(id);
     return flightRM.queryFlightPrice(id, flightNumber);
   }
 
   @Override
   public int queryCarsPrice(int id, String location) 
-    throws RemoteException, DeadlockException ,InvalidTransactionException{
+    throws RemoteException, DeadlockException ,InvalidTransactionException, TransactionAbortedException{
     resetStart(id);
     return carRM.queryCarsPrice(id, location);
   }
 
   @Override
   public int queryRoomsPrice(int id, String location)
-    throws RemoteException, DeadlockException ,InvalidTransactionException{
+    throws RemoteException, DeadlockException ,InvalidTransactionException,TransactionAbortedException{
     resetStart(id);
     return roomRM.queryRoomsPrice(id, location);
   }
 
   @Override
   public int newCustomer(int id) 
-    throws RemoteException , DeadlockException, InvalidTransactionException{
+    throws RemoteException , DeadlockException, InvalidTransactionException,TransactionAbortedException{
   	int cid;
   	if (customerIdx.size()==0) cid=0;
     else cid = Collections.max(customerIdx)+1;
@@ -254,7 +256,7 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public boolean newCustomer(int id, int cid) 
-    throws RemoteException, DeadlockException,InvalidTransactionException {
+    throws RemoteException, DeadlockException,InvalidTransactionException ,TransactionAbortedException{
     this.customerIdx.add(cid);
     resetStart(id);
     return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
@@ -262,21 +264,21 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public boolean reserveFlight(int id, int customerID, int flightNumber) 
-    throws RemoteException, DeadlockException, InvalidTransactionException {
+    throws RemoteException, DeadlockException, InvalidTransactionException ,TransactionAbortedException{
     resetStart(id);
     return flightRM.reserveFlight(id, customerID, flightNumber);
   }
 
   @Override
   public boolean reserveCar(int id, int customerID, String location) 
-    throws RemoteException, DeadlockException ,InvalidTransactionException{
+    throws RemoteException, DeadlockException ,InvalidTransactionException, TransactionAbortedException{
     resetStart(id);
     return carRM.reserveCar(id, customerID, location);
   }
 
   @Override
   public boolean reserveRoom(int id, int customerID, String location) 
-    throws RemoteException, DeadlockException, InvalidTransactionException {
+    throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
     resetStart(id);
     return roomRM.reserveRoom(id, customerID, location);
   }
@@ -284,7 +286,7 @@ public class RMIMiddleware implements IResourceManager {
 
   @Override
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location,
-      boolean car, boolean room) throws RemoteException, DeadlockException, InvalidTransactionException {
+      boolean car, boolean room) throws RemoteException, DeadlockException, InvalidTransactionException,TransactionAbortedException {
     resetStart(id);
     	boolean res = true;
     	Vector<String> history = new Vector<String>();
@@ -330,8 +332,12 @@ public class RMIMiddleware implements IResourceManager {
 	}
 	
 	@Override
-	public void commit(int txnId) throws RemoteException,InvalidTransactionException {
+	public void commit(int txnId) throws RemoteException,InvalidTransactionException,TransactionAbortedException {
     if (startTimes.get(txnId)==null) throw new InvalidTransactionException(txnId);
+    synchronized (abortedTXN){
+        if (abortedTXN.contains(txnId)) throw new TransactionAbortedException(txnId);
+    }
+    
 		roomRM.commit(txnId);carRM.commit(txnId);flightRM.commit(txnId);
     removeTxn(txnId);
 		
@@ -342,10 +348,14 @@ public class RMIMiddleware implements IResourceManager {
     if (startTimes.get(txnID)==null) throw new InvalidTransactionException(txnID);
 		roomRM.abort(txnID);carRM.abort(txnID);flightRM.abort(txnID);
     removeTxn(txnID);
-	}
+    synchronized (abortedTXN){
+      abortedTXN.add(txnID);
+    }
+    Trace.info(abortedTXN.toString());
+  }
 	
 	public boolean unReserveFlights(int id, int customerID, Vector<String> history) 
-    throws RemoteException, DeadlockException ,InvalidTransactionException{
+    throws RemoteException, DeadlockException ,InvalidTransactionException, TransactionAbortedException{
 		resetStart(id);
     boolean res = true;
 		for(String fn: history) {
@@ -356,21 +366,21 @@ public class RMIMiddleware implements IResourceManager {
 	
 	@Override
 	public boolean unReserveFlight(int id, int customerID, int flightNumber) 
-    throws RemoteException, DeadlockException ,InvalidTransactionException{
+    throws RemoteException, DeadlockException ,InvalidTransactionException, TransactionAbortedException{
 		resetStart(id);
     return flightRM.unReserveFlight(id, customerID, flightNumber);
 	}
 	
 	@Override
 	public boolean unReserveCar(int id, int customerID, String location)  
-    throws RemoteException, DeadlockException, InvalidTransactionException {
+    throws RemoteException, DeadlockException, InvalidTransactionException,TransactionAbortedException {
 		resetStart(id);
     return carRM.unReserveCar(id, customerID, location);
 	}
 	
 	@Override
 	public boolean unReserveRoom(int id, int customerID, String location) 
-    throws RemoteException, DeadlockException, InvalidTransactionException {
+    throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		resetStart(id);
     return roomRM.unReserveRoom(id, customerID, location);
 	}
@@ -402,12 +412,15 @@ public class RMIMiddleware implements IResourceManager {
     startTimes.put(xid, startTime);
   }
 
-  private void resetStart(int xid) throws InvalidTransactionException
+  private void resetStart(int xid) throws InvalidTransactionException, TransactionAbortedException
   {
     if (startTimes.get(xid)!=null) {
       initStart(xid);
     }
     else {
+      synchronized (abortedTXN){
+          if (abortedTXN.contains(xid)) throw new TransactionAbortedException(xid );
+      }
       throw new InvalidTransactionException(xid);
     }
   }

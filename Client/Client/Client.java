@@ -13,6 +13,7 @@ import java.util.Vector;
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
 import Server.Common.InvalidTransactionException;
+import Server.Common.TransactionAbortedException;
 
 public abstract class Client
 {
@@ -59,6 +60,13 @@ public abstract class Client
 					connectServer();		
 					execute(cmd, arguments);
 				}
+				catch (TransactionAbortedException e){
+					System.out.println("Transaction cannot be commited -- already aborted");
+				}
+				catch (InvalidTransactionException e){
+					System.out.println("Transaction is not valid");
+				}
+
 			}
 			catch (IllegalArgumentException|ServerException e) {
 				System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
@@ -73,7 +81,8 @@ public abstract class Client
 		}
 	}
 
-	public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException, InvalidTransactionException
+	public void execute(Command cmd, Vector<String> arguments) throws 
+		RemoteException, NumberFormatException, InvalidTransactionException, TransactionAbortedException
 	{
 		switch (cmd)
 		{
@@ -641,7 +650,14 @@ public abstract class Client
 				}
 				System.out.println("Committing to a transaction");
 				int xid = toInt(arguments.elementAt(1));
-				m_resourceManager.commit(xid);
+				try{
+					m_resourceManager.commit(xid);
+				}
+				catch (TransactionAbortedException e){
+					System.out.println("Transaction cannot be commited -- already aborted");
+					break;
+				}
+
 				System.out.println("Transaction commited");
 				break;
 			}
