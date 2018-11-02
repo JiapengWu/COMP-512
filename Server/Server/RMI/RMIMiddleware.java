@@ -356,7 +356,7 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public void start(int txnId) throws RemoteException {
-		startTimer(txnId);
+		initTimer(txnId);
 		roomRM.start(txnId);
 		carRM.start(txnId);
 		flightRM.start(txnId);
