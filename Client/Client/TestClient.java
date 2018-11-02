@@ -36,25 +36,16 @@ public class TestClient
 	    if (args.length > 1) {
 	      s_serverPort = Integer.parseInt(args[1]);
 	    }
-	    setUps(s_serverHost, s_serverPort, s_serverName);
+	    
 
-	    // load all commands
-		Vector<Command> commands = new Vector<Command>();
-		FileInputStream fstream = new FileInputStream("commands.txt");
-		BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
-		String strLine;
-		while ((strLine = br.readLine()) != null)   {
-			commands.add(Command.fromString(strLine));
-		}
-		br.close();
-
+	    // setUps(s_serverHost, s_serverPort, s_serverName);
 		
 		
 		ExecutorService es = Executors.newCachedThreadPool();
 		for (int i = 0; i < NUM_CLIENTS; i++) {
 			client = new RMIClient();
 			client.connect_server(s_serverHost, s_serverPort, s_serverName);
-			TestClientThread ct = new TestClientThread(client, commands, TPERIOD);
+			TestClientThread ct = new TestClientThread(client, commands, TPERIOD, i);
 			es.execute(ct);
 		}
 
