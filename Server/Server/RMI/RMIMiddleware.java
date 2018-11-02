@@ -103,7 +103,6 @@ public class RMIMiddleware implements IResourceManager {
         try {
           mw.checkLive();
           Date currentTime = new Date();
-          System.out.println(currentTime);
           Thread.sleep(TIMEOUT_IN_SEC*900);
 
           } catch (Exception e) {
@@ -380,7 +379,6 @@ public class RMIMiddleware implements IResourceManager {
         Date currentTime = new Date();
         ConcurrentHashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
         long compare = (currentTime.getTime()-((Date)pair.getValue()).getTime())/1000;
-        Trace.info("CheckLive: compare = "+Long.toString(compare));
         if(compare> TIMEOUT_IN_SEC)
         {
           int txnIDtoKill = (int) pair.getKey();
