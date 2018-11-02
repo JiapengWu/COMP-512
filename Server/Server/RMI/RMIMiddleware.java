@@ -346,18 +346,18 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public void commit(int txnId) throws RemoteException, InvalidTransactionException, TransactionAbortedException {
-		if (timeTable.get(txnId) == null)
-			throw new InvalidTransactionException(txnId);
 		synchronized (abortedTXN) {
-			if (abortedTXN.contains(txnId))
-				throw new TransactionAbortedException(txnId);
-		}
+      if (abortedTXN.contains(txnId))
+        throw new TransactionAbortedException(txnId);
+    }
+    if (timeTable.get(txnId) == null)
+			throw new InvalidTransactionException(txnId);
+		
 		killTimer(txnId);
 		roomRM.commit(txnId);
 		carRM.commit(txnId);
 		flightRM.commit(txnId);
 		removeTxn(txnId);
-
 	}
 
 	@Override
