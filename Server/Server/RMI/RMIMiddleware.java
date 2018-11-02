@@ -27,9 +27,9 @@ public class RMIMiddleware implements IResourceManager {
 	private static IResourceManager carRM;
 	private static IResourceManager roomRM;
 
-	private static final int TIMEOUT_SECOND = 2;
+	private static final int TIMEOUT_SECOND = 5;
 
-	private ConcurrentHashMap<Integer, ExecutorService> timeTable = new ConcurrentHashMap<Integer, ExecutorService>();
+	private ConcurrentHashMap<Integer, Thread> timeTable = new ConcurrentHashMap<Integer, Thread>();
 
 	private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
 	private static int middleware_port = 3099;
@@ -104,40 +104,53 @@ public class RMIMiddleware implements IResourceManager {
 
 	}
 
-	public void startTimer(int id) {
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		Callable<String> task = new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				Thread.sleep((TIMEOUT_SECOND + 10) * 1000); // Just to demo a long running task of 4 seconds.
-				return "Over";
-			}
-		};
-		Future<String> future = executor.submit(task);
-		System.out.println(Integer.toString(id) + " starting new timer...");
-		timeTable.put(id, executor);
-		try {
-			future.get(TIMEOUT_SECOND, TimeUnit.SECONDS);
-		} catch (TimeoutException e) {
-			System.out.println(Integer.toString(id) + " timed out, canceling...");
-			future.cancel(true);
+	public class TimeOutThread implements Runnable {
+		private int xid = 0;
+
+		public TimeOutThread(int xid) {
+			this.xid = xid;
+		}
+
+		@Override
+		public void run() {
 			try {
-				abort(id);
-			} catch (RemoteException e1) {
-				e1.printStackTrace();
+				Thread.sleep(TIMEOUT_SECOND * 1000);
+			} catch (InterruptedException e) {
+				System.out.println(Integer.toString(xid) + " interrupted.");
+				Thread.currentThread().interrupt();
+				return;
 			}
-		} catch (Exception e) {
-		} finally {
-			executor.shutdownNow();
+			try {
+				abort(this.xid);
+			} catch (RemoteException e) {
+				System.out.println(Integer.toString(xid) + " abort failed.");
+			}
 		}
 	}
 
-	public void killTimer(int id) {
-		ExecutorService executor = timeTable.get(id);
-		if (executor != null) {
-			executor.shutdownNow();
+	public void initTimer(int id) {
+		Thread cur = new Thread(new TimeOutThread(id));
+		cur.start();
+		timeTable.put(id, cur);
+		System.out.println(Integer.toString(id) + " initiated timer...");
+	}
+	
+	public void startTimer(int id) {
+		if(timeTable.containsKey(id)) {
+			Thread cur = new Thread(new TimeOutThread(id));
+			cur.start();
+			timeTable.put(id, cur);
+			System.out.println(Integer.toString(id) + " started timer...");
 		}
-		System.out.println(Integer.toString(id) + " shutting down timer...");
+		return;
+	}
+
+	public void killTimer(int id) {
+		Thread cur = timeTable.get(id);
+		if (cur != null) {
+			cur.interrupt();
+			System.out.println(Integer.toString(id) + " interrupted timer...");
+		}
 	}
 
 	public void restartTimer(int id) {
@@ -351,6 +364,7 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public void commit(int txnId) throws RemoteException {
+		killTimer(txnId);
 		this.timeTable.remove(txnId);
 		timeTable.remove(txnId);
 		roomRM.commit(txnId);
@@ -360,10 +374,11 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public void abort(int txnID) throws RemoteException {
+		killTimer(txnID);
+		this.timeTable.remove(txnID);
 		roomRM.abort(txnID);
 		carRM.abort(txnID);
 		flightRM.abort(txnID);
-		this.timeTable.remove(txnID);
 	}
 
 	public boolean unReserveFlights(int id, int customerID, Vector<String> history)
@@ -378,19 +393,16 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public boolean unReserveFlight(int id, int customerID, int flightNumber) throws RemoteException, DeadlockException {
-		restartTimer(id);
 		return flightRM.unReserveFlight(id, customerID, flightNumber);
 	}
 
 	@Override
 	public boolean unReserveCar(int id, int customerID, String location) throws RemoteException, DeadlockException {
-		restartTimer(id);
 		return carRM.unReserveCar(id, customerID, location);
 	}
 
 	@Override
 	public boolean unReserveRoom(int id, int customerID, String location) throws RemoteException, DeadlockException {
-		restartTimer(id);
 		return roomRM.unReserveRoom(id, customerID, location);
 	}
 
