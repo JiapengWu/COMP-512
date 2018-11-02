@@ -61,6 +61,7 @@ public class TestClientThread implements Runnable {
 	// execute transaction
 	public boolean executeCmds() throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		int txnId = client.m_resourceManager.start();
+		System.out.println("Executing transaction " + Integer.toString(txnId));
 		try {
 			client.m_resourceManager.newCustomer(txnId, txnId);
 			client.m_resourceManager.addFlight(txnId, txnId, 100, 100);
