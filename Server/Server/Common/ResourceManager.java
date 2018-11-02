@@ -78,7 +78,7 @@ public class ResourceManager implements IResourceManager {
 		Trace.info("ResourceManager_" + m_name + ":: transtaction start with id " + Integer.toString(xid));
 		xWrites.put(xid, new RMHashMap());
 		xDeletes.put(xid, new RMHashMap());
-		// printMem(xid);
+		 printMem(xid);
 	}
 
 	// Reads a data item. The 
@@ -87,6 +87,7 @@ public class ResourceManager implements IResourceManager {
 		RMHashMap deletes = xDeletes.get(xid);
 		synchronized (deletes) {
 			if(deletes.containsKey(key)) {
+				printMem(xid);
 				return null;
 			}
 		}
@@ -98,6 +99,7 @@ public class ResourceManager implements IResourceManager {
 			if (item != null) {
 				// only lock it if we found the item
 				lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+				 printMem(xid);
 				return (RMItem) item.clone();
 			}
 		}
@@ -106,7 +108,9 @@ public class ResourceManager implements IResourceManager {
 		synchronized (m_data) {
 			RMItem item = m_data.get(key);
 			if (item != null) {
+				System.out.println(Integer.toString(xid) + " is requiring a read lock.");
 				lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+				 printMem(xid);
 				return (RMItem) item.clone();
 			}
 		}
@@ -120,7 +124,11 @@ public class ResourceManager implements IResourceManager {
 		synchronized (writes) {
 			writes.put(key, value);
 		}
-		// printMem(xid);
+		RMHashMap deletes = xDeletes.get(xid);
+		synchronized (deletes) {
+			deletes.remove(xid);
+		}
+		printMem(xid);
 	}
 
 	// Remove the item out of storage

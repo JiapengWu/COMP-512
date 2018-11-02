@@ -94,7 +94,7 @@ public class LockManager
 			// Ignore redundant lock requests
 			Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") " + redundantlockrequest.getLocalizedMessage());
 			return true;
-		} 
+		}
 
 		return true;
 	}
@@ -243,11 +243,13 @@ public class LockManager
 					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE){
 						throw new RedundantLockRequestException(dataLockObject.getXId(), "redundant WRITE lock request");
 					}
-					else{ 
-						if (size > 1) {
+					else{ // xid has a read lock 
+						
+						if (size > 1) { //someone else have read lock as well, don't grant
 							Trace.info("want to convert "+dataLockObject.getDataName()+" lock to WRITE but someone already had a lock");
 							return true;
 						}
+						// there is only one lock and the 
 						else {
 							l_dataLockObject.setLockType(TransactionLockObject.LockType.LOCK_WRITE);
 							bitset.set(0);
@@ -265,7 +267,7 @@ public class LockManager
 					return true;
 				}
 			}
-		       	else if (dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE)
+		    else if (dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE)
 			{
 				// Transaction is requesting a WRITE lock and some other transaction has either
 				// a READ or a WRITE lock on it ==> conflict
