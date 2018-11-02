@@ -15,9 +15,11 @@ FORCE: ;
 ../Server/LockManager.jar: ../Server/Server/LockManager/*.java
 	make -C ../Server LockManager.jar
 
+../Server/Exceptions.jar: ../Server/Server/Common/*Exception.java
+	make -C ../Server Exceptions.jar
 
-compile-client: ../Server/RMIInterface.jar ../Server/LockManager.jar
-	javac -cp ../Server/RMIInterface.jar:../Server/LockManager.jar Client/*.java
+compile-client: ../Server/RMIInterface.jar ../Server/LockManager.jar ../Server/Exceptions.jar
+	javac -cp ../Server/RMIInterface.jar:../Server/LockManager.jar:../Server/Exceptions.jar Client/*.java
 
 
 clean:

@@ -1,3 +1,3 @@
-grant codebase "file:/home/2016/jliu164/workspace/COMP512/Server/" {
+grant codebase "file:/home/2016/jliu164/workspace/COMP-512/Server/" {
 permission java.security.AllPermission;
 };
