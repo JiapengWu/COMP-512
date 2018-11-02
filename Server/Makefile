@@ -18,6 +18,11 @@ LockManager.jar: Server/LockManager/*.java
 	javac Server/LockManager/*.java
 	jar cvf LockManager.jar Server/LockManager/*.class
 
+Exceptions.jar: Server/Common/*Exception.java
+	@echo "Compiling exceptions"
+	javac Server/Common/*Exception.java
+	jar cvf Exceptions.jar Server/Common/*Exception.class
+
 compile-server-rmi: Server/RMI/*.java Server/Interface/IResourceManager.java Server/Common/*.java
 	javac Server/RMI/*.java Server/Interface/IResourceManager.java Server/Common/*.java
 

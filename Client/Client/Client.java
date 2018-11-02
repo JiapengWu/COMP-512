@@ -12,6 +12,7 @@ import java.util.Vector;
 
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
+import Server.Common.InvalidTransactionException;
 
 public abstract class Client
 {
@@ -72,7 +73,7 @@ public abstract class Client
 		}
 	}
 
-	public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException
+	public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException, InvalidTransactionException
 	{
 		switch (cmd)
 		{
@@ -654,6 +655,10 @@ public abstract class Client
 				m_resourceManager.abort(xid);
 				System.out.println("Transaction aborted");
 				break;
+			}
+			case Shutdown:{
+				System.out.println("Shutdown all servers");
+				m_resourceManager.shutdown();
 			}
 
 			case Quit:
