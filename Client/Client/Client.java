@@ -81,7 +81,7 @@ public abstract class Client
 		}
 	}
 
-	public void execute(Command cmd, Vector<String> arguments) throws 
+	public int execute(Command cmd, Vector<String> arguments) throws 
 		RemoteException, NumberFormatException, InvalidTransactionException, TransactionAbortedException
 	{
 		switch (cmd)
@@ -641,6 +641,7 @@ public abstract class Client
 				int xid = m_resourceManager.start();
 				if (xid >-1) System.out.println("Transaction started, xid="+Integer.toString(xid));
 				else System.out.println("Cannot transaction");
+				return xid;
 				break;
 			}
 			case Commit:{
@@ -675,6 +676,7 @@ public abstract class Client
 			case Shutdown:{
 				System.out.println("Shutdown all servers");
 				m_resourceManager.shutdown();
+				break;
 			}
 
 			case Quit:
@@ -682,6 +684,7 @@ public abstract class Client
 
 				System.out.println("Quitting client");
 				System.exit(0);
+		return -1;
 		}
 	}
 

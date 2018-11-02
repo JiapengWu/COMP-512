@@ -409,6 +409,9 @@ public class RMIMiddleware implements IResourceManager {
 			ConcurrentHashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
 			try {
 				abort((int) pair.getKey());
+        carRM.shutdown();
+        flightRM.shutdown();
+        roomRM.shutdown();
 			} catch (InvalidTransactionException e) {
 				continue;
 			}

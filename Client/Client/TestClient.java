@@ -13,10 +13,10 @@ import Server.Interface.IResourceManager;
 public class TestClient
 {
 	
-	static float LOAD = 20; // transactions per second
-	static int PERIOD = (int) (1 / LOAD * 1000); // transaction period in milliseconds
-	static int NUM_CLIENTS = 5;
-	static int TPERIOD = PERIOD * NUM_CLIENTS; // transaction period of each client
+	static float LOAD = 10; // transactions per second
+	static int NUM_CLIENTS = 10;
+	static float FREQ = LOAD/NUM_CLIENTS ; // num transaction per sec per client
+	
 
 	
 	private static String s_serverHost = "localhost";
@@ -45,7 +45,7 @@ public class TestClient
 		for (int i = 0; i < NUM_CLIENTS; i++) {
 			client = new RMIClient();
 			client.connect_server(s_serverHost, s_serverPort, s_serverName);
-			TestClientThread ct = new TestClientThread(client, commands, TPERIOD, i);
+			TestClientThread ct = new TestClientThread(client, commands, FREQ, i);
 			es.execute(ct);
 		}
 

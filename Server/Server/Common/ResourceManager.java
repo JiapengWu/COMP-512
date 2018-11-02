@@ -499,6 +499,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	public boolean shutdown() throws RemoteException{
+		System.exit(0);
 		return true;
 	}
 }

@@ -10,7 +10,7 @@ import Server.LockManager.DeadlockException;
 public class TestClientThread implements Runnable
 {
 	static int ROUNDS = 10; // number of transactions to test
-	static int period ; // number of transactions to test
+	static int freq ; // number of transactions to test
 	private Thread t;
 	private RMIClient client;
 
@@ -18,10 +18,10 @@ public class TestClientThread implements Runnable
 	private static int customerId;
 	
 
-	public TestClientThread(RMIClient client, int period, int customerId){
+	public TestClientThread(RMIClient client, int freq, int customerId){
 		this.client = client;
 
-		this.period = period;
+		this.freq = freq;
 		this.customerId=customerId;
 
 	}
@@ -40,9 +40,9 @@ public class TestClientThread implements Runnable
 		// execute transactions in loop
 		for (int i=0; i<ROUNDS;i++){
 			Random rand = new Random();
-			long waitTime = (long) rand.nextInt(period);
+			long waitTime = (long) rand.nextInt(1/freq * 1000);
       		try {
-        		Thread.sleep(waitTime * 2);
+        		Thread.sleep(waitTime);
       		} catch (InterruptedException e) {
         		e.printStackTrace();
       		}
@@ -65,17 +65,17 @@ public class TestClientThread implements Runnable
 	{
 		int txnId = client.m_resourceManager.start();
 		try {
-			client.m_resourceManager.newCustomer(txnId, customerId);
+			client.m_resourceManager.newCustomer(txnId, txnId);
 			client.m_resourceManager.addFlights(txnId, txnId, 100, 100);
 			client.m_resourceManager.addCars(txnId, Integer.toString(txnId),100,100);
 			client.m_resourceManager.addRooms(txnId, Integer.toString(txnId),100,100);
 			
-			client.m_resourceManager.reserveCar(txnId, customerId, Integer.toString(txnId));
-			client.m_resourceManager.reserveRoom(txnId, customerId, Integer.toString(txnId));
-			client.m_resourceManager.reserveFlight(txnId, customerId,txnId );
+			client.m_resourceManager.reserveCar(txnId, txnId, Integer.toString(txnId));
+			client.m_resourceManager.reserveRoom(txnId, txnId, Integer.toString(txnId));
+			client.m_resourceManager.reserveFlight(txnId, txnId,txnId );
 
-			client.m_resourceManager.queryRooms(txnId, customerId);
-			client.m_resourceManager.queryCars(txnId,customerId)
+			client.m_resourceManager.queryRooms(txnId, Integer.toString(txnId));
+			client.m_resourceManager.queryCars(txnId,Integer.toString(txnId));
 
 			client.m_resourceManager.commit(txnId);
 		} catch (DeadlockException e) {
