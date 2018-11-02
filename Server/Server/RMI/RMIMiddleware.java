@@ -114,6 +114,7 @@ public class RMIMiddleware implements IResourceManager {
 			}
 		};
 		Future<String> future = executor.submit(task);
+		System.out.println(Integer.toString(id) + " starting new timer...");
 		timeTable.put(id, executor);
 		try {
 			future.get(TIMEOUT_SECOND, TimeUnit.SECONDS);
@@ -135,6 +136,7 @@ public class RMIMiddleware implements IResourceManager {
 		if (executor != null) {
 			executor.shutdownNow();
 		}
+		System.out.println(Integer.toString(id) + " shutting down timer...");
 	}
 
 	public void restartTimer(int id) {
@@ -340,7 +342,6 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public void start(int txnId) throws RemoteException {
-		restartTimer(txnId);
 		startTimer(txnId);
 		roomRM.start(txnId);
 		carRM.start(txnId);
