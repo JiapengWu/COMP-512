@@ -642,7 +642,6 @@ public abstract class Client
 				if (xid >-1) System.out.println("Transaction started, xid="+Integer.toString(xid));
 				else System.out.println("Cannot transaction");
 				return xid;
-				break;
 			}
 			case Commit:{
 				if (arguments.size() >2) {
@@ -684,8 +683,8 @@ public abstract class Client
 
 				System.out.println("Quitting client");
 				System.exit(0);
-		return -1;
 		}
+		return -1;
 	}
 
 	public static Vector<String> parse(String command)
