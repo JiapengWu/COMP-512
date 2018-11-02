@@ -119,6 +119,7 @@ public class RMIMiddleware implements IResourceManager {
 		try {
 			future.get(TIMEOUT_SECOND, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
+			System.out.println(Integer.toString(id) + "Time out, canceling...");
 			future.cancel(true);
 			try {
 				abort(id);
