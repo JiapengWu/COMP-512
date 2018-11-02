@@ -119,7 +119,7 @@ public class RMIMiddleware implements IResourceManager {
 		try {
 			future.get(TIMEOUT_SECOND, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
-			System.out.println(Integer.toString(id) + "Time out, canceling...");
+			System.out.println(Integer.toString(id) + " timed out, canceling...");
 			future.cancel(true);
 			try {
 				abort(id);
@@ -360,10 +360,10 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public void abort(int txnID) throws RemoteException {
-		this.timeTable.remove(txnID);
 		roomRM.abort(txnID);
 		carRM.abort(txnID);
 		flightRM.abort(txnID);
+		this.timeTable.remove(txnID);
 	}
 
 	public boolean unReserveFlights(int id, int customerID, Vector<String> history)
