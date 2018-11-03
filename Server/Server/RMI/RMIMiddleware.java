@@ -20,7 +20,7 @@ import Server.LockManager.DeadlockException;
 public class RMIMiddleware implements IResourceManager {
 	private static String s_serverName = "MiddleWare";
 	private static final String s_rmiPrefix = "group6_";
-	private static int TIMEOUT_IN_SEC = 100000;
+	private static int TIMEOUT_IN_SEC = 50;
 
 	static RMIMiddleware mw;
 
@@ -28,7 +28,7 @@ public class RMIMiddleware implements IResourceManager {
 	private static IResourceManager carRM;
 	private static IResourceManager roomRM;
 
-	private ArrayList<Integer> customerIdx = new ArrayList<Integer>();
+	private HashSet<Integer> customerIdx = new HashSet<Integer>();
 	private static int middleware_port = 3099;
 	private static int server_port = 3099;
 
@@ -230,12 +230,12 @@ public class RMIMiddleware implements IResourceManager {
 		}
 		String carSummary = "";
 		try {
-			carSummary = carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
+			carSummary = carRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
 		} catch (ArrayIndexOutOfBoundsException e) {
 		}
 		String roomSummary = "";
 		try {
-			roomSummary = roomRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
+			roomSummary = roomRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
 		} catch (ArrayIndexOutOfBoundsException e) {
 		}
 		return flightRM.queryCustomerInfo(id, customerID) + carSummary + roomSummary;
