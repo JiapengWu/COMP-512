@@ -4,19 +4,23 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
+import Server.Common.InvalidTransactionException;
 import Server.Common.Trace;
+import Server.Common.TransactionAbortedException;
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
-import Server.Common.InvalidTransactionException;
-import Server.Common.TransactionAbortedException;
 
 public class RMIMiddleware implements IResourceManager {
 	private static String s_serverName = "MiddleWare";
 	private static final String s_rmiPrefix = "group6_";
-	private static final int TIMEOUT_IN_SEC = 20;
+	private static int TIMEOUT_IN_SEC = 100000;
 
 	static RMIMiddleware mw;
 
@@ -111,7 +115,7 @@ public class RMIMiddleware implements IResourceManager {
 			try {
 				Thread.sleep(TIMEOUT_IN_SEC * 1000);
 			} catch (InterruptedException e) {
-//				System.out.println(Integer.toString(xid) + " interrupted.");
+				// System.out.println(Integer.toString(xid) + " interrupted.");
 				Thread.currentThread().interrupt();
 				return;
 			}
@@ -125,7 +129,7 @@ public class RMIMiddleware implements IResourceManager {
 			}
 		}
 	}
-	
+
 	public static void getResourceManagers(String args[]) throws Exception {
 
 		Registry flightRegistry = LocateRegistry.getRegistry(args[1], server_port);
@@ -190,6 +194,7 @@ public class RMIMiddleware implements IResourceManager {
 	public boolean deleteCustomer(int id, int customerID)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		resetTimer(id);
+		customerIdx.remove(customerID);
 		return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID)
 				&& roomRM.deleteCustomer(id, customerID);
 	}
@@ -220,6 +225,9 @@ public class RMIMiddleware implements IResourceManager {
 	public String queryCustomerInfo(int id, int customerID)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		resetTimer(id);
+		if(!customerIdx.contains(customerID)) {
+			return String.format("Customer %d doesn't exists.", customerID);
+		}
 		String carSummary = "";
 		try {
 			carSummary = carRM.queryCustomerInfo(id, customerID).split("/n", 2)[1];
@@ -350,12 +358,12 @@ public class RMIMiddleware implements IResourceManager {
 	@Override
 	public void commit(int txnId) throws RemoteException, InvalidTransactionException, TransactionAbortedException {
 		synchronized (abortedTXN) {
-      if (abortedTXN.contains(txnId))
-        throw new TransactionAbortedException(txnId);
-    }
-    if (timeTable.get(txnId) == null)
+			if (abortedTXN.contains(txnId))
+				throw new TransactionAbortedException(txnId);
+		}
+		if (timeTable.get(txnId) == null)
 			throw new InvalidTransactionException(txnId);
-		
+
 		killTimer(txnId);
 		roomRM.commit(txnId);
 		carRM.commit(txnId);
@@ -412,9 +420,9 @@ public class RMIMiddleware implements IResourceManager {
 			ConcurrentHashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
 			try {
 				abort((int) pair.getKey());
-        carRM.shutdown();
-        flightRM.shutdown();
-        roomRM.shutdown();
+				carRM.shutdown();
+				flightRM.shutdown();
+				roomRM.shutdown();
 			} catch (InvalidTransactionException e) {
 				continue;
 			}
@@ -426,7 +434,7 @@ public class RMIMiddleware implements IResourceManager {
 		Thread cur = new Thread(new TimeOutThread(xid));
 		cur.start();
 		timeTable.put(xid, cur);
-//		System.out.println(Integer.toString(xid) + " initiated timer...");
+		// System.out.println(Integer.toString(xid) + " initiated timer...");
 	}
 
 	private synchronized void resetTimer(int xid) throws InvalidTransactionException, TransactionAbortedException {
@@ -435,7 +443,7 @@ public class RMIMiddleware implements IResourceManager {
 			initTimer(xid);
 		} else {
 			if (abortedTXN.contains(xid)) {
-				throw new TransactionAbortedException(xid);				
+				throw new TransactionAbortedException(xid);
 			}
 			throw new InvalidTransactionException(xid);
 		}
@@ -445,10 +453,10 @@ public class RMIMiddleware implements IResourceManager {
 		Thread cur = timeTable.get(id);
 		if (cur != null) {
 			cur.interrupt();
-//			System.out.println(Integer.toString(id) + " interrupted timer...");
+			// System.out.println(Integer.toString(id) + " interrupted timer...");
 		}
 	}
-	
+
 	private void removeTxn(int xid) {
 		timeTable.remove(xid);
 	}

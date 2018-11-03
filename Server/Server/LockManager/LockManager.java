@@ -18,8 +18,15 @@ public class LockManager
 	public static void main(String[] args) throws DeadlockException {
 		LockManager lm = new LockManager();
 		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_READ);
+
+		System.out.println(lockTable.allElements().toString());
 //		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
 		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_WRITE);
+
+		System.out.println(lockTable.allElements().toString());
+		lm.UnlockAll(1);
+		System.out.println(lockTable.allElements().toString());
+		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
 		System.out.println(lockTable.allElements().toString());
 	}
 	
@@ -71,14 +78,15 @@ public class LockManager
 						}
 
 						if (bConvert.get(0) == true) {
+							lockTable.remove(new TransactionLockObject(xid, data, TransactionLockObject.LockType.LOCK_READ));
+							lockTable.remove(new DataLockObject(xid, data, TransactionLockObject.LockType.LOCK_READ));
 							 Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") converted");
 						} else {
 							// Lock request that is not lock conversion
-							this.lockTable.add(xLockObject);
-							this.lockTable.add(dataLockObject);
-
 							Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") granted");
 						}
+						this.lockTable.add(xLockObject);
+						this.lockTable.add(dataLockObject);
 					}
 				}
 				if (bConflict) {
@@ -250,9 +258,9 @@ public class LockManager
 							return true;
 						}
 						else {
-							//l_dataLockObject.setLockType(TransactionLockObject.LockType.LOCK_WRITE);
+//							l_dataLockObject.setLockType(TransactionLockObject.LockType.LOCK_WRITE);
 							bitset.set(0);
-							//return false;
+							return false;
 						}
 
 					}
