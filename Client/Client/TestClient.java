@@ -68,7 +68,7 @@ public class TestClient
         FileWriter writer = new FileWriter(csvFile);
 
         for(ArrayList<Long> value: testClient.responseTimePerLoad.values()){
-        	writeLine(writer, convertToStringList(value));
+        	writeLine(writer, value);
         }
         
         writer.flush();
@@ -165,19 +165,13 @@ public class TestClient
 		}
 	}
 	
-	public static ArrayList<String> convertToStringList(ArrayList<Long> values) {
-		ArrayList<String> result = new ArrayList<String>();
-		for (Long value : values) {
-			result.add(Long.toString(value)); 
-		}
-		return result;
-	}
 	
-    public static void writeLine(Writer w, ArrayList<String> values) throws IOException {
+    public static void writeLine(Writer w, ArrayList<Long> values) throws IOException {
 
         boolean first = true;
         StringBuilder sb = new StringBuilder();
-        for (String value : values) {
+        for (Long v : values) {
+        	String value = Long.toString(v);
             if (!first) {
                 sb.append(DEFAULT_SEPARATOR);
             }
