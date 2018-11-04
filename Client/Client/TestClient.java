@@ -27,7 +27,7 @@ public class TestClient
 	private static int s_serverPort = 3099;
 	private static String s_serverName = "mw_server";
 	
-	private HashMap<Long, ArrayList<Long>> responseTimePerLoad = new HashMap<Long, ArrayList<Long>>();
+	private ArrayList<ArrayList<Long>> responseTimePerLoad = new ArrayList<ArrayList<Long>>();
 
 	private static final char DEFAULT_SEPARATOR = ',';
 	
@@ -55,19 +55,19 @@ public class TestClient
 	    	
 	    	try {
 	    		es.awaitTermination(30, TimeUnit.MINUTES);;
-	    		testClient.responseTimePerLoad.put(load, (ArrayList<Long>) executionTime.clone());
+	    		testClient.responseTimePerLoad.add((ArrayList<Long>) executionTime.clone());
 	    	} catch (InterruptedException e) {
 	    		System.out.println("Achiving 30 minutes, quiting...");
 	    		es.shutdown();
 	    	}
 	    }
-	    for(ArrayList<Long> value: testClient.responseTimePerLoad.values()) {	    	
+	    for(ArrayList<Long> value: testClient.responseTimePerLoad) {	    	
 	    	System.out.println(Arrays.toString(value.toArray()));
 	    }
 	    String csvFile = "/home/2016/jwu558/COMP-512/test.csv";
         FileWriter writer = new FileWriter(csvFile);
 
-        for(ArrayList<Long> value: testClient.responseTimePerLoad.values()){
+        for(ArrayList<Long> value: testClient.responseTimePerLoad){
         	writeLine(writer, value);
         }
         
