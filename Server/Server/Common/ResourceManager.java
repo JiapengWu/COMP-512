@@ -83,7 +83,9 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public void start(int xid) {
 		Trace.info("ResourceManager_" + m_name + ":: transtaction start with id " + Integer.toString(xid));
-		xCopies.put(xid, (RMHashMap) m_data.clone());
+		synchronized (m_data) {
+			xCopies.put(xid, (RMHashMap) m_data.clone());
+		}
 		xWrites.put(xid, new RMHashMap());
 		xDeletes.put(xid, new RMHashMap());
 		// printMem(xid);

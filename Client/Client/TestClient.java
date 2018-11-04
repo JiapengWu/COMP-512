@@ -19,18 +19,19 @@ import Server.LockManager.DeadlockException;
 public class TestClient
 {
 	
-	static float NUM_CLIENTS = 10;
-	static int step_size = 10;
-	static int max_load = 100;
+	static final float NUM_CLIENTS = 10;
+	static final int STEP_SIZE = 10;
+	static final int MAX_LOAD = 30;
 
 	private static String s_serverHost = "localhost";
 	private static int s_serverPort = 3099;
 	private static String s_serverName = "mw_server";
 	
-	private HashMap<Integer, ArrayList<Long>> avgResponseTime = new HashMap<Integer, ArrayList<Long>>();
+	private HashMap<Long, ArrayList<Long>> responseTimePerLoad = new HashMap<Long, ArrayList<Long>>();
 
 	private static final char DEFAULT_SEPARATOR = ',';
 	
+	@SuppressWarnings("unchecked")
 	public static void main(String args[]) throws IOException
 	{
 		if (args.length > 0) {
@@ -39,52 +40,55 @@ public class TestClient
 		TestClient testClient = new TestClient();
 	    
 	    // setUps(s_serverHost, s_serverPort, s_serverName);
-	    for(int load = step_size; load * step_size < max_load; load++) {
+	    for(long load = STEP_SIZE; load < MAX_LOAD; load += STEP_SIZE) {
 	    	float freq = load / NUM_CLIENTS;
 	    	ExecutorService es = Executors.newCachedThreadPool();
+	    	ArrayList<Long> executionTime = new ArrayList<Long>();
+			executionTime.add(load);
 	    	for (int i = 0; i < NUM_CLIENTS; i++) {
 	    		RMIClient client = new RMIClient();
 	    		client.connectServer(s_serverHost, s_serverPort, s_serverName);
-	    		TestClientThread ct = testClient.new TestClientThread(client, freq, load, testClient);
+	    		TestClientThread ct = testClient.new TestClientThread(client, freq, load, executionTime);
 	    		es.execute(ct);
 	    	}
 	    	es.shutdown();
 	    	
 	    	try {
-	    		es.awaitTermination(30, TimeUnit.MINUTES);
+	    		es.awaitTermination(30, TimeUnit.MINUTES);;
+	    		testClient.responseTimePerLoad.put(load, (ArrayList<Long>) executionTime.clone());
 	    	} catch (InterruptedException e) {
 	    		System.out.println("Achiving 30 minutes, quiting...");
 	    		es.shutdown();
 	    	}
 	    }
-	    String csvFile = "/home/2016/jwu558/COMP-512/";
+	    for(ArrayList<Long> value: testClient.responseTimePerLoad.values()) {	    	
+	    	System.out.println(Arrays.toString(value.toArray()));
+	    }
+	    String csvFile = "/home/2016/jwu558/COMP-512/test.csv";
         FileWriter writer = new FileWriter(csvFile);
 
-        writeLine(writer, (ArrayList<String>) Arrays.asList("load"));
-        for(ArrayList<Long> value: testClient.avgResponseTime.values()){
+        for(ArrayList<Long> value: testClient.responseTimePerLoad.values()){
         	writeLine(writer, convertToStringList(value));
         }
         
         writer.flush();
         writer.close();
-
-	    
 	}
 	
 
 	public class TestClientThread implements Runnable {
-		static final int ROUNDS = 10; // number of transactions to test
-		int load;
+		static final int ROUNDS = 2; // number of transactions to test
+		long load;
 		float freq; // number of transactions to test
 		private Thread t;
 		private RMIClient client;
-		private TestClient testClient;
+		private ArrayList<Long> executionTime;
 	
-		public TestClientThread(RMIClient client, float freq, int load, TestClient testClient) {
+		public TestClientThread(RMIClient client, float freq, long load, ArrayList<Long> executionTime) {
 			this.client = client;
 			this.freq = freq;
 			this.load = load;
-			this.testClient = testClient;
+			this.executionTime = executionTime;
 		}
 	
 		public void start() {
@@ -94,16 +98,16 @@ public class TestClient
 			}
 		}
 	
-		@SuppressWarnings("unchecked")
 		@Override
 		public void run() {
 			// execute transactions in loop
 			ArrayList<Long> executionTime = new ArrayList<Long>();
-			executionTime.add((long) load);
 			for (int i = 0; i < ROUNDS; i++) {
 				Random random = new Random();
 				long offset = random.nextInt(41) - 20; 
 				long waitTime = (long) (1 / freq * 1000) + offset;
+
+				System.out.println(String.format("Wait time: %s milliseconds", Long.toString(waitTime)));
 				long start_execution = System.currentTimeMillis();
 				
 				// Do one set of transaction
@@ -120,14 +124,17 @@ public class TestClient
 					return;
 				}
 				try {
-//					System.out.println(String.format("Ready to sleep for %s milliseconds", Long.toString(waitTime - duration)));
 					executionTime.add(duration); // total duration for each round
 					Thread.sleep(waitTime - duration);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
-			this.testClient.avgResponseTime.put(load, (ArrayList<Long>) executionTime.clone());
+			synchronized (this.executionTime) {
+				this.executionTime.addAll(executionTime);
+//				System.out.println(Arrays.toString(this.executionTime.toArray()));
+			}
+			
 		}
 	
 		// execute transaction
@@ -146,6 +153,7 @@ public class TestClient
 	
 				client.m_resourceManager.queryRooms(txnId, Integer.toString(txnId));
 				client.m_resourceManager.queryCars(txnId, Integer.toString(txnId));
+				client.m_resourceManager.queryCustomerInfo(txnId, txnId);
 	
 				client.m_resourceManager.commit(txnId);
 			} catch (DeadlockException e) {
@@ -172,8 +180,8 @@ public class TestClient
         for (String value : values) {
             if (!first) {
                 sb.append(DEFAULT_SEPARATOR);
-                sb.append(value);
             }
+            sb.append(value);
             first = false;
         }
         sb.append("\n");
