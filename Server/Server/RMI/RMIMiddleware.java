@@ -4,7 +4,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -20,7 +19,7 @@ import Server.LockManager.DeadlockException;
 public class RMIMiddleware implements IResourceManager {
 	private static String s_serverName = "MiddleWare";
 	private static final String s_rmiPrefix = "group6_";
-	private static int TIMEOUT_IN_SEC = 50;
+	private static int TIMEOUT_IN_SEC = 10000;
 
 	static RMIMiddleware mw;
 
@@ -308,7 +307,6 @@ public class RMIMiddleware implements IResourceManager {
 			boolean room)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		resetTimer(id);
-		boolean res = true;
 		Vector<String> history = new Vector<String>();
 		for (String fn : flightNumbers) {
 			if (reserveFlight(id, customerID, Integer.parseInt(fn)))
