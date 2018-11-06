@@ -8,7 +8,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,14 +20,21 @@ import Server.LockManager.DeadlockException;
 
 public class TestClient
 {
-	
-	static final float NUM_CLIENTS = 10;
-	static final int STEP_SIZE = 100;
-	static final int MAX_LOAD = 1000;
 
+	private static boolean fixClient = false;
+	
+	private static final int NUM_LOAD = 100;
+	private static final int CLIENT_STEP_SIZE = 10;
+	private static final int MAX_CLIENT = 1000;
+	
+	private static final int NUM_CLIENT = 10;
+	private static final int LOAD_STEP_SIZE = 10;
+	private static final int MAX_LOAD = 1000;
+	
 	private static String s_serverHost = "localhost";
 	private static int s_serverPort = 3099;
 	private static String s_serverName = "mw_server";
+	private int failCount = 0;
 	
 	private ArrayList<ArrayList<Long>> responseTimePerLoad = new ArrayList<ArrayList<Long>>();
 
@@ -41,51 +47,95 @@ public class TestClient
 		if (args.length > 0) {
 	      s_serverHost = args[0];
 	    }
-		if (args.length==2 ) {
-			xtraDim=true;
+		if (args.length == 2) {
+			xtraDim = true;
 		}
+		
 		TestClient testClient = new TestClient();
 	    
 		// extra dimensions
-	    try {
-			setUps(s_serverHost, s_serverPort, s_serverName, "group6_");
-		} catch (DeadlockException | InvalidTransactionException | TransactionAbortedException e1) {
-			System.out.println("Initialize server failed");
-			e1.printStackTrace();
+		if(xtraDim) {			
+			try {
+				setUps(s_serverHost, s_serverPort, s_serverName, "group6_");
+			} catch (DeadlockException | InvalidTransactionException | TransactionAbortedException e1) {
+				System.out.println("Initialize server failed");
+				e1.printStackTrace();
+			}
+			// extra dimensions end
 		}
-	    // extra dimensions end
 	    
-	    for(long load = STEP_SIZE; load <= MAX_LOAD; load += STEP_SIZE) {
-	    	float freq = load / NUM_CLIENTS;
-	    	ExecutorService es = Executors.newCachedThreadPool();
-	    	ArrayList<Long> executionTime = new ArrayList<Long>();
-			executionTime.add(load);
-	    	for (int i = 0; i < NUM_CLIENTS; i++) {
-	    		RMIClient client = new RMIClient();
-	    		client.connectServer(s_serverHost, s_serverPort, s_serverName);
-	    		TestClientThread ct = testClient.new TestClientThread(client, freq, load, executionTime, NUM_CLIENTS, xtraDim);
-	    		es.execute(ct);
-	    	}
-	    	es.shutdown();
-	    	
-	    	try {
-	    		es.awaitTermination(30, TimeUnit.MINUTES);;
-	    		testClient.responseTimePerLoad.add((ArrayList<Long>) executionTime.clone());
-	    	} catch (InterruptedException e) {
-	    		System.out.println("Achiving 30 minutes, quiting...");
-	    		es.shutdown();
-	    	}
-	    }
+		if(fixClient) {
+			for(long load = LOAD_STEP_SIZE; load <= MAX_LOAD; load += LOAD_STEP_SIZE) {
+				System.out.println(String.format("%d clients, %d load.", NUM_CLIENT, load));
+				float freq = ((float)load) / NUM_CLIENT;
+				ExecutorService es = Executors.newCachedThreadPool();
+				ArrayList<Long> executionTime = new ArrayList<Long>();
+				executionTime.add(load);
+				for (int i = 0; i < NUM_CLIENT; i++) {
+					RMIClient client = new RMIClient();
+					client.connectServer(s_serverHost, s_serverPort, s_serverName);
+					TestClientThread ct = testClient.new TestClientThread(testClient, client, freq, load, executionTime, NUM_CLIENT, xtraDim);
+					es.execute(ct);
+				}
+				es.shutdown();
+				
+				try {
+					es.awaitTermination(30, TimeUnit.MINUTES);
+					testClient.responseTimePerLoad.add((ArrayList<Long>) executionTime.clone());
+					if(testClient.failCount > 0.9 * NUM_CLIENT * TestClientThread.ROUNDS) {
+						System.out.println("Early stopping.");break;
+					}
+					testClient.failCount = 0;
+				} catch (InterruptedException e) {
+					System.out.println("Achiving 30 minutes, quiting...");
+					es.shutdown();
+				}
+			}
+		}
+		
+		else {
+			for(int numClient = CLIENT_STEP_SIZE; numClient <= MAX_CLIENT; numClient += CLIENT_STEP_SIZE) {
+				System.out.println(String.format("%d clients, %d load.", numClient, NUM_LOAD));
+				float freq = ((float)NUM_LOAD) / numClient;
+				ExecutorService es = Executors.newCachedThreadPool();
+				ArrayList<Long> executionTime = new ArrayList<Long>();
+				executionTime.add((long) numClient);
+				for (int i = 0; i < numClient; i++) {
+					RMIClient client = new RMIClient();
+					client.connectServer(s_serverHost, s_serverPort, s_serverName);
+					TestClientThread ct = testClient.new TestClientThread(testClient, client, freq, NUM_LOAD, executionTime, numClient, xtraDim);
+					es.execute(ct);
+				}
+				es.shutdown();
+				
+				try {
+					es.awaitTermination(30, TimeUnit.MINUTES);
+					testClient.responseTimePerLoad.add((ArrayList<Long>) executionTime.clone());
+					if(testClient.failCount > 0.9 * numClient * TestClientThread.ROUNDS) {
+						System.out.println("Early stopping.");break;
+					}
+					testClient.failCount = 0;
+				} catch (InterruptedException e) {
+					System.out.println("Achiving 30 minutes, quiting...");
+					es.shutdown();
+				}
+			}
+		}
+	    
 //	    for(ArrayList<Long> value: testClient.responseTimePerLoad) {	    	
 //	    	System.out.println(Arrays.toString(value.toArray()));
 //	    }
-	    String csvFile = "/home/2016/jwu558/COMP-512/test.csv";
+		String csvFile = null;
+		if(NUM_CLIENT == 1 && fixClient) {
+			csvFile = "/home/2016/jwu558/COMP-512/test_single_client.csv";
+		}else {			
+			csvFile = String.format("/home/2016/jwu558/COMP-512/test_%s%s.csv", 
+					fixClient?"fix_client_num":"fix_load_num", xtraDim? "_extra_dim":"");
+		}
         FileWriter writer = new FileWriter(csvFile);
-
         for(ArrayList<Long> value: testClient.responseTimePerLoad){
         	writeLine(writer, value);
         }
-        
         writer.flush();
         writer.close();
 	}
@@ -118,6 +168,9 @@ public class TestClient
 		}
 		int xid = mw.start();
 		mw.addCars(xid,"MTL",100000,100000);
+		mw.addFlight(xid, 1, 1, 1);
+		mw.addRooms(xid, "MTL", 1, 1);
+		mw.newCustomer(xid, 1);
 		mw.commit(xid);
 		
 	}
@@ -128,12 +181,14 @@ public class TestClient
 		long load;
 		float freq; // number of transactions to test
 		private Thread t;
+		private TestClient testClient;
 		private RMIClient client;
 		private ArrayList<Long> executionTime;
 		private boolean xtraDim;
 		private float numClients;
 	
-		public TestClientThread(RMIClient client, float freq, long load, ArrayList<Long> executionTime, float numClients, boolean xtraDim) {
+		public TestClientThread(TestClient testClient, RMIClient client, float freq, long load, ArrayList<Long> executionTime, float numClients, boolean xtraDim) {
+			this.testClient = testClient;
 			this.client = client;
 			this.freq = freq;
 			this.load = load;
@@ -159,7 +214,7 @@ public class TestClient
 				long offset = (long) (random.nextInt((int) (0.1 * fixed + 1))- 0.05 * fixed); 
 				long waitTime = (long) (1 / freq * 1000) + offset;
 
-//				System.out.println(String.format("Wait time: %s milliseconds", Long.toString(waitTime)));
+				System.out.println(String.format("Wait time: %s milliseconds", Long.toString(waitTime)));
 				long start_execution = System.currentTimeMillis();
 				
 				// Do one set of transaction
@@ -177,6 +232,9 @@ public class TestClient
 				long duration = System.currentTimeMillis() - start_execution;
 				if(duration > waitTime) {
 					System.out.println("Execution time longer than specified time interval. Existing...");
+					synchronized (testClient) {						
+						this.testClient.failCount++;
+					}
 					continue;
 				}
 				try {
@@ -225,6 +283,13 @@ public class TestClient
 			int txnId = client.m_resourceManager.start();
 			try {
 				client.m_resourceManager.queryCars(txnId, "MTL");
+				client.m_resourceManager.queryCarsPrice(txnId, "MTL");
+				client.m_resourceManager.queryFlight(txnId, 1);
+				client.m_resourceManager.queryFlightPrice(txnId, 1);
+				client.m_resourceManager.queryRooms(txnId, "MTL");
+				client.m_resourceManager.queryRoomsPrice(txnId, "MTL");
+				client.m_resourceManager.queryCustomerInfo(txnId, 1);
+				client.m_resourceManager.queryCars(txnId, "MTL");
 				client.m_resourceManager.commit(txnId);
 			}catch(DeadlockException e) {
 				client.m_resourceManager.abort(txnId);
@@ -234,7 +299,6 @@ public class TestClient
 			return true;
 		}
 	}
-	
 	
     public static void writeLine(Writer w, ArrayList<Long> values) throws IOException {
 
