@@ -9,12 +9,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import Server.Common.InvalidTransactionException;
 import Server.Common.TransactionAbortedException;
@@ -24,11 +21,11 @@ import Server.LockManager.DeadlockException;
 public class TestClient
 {
 
-	private static boolean fixClient = false;
+	private static boolean fixClient = true;
 	
 	private static final int NUM_LOAD = 100;
-	private static final int CLIENT_STEP_SIZE = 100;
-	private static final int MAX_CLIENT = 1000;
+	private static final int CLIENT_STEP_SIZE = 10;
+	private static final int MAX_CLIENT = 100;
 	
 	private static final int NUM_CLIENT = 10;
 	private static final int LOAD_STEP_SIZE = 10;
@@ -199,7 +196,7 @@ public class TestClient
 
 
 	public class TestClientThread implements Runnable {
-		static final int ROUNDS = 10; // number of transactions to test
+		static final int ROUNDS = 100; // number of transactions to test
 		long load;
 		float freq; // number of transactions to test
 		private Thread t;

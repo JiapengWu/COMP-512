@@ -434,8 +434,9 @@ public class RMIMiddleware implements IResourceManager {
 		carRM.commit(txnId);
 		flightRM.commit(txnId);
 		removeTxn(txnId);
-		this.startTime.get(txnId).increment(System.currentTimeMillis() - start);
-		return this.startTime.get(txnId).get() + System.currentTimeMillis() - start;
+		long result = this.startTime.get(txnId).get() + System.currentTimeMillis() - start;
+		this.startTime.remove(txnId);
+		return result;
 	}
 
 	@Override
