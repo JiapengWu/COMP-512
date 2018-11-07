@@ -9,9 +9,12 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import Server.Common.InvalidTransactionException;
 import Server.Common.TransactionAbortedException;
@@ -24,7 +27,7 @@ public class TestClient
 	private static boolean fixClient = false;
 	
 	private static final int NUM_LOAD = 100;
-	private static final int CLIENT_STEP_SIZE = 10;
+	private static final int CLIENT_STEP_SIZE = 100;
 	private static final int MAX_CLIENT = 1000;
 	
 	private static final int NUM_CLIENT = 10;
@@ -36,12 +39,13 @@ public class TestClient
 	private static String s_serverName = "mw_server";
 	private int failCount = 0;
 	
-	private ArrayList<ArrayList<Long>> responseTimePerLoad = new ArrayList<ArrayList<Long>>();
+	private ArrayList<ArrayList<Long>> clientResponseTimePerLoad = new ArrayList<ArrayList<Long>>();
+	private ArrayList<ArrayList<Long>> mwResponseTimePerLoad = new ArrayList<ArrayList<Long>>();
 
 	private static final char DEFAULT_SEPARATOR = ',';
 	static boolean xtraDim = false;
 	
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "unused" })
 	public static void main(String args[]) throws IOException
 	{
 		if (args.length > 0) {
@@ -69,19 +73,22 @@ public class TestClient
 				System.out.println(String.format("%d clients, %d load.", NUM_CLIENT, load));
 				float freq = ((float)load) / NUM_CLIENT;
 				ExecutorService es = Executors.newCachedThreadPool();
-				ArrayList<Long> executionTime = new ArrayList<Long>();
-				executionTime.add(load);
+				ArrayList<Long> clientExecutionTime = new ArrayList<Long>();
+				ArrayList<Long> mwExecutionTime = new ArrayList<Long>();
+				clientExecutionTime.add(load);
 				for (int i = 0; i < NUM_CLIENT; i++) {
 					RMIClient client = new RMIClient();
 					client.connectServer(s_serverHost, s_serverPort, s_serverName);
-					TestClientThread ct = testClient.new TestClientThread(testClient, client, freq, load, executionTime, NUM_CLIENT, xtraDim);
+					TestClientThread ct = 
+							testClient.new TestClientThread(testClient, client, freq, load, 
+									clientExecutionTime, mwExecutionTime, NUM_CLIENT, xtraDim);
 					es.execute(ct);
 				}
 				es.shutdown();
 				
 				try {
 					es.awaitTermination(30, TimeUnit.MINUTES);
-					testClient.responseTimePerLoad.add((ArrayList<Long>) executionTime.clone());
+					testClient.clientResponseTimePerLoad.add((ArrayList<Long>) clientExecutionTime.clone());
 					if(testClient.failCount > 0.9 * NUM_CLIENT * TestClientThread.ROUNDS) {
 						System.out.println("Early stopping.");break;
 					}
@@ -98,19 +105,22 @@ public class TestClient
 				System.out.println(String.format("%d clients, %d load.", numClient, NUM_LOAD));
 				float freq = ((float)NUM_LOAD) / numClient;
 				ExecutorService es = Executors.newCachedThreadPool();
-				ArrayList<Long> executionTime = new ArrayList<Long>();
-				executionTime.add((long) numClient);
+				ArrayList<Long> clientExecutionTime = new ArrayList<Long>();
+				ArrayList<Long> mwExecutionTime = new ArrayList<Long>();
+				clientExecutionTime.add((long) numClient);
 				for (int i = 0; i < numClient; i++) {
 					RMIClient client = new RMIClient();
 					client.connectServer(s_serverHost, s_serverPort, s_serverName);
-					TestClientThread ct = testClient.new TestClientThread(testClient, client, freq, NUM_LOAD, executionTime, numClient, xtraDim);
+					TestClientThread ct = 
+							testClient.new TestClientThread(testClient, client, freq, NUM_LOAD, 
+									clientExecutionTime, mwExecutionTime, numClient, xtraDim);
 					es.execute(ct);
 				}
 				es.shutdown();
 				
 				try {
 					es.awaitTermination(30, TimeUnit.MINUTES);
-					testClient.responseTimePerLoad.add((ArrayList<Long>) executionTime.clone());
+					testClient.clientResponseTimePerLoad.add((ArrayList<Long>) clientExecutionTime.clone());
 					if(testClient.failCount > 0.9 * numClient * TestClientThread.ROUNDS) {
 						System.out.println("Early stopping.");break;
 					}
@@ -122,22 +132,34 @@ public class TestClient
 			}
 		}
 	    
-//	    for(ArrayList<Long> value: testClient.responseTimePerLoad) {	    	
+//	    for(ArrayList<Long> value: testClient.mwResponseTimePerLoad) {	    	
 //	    	System.out.println(Arrays.toString(value.toArray()));
 //	    }
-		String csvFile = null;
+		String client_csvFile = null;
+		String mw_csvFile = null;
 		if(NUM_CLIENT == 1 && fixClient) {
-			csvFile = "/home/2016/jwu558/COMP-512/test_single_client.csv";
+			client_csvFile = "/home/2016/jwu558/COMP-512/test_client_single_client.csv";
+			mw_csvFile = "/home/2016/jwu558/COMP-512/test_mw_single_client.csv";
 		}else {			
-			csvFile = String.format("/home/2016/jwu558/COMP-512/test_%s%s.csv", 
+			client_csvFile = String.format("/home/2016/jwu558/COMP-512/test_client_%s%s.csv", 
+					fixClient?"fix_client_num":"fix_load_num", xtraDim? "_extra_dim":"");
+			mw_csvFile = String.format("/home/2016/jwu558/COMP-512/test_mw_%s%s.csv", 
 					fixClient?"fix_client_num":"fix_load_num", xtraDim? "_extra_dim":"");
 		}
-        FileWriter writer = new FileWriter(csvFile);
-        for(ArrayList<Long> value: testClient.responseTimePerLoad){
-        	writeLine(writer, value);
+        FileWriter writer_client = new FileWriter(client_csvFile);
+        for(ArrayList<Long> value: testClient.clientResponseTimePerLoad){
+        	writeLine(writer_client, value);
         }
-        writer.flush();
-        writer.close();
+        
+        FileWriter writer_mw = new FileWriter(client_csvFile);
+        for(ArrayList<Long> value: testClient.mwResponseTimePerLoad){
+        	writeLine(writer_mw, value);
+        }
+        writer_client.flush();
+        writer_client.close();
+        writer_mw.flush();
+        writer_mw.close();
+        
 	}
 	
 
@@ -177,22 +199,25 @@ public class TestClient
 
 
 	public class TestClientThread implements Runnable {
-		static final int ROUNDS = 100; // number of transactions to test
+		static final int ROUNDS = 10; // number of transactions to test
 		long load;
 		float freq; // number of transactions to test
 		private Thread t;
 		private TestClient testClient;
 		private RMIClient client;
-		private ArrayList<Long> executionTime;
+		private ArrayList<Long> clientExecutionTime;
+		private ArrayList<Long> mwExecutionTime;
 		private boolean xtraDim;
 		private float numClients;
 	
-		public TestClientThread(TestClient testClient, RMIClient client, float freq, long load, ArrayList<Long> executionTime, float numClients, boolean xtraDim) {
+		public TestClientThread(TestClient testClient, RMIClient client, float freq, long load, 
+				ArrayList<Long> clientExecutionTime, ArrayList<Long> mwExecutionTime, float numClients, boolean xtraDim) {
 			this.testClient = testClient;
 			this.client = client;
 			this.freq = freq;
 			this.load = load;
-			this.executionTime = executionTime;
+			this.clientExecutionTime = clientExecutionTime;
+			this.mwExecutionTime = mwExecutionTime;
 			this.xtraDim = xtraDim;
 			this.numClients = numClients;
 		}
@@ -207,7 +232,9 @@ public class TestClient
 		@Override
 		public void run() {
 			// execute transactions in loop
-			ArrayList<Long> executionTime = new ArrayList<Long>();
+			ArrayList<Long> clientExecutionTime = new ArrayList<Long>();
+			ArrayList<Long> mwExecutionTime = new ArrayList<Long>();
+			
 			for (int i = 0; i < ROUNDS; i++) {
 				Random random = new Random();
 				long fixed = (long) (1 / freq * 1000);
@@ -216,11 +243,10 @@ public class TestClient
 
 				System.out.println(String.format("Wait time: %s milliseconds", Long.toString(waitTime)));
 				long start_execution = System.currentTimeMillis();
-				
-				// Do one set of transaction
+				long middlewareExecTime = 0;
 				try {
-					if (xtraDim) executeCmdSameTid();
-					else executeCmds();
+					if (xtraDim) middlewareExecTime = executeCmdSameTid();
+					else middlewareExecTime = executeCmds();
 				} catch (RemoteException | DeadlockException | InvalidTransactionException
 						| TransactionAbortedException e1) {
 					synchronized (client) {
@@ -238,7 +264,8 @@ public class TestClient
 					continue;
 				}
 				try {
-					executionTime.add(duration); // total duration for each round
+					clientExecutionTime.add(duration); // total duration for each round
+					mwExecutionTime.add(middlewareExecTime);
 					if(numClients != 1) {						
 						Thread.sleep(waitTime - duration);
 					}
@@ -246,14 +273,18 @@ public class TestClient
 					e.printStackTrace();
 				}
 			}
-			synchronized (this.executionTime) {
-				this.executionTime.addAll(executionTime);
+			synchronized (this.clientExecutionTime) {
+				this.clientExecutionTime.addAll(clientExecutionTime);
+			}
+			synchronized (this.mwExecutionTime) {
+				this.mwExecutionTime.addAll(mwExecutionTime);
 			}
 			
 		}
 	
+	
 		// execute transaction
-		public boolean executeCmds() throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		public long executeCmds() throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 			int txnId = client.m_resourceManager.start();
 //			System.out.println("Executing transaction " + Integer.toString(txnId));
 			try {
@@ -270,16 +301,16 @@ public class TestClient
 				client.m_resourceManager.queryCars(txnId, Integer.toString(txnId));
 				client.m_resourceManager.queryCustomerInfo(txnId, txnId);
 	
-				client.m_resourceManager.commit(txnId);
+				long mwExecTime = client.m_resourceManager.commit(txnId);
+				return mwExecTime;
 			} catch (DeadlockException e) {
 				client.m_resourceManager.abort(txnId);
 				System.out.println("Deadlock!");
-				return false;
+				return 0;
 			}
-			return true;
 		}
 		
-		public boolean executeCmdSameTid() throws RemoteException, InvalidTransactionException, TransactionAbortedException {
+		public long executeCmdSameTid() throws RemoteException, InvalidTransactionException, TransactionAbortedException {
 			int txnId = client.m_resourceManager.start();
 			try {
 				client.m_resourceManager.queryCars(txnId, "MTL");
@@ -290,13 +321,13 @@ public class TestClient
 				client.m_resourceManager.queryRoomsPrice(txnId, "MTL");
 				client.m_resourceManager.queryCustomerInfo(txnId, 1);
 				client.m_resourceManager.queryCars(txnId, "MTL");
-				client.m_resourceManager.commit(txnId);
+				long mwExecTime = client.m_resourceManager.commit(txnId);
+				return mwExecTime;
 			}catch(DeadlockException e) {
 				client.m_resourceManager.abort(txnId);
 				System.out.println("Deadlock!");
-				return false;
+				return 0;
 			}
-			return true;
 		}
 	}
 	

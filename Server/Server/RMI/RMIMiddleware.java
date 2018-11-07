@@ -5,6 +5,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
@@ -33,11 +34,17 @@ public class RMIMiddleware implements IResourceManager {
 
 	private int txnIdCounter = 0;
 	private HashSet<Integer> abortedTXN = new HashSet<Integer>();
-
+	
+	private ConcurrentHashMap<Integer, MutableLong> startTime = new ConcurrentHashMap<Integer, MutableLong>();
 	private ConcurrentHashMap<Integer, Thread> timeTable = new ConcurrentHashMap<Integer, Thread>();
 
+	
+
+	
 	public RMIMiddleware(String s_serverName2) {
 	}
+	
+	
 
 	public static void main(String args[]) {
 		try {
@@ -101,6 +108,13 @@ public class RMIMiddleware implements IResourceManager {
 			System.setSecurityManager(new SecurityManager());
 		}
 	}
+	
+	public class MutableLong{
+		private long value = 0; // note that we start at 1 since we're counting
+		public MutableLong(long value) {this.value = value;}
+		public void increment (long inc) {value += inc;}      
+		public long get() {return value;} 
+	}
 
 	public class TimeOutThread implements Runnable {
 		private int xid = 0;
@@ -150,29 +164,43 @@ public class RMIMiddleware implements IResourceManager {
 
 	public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
+		boolean result  = flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public boolean addCars(int id, String location, int numCars, int price)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return carRM.addCars(id, location, numCars, price);
+		boolean result = carRM.addCars(id, location, numCars, price);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public boolean addRooms(int id, String location, int numRooms, int price)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return roomRM.addRooms(id, location, numRooms, price);
+		boolean result = roomRM.addRooms(id, location, numRooms, price);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
+		
 	}
 
 	@Override
 	public boolean deleteFlight(int id, int flightNum)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return flightRM.deleteFlight(id, flightNum);
+		boolean result = flightRM.deleteFlight(id, flightNum);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
@@ -201,28 +229,38 @@ public class RMIMiddleware implements IResourceManager {
 	@Override
 	public int queryFlight(int id, int flightNumber)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return flightRM.queryFlight(id, flightNumber);
+		int result = flightRM.queryFlight(id, flightNumber);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public int queryCars(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return carRM.queryCars(id, location);
+		int result = carRM.queryCars(id, location);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public int queryRooms(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return roomRM.queryRooms(id, location);
+		int result = roomRM.queryRooms(id, location);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 
 	public String queryCustomerInfo(int id, int customerID)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
 		if(!customerIdx.contains(customerID)) {
 			return String.format("Customer %d doesn't exists.", customerID);
@@ -237,69 +275,95 @@ public class RMIMiddleware implements IResourceManager {
 			roomSummary = roomRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
 		} catch (ArrayIndexOutOfBoundsException e) {
 		}
-		return flightRM.queryCustomerInfo(id, customerID) + carSummary + roomSummary;
+		String result = flightRM.queryCustomerInfo(id, customerID) + carSummary + roomSummary;
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public int queryFlightPrice(int id, int flightNumber)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return flightRM.queryFlightPrice(id, flightNumber);
+		int result = flightRM.queryFlightPrice(id, flightNumber);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public int queryCarsPrice(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return carRM.queryCarsPrice(id, location);
+		int result = carRM.queryCarsPrice(id, location);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public int queryRoomsPrice(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return roomRM.queryRoomsPrice(id, location);
+		int result = roomRM.queryRoomsPrice(id, location);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public int newCustomer(int id)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		int cid;
 		if (customerIdx.size() == 0)
 			cid = 0;
 		else
 			cid = Collections.max(customerIdx) + 1;
 		this.newCustomer(id, cid);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
 		return cid;
+		
 	}
 
 	@Override
 	public boolean newCustomer(int id, int cid)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		this.customerIdx.add(cid);
 		resetTimer(id);
-		return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
+		boolean result = flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public boolean reserveFlight(int id, int customerID, int flightNumber)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return flightRM.reserveFlight(id, customerID, flightNumber);
+		boolean result = flightRM.reserveFlight(id, customerID, flightNumber);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public boolean reserveCar(int id, int customerID, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return carRM.reserveCar(id, customerID, location);
+		boolean result = carRM.reserveCar(id, customerID, location);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
 	public boolean reserveRoom(int id, int customerID, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		resetTimer(id);
-		return roomRM.reserveRoom(id, customerID, location);
+		boolean result = roomRM.reserveRoom(id, customerID, location);
+		this.startTime.get(id).increment(System.currentTimeMillis() - start);
+		return result;
 	}
 
 	@Override
@@ -347,14 +411,17 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public void start(int txnId) throws RemoteException {
+		long start = System.currentTimeMillis();
 		initTimer(txnId);
 		roomRM.start(txnId);
 		carRM.start(txnId);
 		flightRM.start(txnId);
+		startTime.put(txnId, new MutableLong(System.currentTimeMillis() - start));
 	}
 
 	@Override
-	public void commit(int txnId) throws RemoteException, InvalidTransactionException, TransactionAbortedException {
+	public long commit(int txnId) throws RemoteException, InvalidTransactionException, TransactionAbortedException {
+		long start = System.currentTimeMillis();
 		synchronized (abortedTXN) {
 			if (abortedTXN.contains(txnId))
 				throw new TransactionAbortedException(txnId);
@@ -367,6 +434,8 @@ public class RMIMiddleware implements IResourceManager {
 		carRM.commit(txnId);
 		flightRM.commit(txnId);
 		removeTxn(txnId);
+		this.startTime.get(txnId).increment(System.currentTimeMillis() - start);
+		return this.startTime.get(txnId).get() + System.currentTimeMillis() - start;
 	}
 
 	@Override

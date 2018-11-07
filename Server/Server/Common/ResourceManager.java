@@ -44,7 +44,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	@Override
-	public void commit(int xid) throws InvalidTransactionException,TransactionAbortedException {
+	public long commit(int xid) throws InvalidTransactionException,TransactionAbortedException {
 		if (xCopies.get(xid)==null) throw new InvalidTransactionException(xid);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction commit with id " + Integer.toString(xid));
 		// Apply writes (including deletes)
@@ -65,6 +65,7 @@ public class ResourceManager implements IResourceManager {
 		xDeletes.remove(xid);
 		xCopies.remove(xid);
 		lm.UnlockAll(xid);
+		return 0;
 	}
 
 	// helper to debug

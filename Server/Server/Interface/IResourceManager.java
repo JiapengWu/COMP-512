@@ -214,10 +214,11 @@ public interface IResourceManager extends Remote
 
 
     /**
+     * @return 
      * For start/commit/abort transactions
      * @throws  
      */
-    public void commit (int txnId) throws RemoteException ,InvalidTransactionException, TransactionAbortedException;
+    public long commit (int txnId) throws RemoteException ,InvalidTransactionException, TransactionAbortedException;
 
     public void start (int txnId) throws RemoteException;
 
