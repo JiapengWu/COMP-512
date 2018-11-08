@@ -19,13 +19,13 @@ label1 = (" ").join(fname.split("_")[5:7])
 if len(sys.argv) >2:
     fname2 = sys.argv[2]
     df2=pd.read_csv(fname2,sep=",")
-    means2=df2['mean']
+    means2=df2['50%']
     stds2=df2['std']
     label2 = (" ").join(fname2.split("_")[5:7])
 
 
 df=pd.read_csv(fname, sep=',')
-means = df['mean']
+means = df['50%']
 stds = df['std']
 xs = df.iloc[:,1]
 
@@ -42,6 +42,6 @@ if fname2!="":
     if not diff:
         plt.title("Single client")
 plt.ylabel("Response time")
-xname= "#clients" if fname.split("_")[3] == "load"  else "load(#transaction/sec)"
+xname= "#clients" if fname.split("_")[4] == "load"  else "load(#transaction/sec)"
 plt.xlabel(xname)
 plt.show()
