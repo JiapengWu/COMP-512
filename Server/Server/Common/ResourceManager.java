@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.Vector;
 
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
 import Server.LockManager.LockManager;
@@ -501,7 +504,22 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	public boolean shutdown() throws RemoteException{
-		System.exit(0);
+		//System.exit(0);
+		new Thread() {
+	    @Override
+	    public void run() {
+	      System.out.print("Shutting down...");
+	      try {
+	        sleep(500);
+	      } catch (InterruptedException e) {
+	        // I don't care
+	      }
+	      System.out.println("done");
+	      System.exit(0);
+	    }
+
+  		}.start();
+	
 		return true;
 	}
 }

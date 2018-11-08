@@ -675,6 +675,20 @@ public abstract class Client
 			case Shutdown:{
 				System.out.println("Shutdown all servers");
 				m_resourceManager.shutdown();
+				new Thread() {
+				    @Override
+				    public void run() {
+				      System.out.print("Shutting down...");
+				      try {
+				        sleep(500);
+				      } catch (InterruptedException e) {
+				        // I don't care
+				      }
+				      System.exit(0);
+				    }
+
+			  		}.start();
+				
 				break;
 			}
 

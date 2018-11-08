@@ -28,8 +28,8 @@ public class RMIMiddleware implements IResourceManager {
 	private static IResourceManager roomRM;
 
 	private HashSet<Integer> customerIdx = new HashSet<Integer>();
-	private static int middleware_port = 3099;
-	private static int server_port = 3099;
+	private static int middleware_port = 3199;
+	private static int server_port = 3199;
 
 	private int txnIdCounter = 0;
 	private HashSet<Integer> abortedTXN = new HashSet<Integer>();
@@ -418,14 +418,29 @@ public class RMIMiddleware implements IResourceManager {
 			ConcurrentHashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
 			try {
 				abort((int) pair.getKey());
-				carRM.shutdown();
-				flightRM.shutdown();
-				roomRM.shutdown();
 			} catch (InvalidTransactionException e) {
 				continue;
 			}
 		}
-		return true;
+    carRM.shutdown();
+    flightRM.shutdown();
+    roomRM.shutdown();
+    new Thread() {
+	    @Override
+	    public void run() {
+	      System.out.print("Shutting down...");
+	      try {
+	        sleep(500);
+	      } catch (InterruptedException e) {
+	        // I don't care
+	      }
+	      System.out.println("done");
+	      System.exit(0);
+	    }
+
+  		}.start();
+	
+	return true;
 	}
 
 	private void initTimer(int xid) {
