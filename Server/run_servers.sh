@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-if [[ `pwd` == *"jwu558"* ]]; then MACHINES=(cs-5 cs-6 cs-1 cs-12); else MACHINES=(cs-2 cs-3 cs-4 cs-11) ; fi
+if [[ `pwd` == *"jwu558"* ]]; then MACHINES=(cs-2 cs-3 cs-4 cs-11); else MACHINES=(cs-2 cs-3 cs-4 cs-11) ; fi
 
 tmux new-session \; \
 	split-window -h \; \

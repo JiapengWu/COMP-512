@@ -5,7 +5,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
@@ -29,8 +28,8 @@ public class RMIMiddleware implements IResourceManager {
 	private static IResourceManager roomRM;
 
 	private HashSet<Integer> customerIdx = new HashSet<Integer>();
-	private static int middleware_port = 3099;
-	private static int server_port = 3099;
+	private static int middleware_port = 2099;
+	private static int server_port = 2099;
 
 	private int txnIdCounter = 0;
 	private HashSet<Integer> abortedTXN = new HashSet<Integer>();

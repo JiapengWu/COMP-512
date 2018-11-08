@@ -5,7 +5,8 @@ if __name__ == '__main__':
     with open(sys.argv[1], "r") as f:
         lines = f.readlines()
     largest = max(list(map(lambda x: len(x), lines)))
-    df = pd.read_csv(sys.argv[1], names=list(range(largest)), header=None)
+    # pd.read_csv(open('test.csv', 'rU'), encoding='utf-8', engine='c')
+    df = pd.read_csv(sys.argv[1], names=list(range(largest)), header=None, engine='python')
     ndf = df.iloc[:, 0]
     ndf.columns = ['load']
     response_time = df.iloc[:, 1:]
