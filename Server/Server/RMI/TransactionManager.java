@@ -1,13 +1,20 @@
 package Server.RMI;
 
-import Server.Common.TransactionCoordinator;
-import Server.Common.DiskManager;
-
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+
+import Server.Common.DiskManager;
+import Server.Common.InvalidTransactionException;
+import Server.Common.TransactionAbortedException;
+import Server.Common.TransactionCoordinator;
+import Server.Interface.IResourceManager;
 
 public class TransactionManager{
+	public static final int TIMEOUT_IN_SEC = 60;
 	private String name = "MiddleWare"; 
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
@@ -28,7 +35,7 @@ public class TransactionManager{
 	protected int crashMode = 0; 
 
 	public TransactionManager(){
-		HashMap< Integer,IResourceManager> = new HashMap<Integer,IResourceManager>();
+		stubs = new HashMap<Integer,IResourceManager>();
 		txnIdCounter = 0;
 		abortedTXN = new HashSet<Integer>();
 		timeTable = new ConcurrentHashMap<Integer, Thread>();
@@ -39,8 +46,9 @@ public class TransactionManager{
 	// return a TM for middleware to use later
 	public TransactionManager restore(){
 		// DM need to read logs about all transactions
+		HashMap<Integer, TransactionCoordinator> old_txns = null;
 		try{
-			HashMap<Integer, TransactionCoordinator> old_txns = DiskManager.readLog(name);
+			old_txns = DiskManager.readLog(name);
 		}
 		// if no prior TM log exist, just create a new one and return
 		catch (IOException e){
@@ -51,15 +59,15 @@ public class TransactionManager{
 		tm.txns = old_txns;
 		for (TransactionCoordinator trans: old_txns.values()){
 			if (trans.started == 1){
-				if(trans.committed==1){
-					sendDecision(trans,1);
+				if(trans.decision==1){
+					sendDecision(trans,true);
 				}
 				else{
-					sendDecision(trans,0);
+					sendDecision(trans,false);
 				}
 			}
 			else{
-				sendDecision(trans,0);
+				sendDecision(trans,false);
 			}
 		}
 		
@@ -71,10 +79,14 @@ public class TransactionManager{
 	public void abort(int txnID) throws RemoteException, InvalidTransactionException {
 		if (timeTable.get(txnID) == null)
 			throw new InvalidTransactionException(txnID);
-		TransactionCoordinator trans = txns.get(txnId);
+		TransactionCoordinator trans = txns.get(txnID);
 		if (trans==null) throw new InvalidTransactionException(txnID);
-		killTimer(txnID);
-		sendDecision(trans, decision);
+	
+		try {
+			sendDecision(trans, false);
+		} catch (TransactionAbortedException e) {
+			;
+		}
 		synchronized (abortedTXN) {
 			abortedTXN.add(txnID);
 		}
@@ -89,7 +101,7 @@ public class TransactionManager{
 			if (abortedTXN.contains(txnId))
 				throw new TransactionAbortedException(txnId);
 		}
-		if (trans==null) throw new InvalidTransactionException(txnID);
+		if (trans==null) throw new InvalidTransactionException(txnId);
 		trans.started = 1;
 		txns.put(txnId, trans);
 		// write "start2PC" to logs
@@ -98,11 +110,11 @@ public class TransactionManager{
 
 		// TODO: add timeout to all RMs
 		// get votes from participants
-		int decision = 1;
-		for (Integer rmIdx: trans.RMSet) decision &= stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
+		boolean decision = true;
+		for (Integer rmIdx: trans.rmSet) decision &= stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
 
 		// write decision to log
-		trans.commited = (decision==1)? 1:-1;
+		trans.decision = (decision==true)? 1:-1;
 		txns.put(txnId, trans);
 		DiskManager.writeLog("Coordinator", name, txns);
 		
@@ -114,39 +126,38 @@ public class TransactionManager{
 	
 
 	// send commit or abort decision to all participants. Decision: 1 -- commit, 0 -- abort
-	public void sendDecision(TransactionCoordinator trans, int decision) 
+	public void sendDecision(TransactionCoordinator trans, boolean decision) 
 		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
 		
 		killTimer(trans.xid);
-		if (decision==1) {
-			for (Integer rm: trans.RMSet) stubs.get(rmIdx).commit(txnId);
-			removeTxn(trans.xid);
+		for (Integer rmIdx: trans.rmSet) {
+			if (decision) stubs.get(rmIdx).commit(trans.xid);
+			else stubs.get(rmIdx).abort(trans.xid);
 		}
-		else{
-			abort(trans.xid);
-		}
+		removeTxn(trans.xid);
 		
 	}
 
 
-	public synchronized int start(){
+	public synchronized int start() throws RemoteException{
 		int xid = txnIdCounter;
 		start(txnIdCounter);
 		txnIdCounter +=1;
 		return xid;
 	}
 
-	public void start(int txnId){
+	public void start(int txnId) throws RemoteException{
 		initTimer(txnId);
-		for (Integer rmIdx: trans.RMSet) stubs.get(rmIdx).start(txnId);
+		TransactionCoordinator trans = txns.get(txnId);
+		for (Integer rmIdx: trans.rmSet) stubs.get(rmIdx).start(txnId);
 	}
 
 
 	// update the RM stub invovled with this transaction. 
 	// @param: rm: 1: flight, 2: car, 3:room
 	public void updateRMSet(int xid, int rm){
-		TransactionCoordinator trans = txns.get(txnId);
-		trans.RMSet.add(rm);
+		TransactionCoordinator trans = txns.get(xid);
+		trans.rmSet.add(rm);
 		txns.put(xid, trans);
 	}
 

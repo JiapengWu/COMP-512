@@ -242,8 +242,14 @@ public interface IResourceManager extends Remote
     /* project 3 */
     public boolean prepare(int xid)
         throws RemoteException, TransactionAbortedException, InvalidTransactionException;
+    
     public void resetCrashes() throws RemoteException;
+    
     public void crashMiddleware(int mode) throws RemoteException;
+    
     public void crashResourceManager(String name /* RM Name */, int mode)
         throws RemoteException;
+
+	boolean voteReply(int id)
+			throws RemoteException, InvalidTransactionException;
 }

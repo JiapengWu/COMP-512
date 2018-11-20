@@ -20,6 +20,7 @@ import Server.LockManager.LockManager;
 import Server.LockManager.TransactionLockObject;
 
 public class ResourceManager implements IResourceManager {
+	int crashMode = -1;
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
 	protected HashMap<Integer, TransactionParticipant> map = new HashMap<Integer, TransactionParticipant>();
@@ -539,7 +540,7 @@ public class ResourceManager implements IResourceManager {
 
 	@Override
 	public boolean voteReply(int id)
-			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+			throws RemoteException, InvalidTransactionException {
 		map.get(id).votedYes = 1;
 		// TODO: when do we vote no?
 		DiskManager.writeLog("Participant", this.m_name, map);
@@ -556,7 +557,8 @@ public class ResourceManager implements IResourceManager {
 		this.map = log;
 		Iterator it = map.entrySet().iterator();
 		while (it.hasNext()) {
-			HashMap.Entry pair = (HashMap.Entry) it.next();
+			@SuppressWarnings("unchecked")
+			HashMap.Entry<Integer, TransactionParticipant> pair = (HashMap.Entry<Integer, TransactionParticipant>) it.next();
 			try {
 				int xid = (int) pair.getKey();
 				TransactionParticipant transaction = (TransactionParticipant)pair.getValue();
@@ -581,6 +583,25 @@ public class ResourceManager implements IResourceManager {
 			}
 		}
 		
+	}
+
+	@Override
+	public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
+		return true;
+	}
+
+	@Override
+	public void resetCrashes() throws RemoteException {
+		this.crashMode = -1;
+	}
+
+	@Override
+	public void crashMiddleware(int mode) throws RemoteException {
+	}
+
+	@Override
+	public void crashResourceManager(String name, int mode) throws RemoteException {
+		this.crashMode = mode; 
 	}
 	
 }
