@@ -79,7 +79,7 @@ Transactions (C):
 	+ started: int (0: not set, 1: started 2PC)
 	+ xid
 	+ decision: int (0: no decision, 1: everyone commit, -1: everyone abort)
-	+ set of RMs involved
+	+ set of RMs involved: RMSet -- 1: flight, 2: car, 3:room
 
 
 DiskManager:

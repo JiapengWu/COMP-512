@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 import Server.Common.InvalidTransactionException;
 import Server.Common.Trace;
@@ -31,12 +31,10 @@ public class RMIMiddleware implements IResourceManager {
 	private static int middleware_port = 3199;
 	private static int server_port = 3199;
 
-	private int txnIdCounter = 0;
-	private HashSet<Integer> abortedTXN = new HashSet<Integer>();
-
-	private ConcurrentHashMap<Integer, Thread> timeTable = new ConcurrentHashMap<Integer, Thread>();
+	private TransactionManager tm;
 
 	public RMIMiddleware(String s_serverName2) {
+		tm.restore();
 	}
 
 	public static void main(String args[]) {
@@ -76,6 +74,10 @@ public class RMIMiddleware implements IResourceManager {
 				Trace.error("RMIMiddleware: Error getting resource manager");
 				e.printStackTrace();
 			}
+
+			// let TransactionManager know about the stubs
+			setStubs(mw, new ArrayList<IResourceManager>({flightRM, carRM,roomRM}));
+
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {
 					try {
@@ -102,31 +104,8 @@ public class RMIMiddleware implements IResourceManager {
 		}
 	}
 
-	public class TimeOutThread implements Runnable {
-		private int xid = 0;
-
-		public TimeOutThread(int xid) {
-			this.xid = xid;
-		}
-
-		@Override
-		public void run() {
-			try {
-				Thread.sleep(TIMEOUT_IN_SEC * 1000);
-			} catch (InterruptedException e) {
-				// System.out.println(Integer.toString(xid) + " interrupted.");
-				Thread.currentThread().interrupt();
-				return;
-			}
-			try {
-				System.out.println(Integer.toString(xid) + " timeout, aborting...");
-				abort(this.xid);
-			} catch (InvalidTransactionException e) {
-				System.out.println(Integer.toString(xid) + " abort invalid transaction.");
-			} catch (RemoteException e) {
-				System.out.println(Integer.toString(xid) + " abort remote exception.");
-			}
-		}
+	public static void setStubs(RMIMiddleware mw, ArrayList<IResourceManager> stubs){
+		mw.tm.stubs = stubs;
 	}
 
 	public static void getResourceManagers(String args[]) throws Exception {
@@ -150,50 +129,57 @@ public class RMIMiddleware implements IResourceManager {
 
 	public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 1);
 		return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
 	}
 
 	@Override
 	public boolean addCars(int id, String location, int numCars, int price)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 2);
 		return carRM.addCars(id, location, numCars, price);
 	}
 
 	@Override
 	public boolean addRooms(int id, String location, int numRooms, int price)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 3);
 		return roomRM.addRooms(id, location, numRooms, price);
 	}
 
 	@Override
 	public boolean deleteFlight(int id, int flightNum)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 1);
 		return flightRM.deleteFlight(id, flightNum);
 	}
 
 	@Override
 	public boolean deleteCars(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 2);
 		return carRM.deleteCars(id, location);
 	}
 
 	@Override
 	public boolean deleteRooms(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 3);
 		return roomRM.deleteRooms(id, location);
 	}
 
 	@Override
 	public boolean deleteCustomer(int id, int customerID)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
 		customerIdx.remove(customerID);
+		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
 		return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID)
 				&& roomRM.deleteCustomer(id, customerID);
 	}
@@ -201,32 +187,35 @@ public class RMIMiddleware implements IResourceManager {
 	@Override
 	public int queryFlight(int id, int flightNumber)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 1);
 		return flightRM.queryFlight(id, flightNumber);
 	}
 
 	@Override
 	public int queryCars(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 2);
 		return carRM.queryCars(id, location);
 	}
 
 	@Override
 	public int queryRooms(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 3);
 		return roomRM.queryRooms(id, location);
 	}
 
 	@Override
-
 	public String queryCustomerInfo(int id, int customerID)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
 		if(!customerIdx.contains(customerID)) {
 			return String.format("Customer %d doesn't exists.", customerID);
 		}
+		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
 		String carSummary = "";
 		try {
 			carSummary = carRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
@@ -243,21 +232,24 @@ public class RMIMiddleware implements IResourceManager {
 	@Override
 	public int queryFlightPrice(int id, int flightNumber)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 1);
 		return flightRM.queryFlightPrice(id, flightNumber);
 	}
 
 	@Override
 	public int queryCarsPrice(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 2);
 		return carRM.queryCarsPrice(id, location);
 	}
 
 	@Override
 	public int queryRoomsPrice(int id, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 3);
 		return roomRM.queryRoomsPrice(id, location);
 	}
 
@@ -277,28 +269,32 @@ public class RMIMiddleware implements IResourceManager {
 	public boolean newCustomer(int id, int cid)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		this.customerIdx.add(cid);
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
 		return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
 	}
 
 	@Override
 	public boolean reserveFlight(int id, int customerID, int flightNumber)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 1);
 		return flightRM.reserveFlight(id, customerID, flightNumber);
 	}
 
 	@Override
 	public boolean reserveCar(int id, int customerID, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 2);
 		return carRM.reserveCar(id, customerID, location);
 	}
 
 	@Override
 	public boolean reserveRoom(int id, int customerID, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 3);
 		return roomRM.reserveRoom(id, customerID, location);
 	}
 
@@ -306,7 +302,8 @@ public class RMIMiddleware implements IResourceManager {
 	public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car,
 			boolean room)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		resetTimer(id);
+		tm.resetTimer(id);
+		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
 		Vector<String> history = new Vector<String>();
 		for (String fn : flightNumbers) {
 			if (reserveFlight(id, customerID, Integer.parseInt(fn)))
@@ -340,48 +337,23 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public synchronized int start() throws RemoteException {
-		txnIdCounter += 1;
-		start(txnIdCounter);
-		return txnIdCounter;
+		int xid = tm.start();
+		return xid;
 	}
 
 	@Override
 	public void start(int txnId) throws RemoteException {
-		initTimer(txnId);
-		roomRM.start(txnId);
-		carRM.start(txnId);
-		flightRM.start(txnId);
+		tm.start(txnId);
 	}
 
 	@Override
 	public void commit(int txnId) throws RemoteException, InvalidTransactionException, TransactionAbortedException {
-		synchronized (abortedTXN) {
-			if (abortedTXN.contains(txnId))
-				throw new TransactionAbortedException(txnId);
-		}
-		if (timeTable.get(txnId) == null)
-			throw new InvalidTransactionException(txnId);
-
-		killTimer(txnId);
-		roomRM.commit(txnId);
-		carRM.commit(txnId);
-		flightRM.commit(txnId);
-		removeTxn(txnId);
+		tm.commit(txnId);
 	}
 
 	@Override
-	public void abort(int txnID) throws RemoteException, InvalidTransactionException {
-		if (timeTable.get(txnID) == null)
-			throw new InvalidTransactionException(txnID);
-		killTimer(txnID);
-		roomRM.abort(txnID);
-		carRM.abort(txnID);
-		flightRM.abort(txnID);
-		removeTxn(txnID);
-		synchronized (abortedTXN) {
-			abortedTXN.add(txnID);
-		}
-		Trace.info(abortedTXN.toString());
+	public void abort(int txnId) throws RemoteException, InvalidTransactionException {
+		tm.abort(txnId);
 	}
 
 	public boolean unReserveFlights(int id, int customerID, Vector<String> history)
@@ -413,64 +385,14 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public boolean shutdown() throws RemoteException {
-		Iterator it = timeTable.entrySet().iterator();
-		while (it.hasNext()) {
-			ConcurrentHashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
-			try {
-				abort((int) pair.getKey());
-			} catch (InvalidTransactionException e) {
-				continue;
-			}
-		}
-    carRM.shutdown();
-    flightRM.shutdown();
-    roomRM.shutdown();
-    new Thread() {
-	    @Override
-	    public void run() {
-	      System.out.print("Shutting down...");
-	      try {
-	        sleep(500);
-	      } catch (InterruptedException e) {
-	        // I don't care
-	      }
-	      System.out.println("done");
-	      System.exit(0);
-	    }
+		return tm.shutdown();
+	}
 
-  		}.start();
+
+	@Override
+	public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException;{
+		// do nothing at the middleware
+		return true;
+	}
 	
-	return true;
-	}
-
-	private void initTimer(int xid) {
-		Thread cur = new Thread(new TimeOutThread(xid));
-		cur.start();
-		timeTable.put(xid, cur);
-		// System.out.println(Integer.toString(xid) + " initiated timer...");
-	}
-
-	private synchronized void resetTimer(int xid) throws InvalidTransactionException, TransactionAbortedException {
-		if (timeTable.get(xid) != null) {
-			killTimer(xid);
-			initTimer(xid);
-		} else {
-			if (abortedTXN.contains(xid)) {
-				throw new TransactionAbortedException(xid);
-			}
-			throw new InvalidTransactionException(xid);
-		}
-	}
-
-	public void killTimer(int id) {
-		Thread cur = timeTable.get(id);
-		if (cur != null) {
-			cur.interrupt();
-			// System.out.println(Integer.toString(id) + " interrupted timer...");
-		}
-	}
-
-	private void removeTxn(int xid) {
-		timeTable.remove(xid);
-	}
 }
