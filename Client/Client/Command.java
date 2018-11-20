@@ -35,7 +35,11 @@ public enum Command {
 	Start("Start a transaction",""),
 	Commit("Commit a transaction","<xid>"),
 	Abort("Abort a transaction","<xid>"),
-	Shutdown("Shutdown all servers","");
+	Shutdown("Shutdown all servers",""),
+
+	ResetCrashes("Reset crash mode of servers",""),
+	CrashMiddleware("Crash the middleware", "<mode>"),
+	CrashResourceManager("Crash a server", "<RM name>, <mode>");
 
 	String m_description;
 	String m_args;

@@ -406,6 +406,9 @@ public class RMIMiddleware implements IResourceManager {
     @Override
     public void resetCrashes() throws RemoteException{
     	tm.crashMode = 0;
+    	flightRM.resetCrashes();
+    	carRM.resetCrashes();
+    	roomRM.resetCrashes();
     }
 
     @Override

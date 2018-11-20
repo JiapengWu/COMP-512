@@ -250,6 +250,6 @@ public interface IResourceManager extends Remote
     public void crashResourceManager(String name /* RM Name */, int mode)
         throws RemoteException;
 
-	boolean voteReply(int id)
+	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException;
 }

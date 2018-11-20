@@ -55,18 +55,27 @@ public class TransactionManager{
 		catch (IOException e){
 			return new TransactionManager();
 		}
-		// else process leftover transactions
+		// else process ongoing transactions before crash
 		for (TransactionCoordinator trans: old_txns.values()){
 			// for transactions that started 2PC:
 			if (trans.started == 1){
+				// already made decision: resend decision to all participants
 				if(trans.decision==1){
 					sendDecision(trans,true);
 				}
+				// haven't made decision: abort
 				else{
 					trans.decision=-1;
 					old_txns.put(trans.xid, trans);
 					sendDecision(trans,false);
 				}
+			}
+			else{
+				// for transactions that haven't started 2PC: abort
+				trans.started =1;
+				trans.decision=-1;
+				old_txns.put(trans.xid, trans);
+				sendDecision(trans,false);
 			}
 		}
 		DiskManager.writeLog("Coordinator", name, old_txns);
@@ -137,13 +146,15 @@ public class TransactionManager{
 	}
 
 
-	// send commit or abort decision to all participants. Decision: 1 -- commit, 0 -- abort
+	/* send commit or abort decision to all participants. 
+	@param decision: 1 -- commit, 0 -- abort
+	*/
 	public void sendDecision(TransactionCoordinator trans, boolean decision) 
 		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
 		
 		killTimer(trans.xid);
 		for (Integer rmIdx: trans.rmSet) {
-			if (decision) stubs.get(rmIdx).commit(trans.xid);
+			if (decision==1) stubs.get(rmIdx).commit(trans.xid);
 			else stubs.get(rmIdx).abort(trans.xid);
 
 			// crash after sending some but not all decisions

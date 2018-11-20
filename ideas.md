@@ -28,6 +28,7 @@ TransactionManager/Coordinator:
 		3) resendSet = started\decided. ie, started2PC, but crashed before all participants reply, so abort all
 		4) sendDecision(xid, decision) for xid in decided
 		5) sendDecision(xid, abort) for all xid in resendSet
+		6) sendDevision(xid, abort) for all transactions that haven't started 2PC
  	- sendDecision(commit/abort, xid):
 		1) Log decision+ xid
 		2) send commit/abort decision to all RMs in map[xid].RMs

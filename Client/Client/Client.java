@@ -692,9 +692,36 @@ public abstract class Client
 				break;
 			}
 
+			/* Crash methods */
+			case ResetCrashes:{
+				System.out.println("Reset crash modes on all servers and middleware");
+				m_resourceManager.resetCrashes();
+				break;
+			}
+
+			case CrashMiddleware:{
+				if (arguments.size() !=1) {
+					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mCrashMiddleware command expects 1 arg, mode");
+					break;
+				}
+				int mode = toInt(arguments.elementAt(1));
+				System.out.println("Set crash on middleware with mode" +arguments.elementAt(1));
+				m_resourceManager.crashMiddleware(mode);
+				break;
+			}
+
+			case CrashResourceManager:{
+				if (arguments.size() !=2) {
+					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mCrashResourceManager command expects 2 arg: RM name (flight|car|room), mode");
+					break;
+				}
+				int mode = toInt(arguments.elementAt(2));
+				m_resourceManager.crashResourceManager(arguments.elementAt(1),mode);
+				break;
+			}
+
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
-
 				System.out.println("Quitting client");
 				System.exit(0);
 		}
