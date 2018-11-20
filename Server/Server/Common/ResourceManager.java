@@ -58,6 +58,8 @@ public class ResourceManager implements IResourceManager {
 //	map.remove(xid)
 	@Override
 	public void commit(int xid) throws InvalidTransactionException,TransactionAbortedException {
+		if(this.crashMode == 4) System.exit(0);
+		
 		map.get(xid).commited = 1;
 		DiskManager.writeLog("Participant", this.m_name, map);
 		TransactionParticipant transaction = map.get(xid);
@@ -541,19 +543,30 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException {
+
+		if(this.crashMode == 1) System.exit(0);
+		//desision
+		
 		map.get(id).votedYes = 1;
 		// TODO: when do we vote no?
 		DiskManager.writeLog("Participant", this.m_name, map);
+
+		if(this.crashMode == 2) System.exit(0);
+		if(this.crashMode == 3) shutdown();
 		return true;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void restore() {
+
 		HashMap<Integer, TransactionParticipant> log = null;
 		try {
-			log = DiskManager.readLog(m_name);
+			log = (HashMap<Integer, TransactionParticipant>) DiskManager.readLog(m_name);
 		} catch (IOException e) {
 			System.out.println("File dones't exist, nothing to restore.");
 		}
+
+		if(this.crashMode == 4) System.exit(0);
 		this.map = log;
 		Iterator it = map.entrySet().iterator();
 		while (it.hasNext()) {
@@ -564,7 +577,9 @@ public class ResourceManager implements IResourceManager {
 				TransactionParticipant transaction = (TransactionParticipant)pair.getValue();
 				if(transaction.votedYes == 1) {
 					if(transaction.commited == 0) {
-//						wait
+						while(true) {
+							
+						}
 					}
 					else if (transaction.commited == 1) {
 						try {

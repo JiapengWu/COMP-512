@@ -19,7 +19,7 @@ public class TransactionManager{
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
 	private ConcurrentHashMap<Integer, Thread> timeTable;
-	public HashMap< Integer,IResourceManager> stubs; // {1: flightRM, 2: roomRM, 3: carRM}
+	public HashMap<Integer, IResourceManager> stubs; // {1: flightRM, 2: roomRM, 3: carRM}
 	protected HashMap<Integer, TransactionCoordinator> txns;
 
 	/* crash mode: 0 - unset
@@ -44,11 +44,12 @@ public class TransactionManager{
 
 
 	// return a TM for middleware to use later
+	@SuppressWarnings("unchecked")
 	public TransactionManager restore(){
 		// DM need to read logs about all transactions
 		HashMap<Integer, TransactionCoordinator> old_txns = null;
 		try{
-			old_txns = DiskManager.readLog(name);
+			old_txns = (HashMap<Integer, TransactionCoordinator>) DiskManager.readLog(name);
 		}
 		// if no prior TM log exist, just create a new one and return
 		catch (IOException e){
@@ -111,6 +112,8 @@ public class TransactionManager{
 		// TODO: add timeout to all RMs
 		// get votes from participants
 		boolean decision = true;
+		
+//		TODO: timeout
 		for (Integer rmIdx: trans.rmSet) decision &= stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
 
 		// write decision to log
@@ -224,7 +227,7 @@ public class TransactionManager{
 	public boolean shutdown() throws RemoteException {
 		Iterator it = timeTable.entrySet().iterator();
 		while (it.hasNext()) {
-			ConcurrentHashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
+			HashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
 			try {
 				abort((int) pair.getKey());
 			} catch (InvalidTransactionException e) {
