@@ -5,14 +5,14 @@
 
 package Server.Common;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
-
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
@@ -22,12 +22,9 @@ import Server.LockManager.TransactionLockObject;
 public class ResourceManager implements IResourceManager {
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
-
+	protected HashMap<Integer, TransactionParticipant> map = new HashMap<Integer, TransactionParticipant>();
 	protected LockManager lm = new LockManager();
 	// Transaction history record from start to commit, to handle abort
-	protected HashMap<Integer, RMHashMap> xCopies = new HashMap<Integer, RMHashMap>();
-	protected HashMap<Integer, RMHashMap> xWrites = new HashMap<Integer, RMHashMap>();
-	protected HashMap<Integer, RMHashMap> xDeletes = new HashMap<Integer, RMHashMap>();
 
 	public ResourceManager(String p_name) {
 		m_name = p_name;
@@ -35,76 +32,90 @@ public class ResourceManager implements IResourceManager {
 
 	/*
 	 * Transaction related operations
+
 	 */
+//	- abort(xid):
+//	map[xid].commited=-1 
+//	write "abort"+xid
+//	map.remove(xid)
 	@Override
 	public void abort(int xid) throws InvalidTransactionException {
-		if (xCopies.get(xid)==null) throw new InvalidTransactionException(xid);
+		map.get(xid).commited = -1;
+		DiskManager.writeLog("Participant", this.m_name, map);
+		if (map.get(xid)==null) throw new InvalidTransactionException(xid);
+
+		DiskManager.writeLog("Participant", this.m_name, map);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
-		xCopies.remove(xid);
-		xWrites.remove(xid);
-		xDeletes.remove(xid);
+		this.map.remove(xid);
 		lm.UnlockAll(xid);
 	}
 
+//	- commit(xid):
+//	write "commit"+xid into log
+//	map[xid].commited=1
+//	applyCommit(xid)
+//	map.remove(xid)
 	@Override
 	public void commit(int xid) throws InvalidTransactionException,TransactionAbortedException {
-		if (xCopies.get(xid)==null) throw new InvalidTransactionException(xid);
+		map.get(xid).commited = 1;
+		DiskManager.writeLog("Participant", this.m_name, map);
+		TransactionParticipant transaction = map.get(xid);
+		if (transaction == null) throw new InvalidTransactionException(xid);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction commit with id " + Integer.toString(xid));
 		// Apply writes (including deletes)
 		synchronized (m_data) {
-			RMHashMap writes = xWrites.get(xid);
+			RMHashMap writes = transaction.xWrites;
 			Set<String> keys = writes.keySet();
 			for (String key : keys) {
 				m_data.put(key, writes.get(key));
 			}
-			RMHashMap deletes = xDeletes.get(xid);
+			RMHashMap deletes = transaction.xDeletes;
 			keys = deletes.keySet();
 			for (String key : keys) {
 				m_data.remove(key);
 			}
 		}
 		// empty history
-		xWrites.remove(xid);
-		xDeletes.remove(xid);
-		xCopies.remove(xid);
+		this.map.remove(xid);
 		lm.UnlockAll(xid);
 	}
 
 	// helper to debug
 	private void printMem(int xid) {
+		TransactionParticipant transaction = this.map.get(xid);
 		System.out.println(">>> Server memory info for xid=" + Integer.toString(xid));
 		System.out.println("==== m_data.keys() ====");
 		System.out.println(m_data.keySet());
 		System.out.println("==== xCopies[" + Integer.toString(xid) + "] ====");
-		System.out.println(xCopies.get(xid).keySet());
+		System.out.println(transaction.xCopies.keySet());
 		System.out.println("==== xWrites[" + Integer.toString(xid) + "].key() ====");
-		System.out.println(xWrites.get(xid).keySet());
+		System.out.println(transaction.xWrites.keySet());
 		System.out.println("==== xDeletes[" + Integer.toString(xid) + "].key() ====");
-		System.out.println(xDeletes.get(xid).keySet());
+		System.out.println(transaction.xDeletes.keySet());
 	}
 
 	@Override
 	public void start(int xid) {
 		Trace.info("ResourceManager_" + m_name + ":: transtaction start with id " + Integer.toString(xid));
 		synchronized (m_data) {
-			xCopies.put(xid, (RMHashMap) m_data.clone());
+			TransactionParticipant transaction = new TransactionParticipant(xid, m_data);
+			map.put(xid, transaction);
 		}
-		xWrites.put(xid, new RMHashMap());
-		xDeletes.put(xid, new RMHashMap());
 		// printMem(xid);
 	}
 
 	// Reads a data item
 	protected RMItem readData(int xid, String key) throws DeadlockException {
 		// if we haven deleted it, then we don't return anything
-		RMHashMap deletes = xDeletes.get(xid);
+		TransactionParticipant transaction = this.map.get(xid);
+		RMHashMap deletes = transaction.xDeletes;
 		synchronized (deletes) {
 			if(deletes.containsKey(key)) {
-				printMem(xid);
+//				printMem(xid);
 				return null;
 			}
 		}
-		RMHashMap copy = xCopies.get(xid);
+		RMHashMap copy = transaction.xCopies;
 		synchronized (m_data) {
 			RMItem item = copy.get(key);
 			if (item != null) {
@@ -126,15 +137,16 @@ public class ResourceManager implements IResourceManager {
 	// Writes a data item
 	protected void writeData(int xid, String key, RMItem value) throws DeadlockException {
 		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-		RMHashMap copy = xCopies.get(xid);
+		TransactionParticipant transaction = this.map.get(xid);
+		RMHashMap copy = transaction.xCopies;
 		synchronized (copy) {
 			copy.put(key, value);
 		}
-		RMHashMap writes = xWrites.get(xid);
+		RMHashMap writes = transaction.xWrites;
 		synchronized (writes) {
 			writes.put(key, value);
 		}
-		RMHashMap deletes = xDeletes.get(xid);
+		RMHashMap deletes = transaction.xDeletes;
 		synchronized (deletes) {
 			if (deletes.containsKey(key)) deletes.remove(key);
 		}
@@ -143,9 +155,10 @@ public class ResourceManager implements IResourceManager {
 
 	// Remove the item out of storage
 	protected void removeData(int xid, String key) throws DeadlockException {
+		TransactionParticipant transaction = this.map.get(xid);
 		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-		RMHashMap deletes = xDeletes.get(xid);
-		RMHashMap copy = xCopies.get(xid);
+		RMHashMap deletes = transaction.xDeletes;
+		RMHashMap copy = transaction.xCopies;
 		synchronized (deletes) {
 			deletes.put(key, null);
 			copy.remove(key);
@@ -504,6 +517,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	public boolean shutdown() throws RemoteException{
+
 		//System.exit(0);
 		new Thread() {
 	    @Override
@@ -522,4 +536,51 @@ public class ResourceManager implements IResourceManager {
 	
 		return true;
 	}
+
+	@Override
+	public boolean voteReply(int id)
+			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+		map.get(id).votedYes = 1;
+		// TODO: when do we vote no?
+		DiskManager.writeLog("Participant", this.m_name, map);
+		return true;
+	}
+	
+	public void restore() {
+		HashMap<Integer, TransactionParticipant> log = null;
+		try {
+			log = DiskManager.readLog(m_name);
+		} catch (IOException e) {
+			System.out.println("File dones't exist, nothing to restore.");
+		}
+		this.map = log;
+		Iterator it = map.entrySet().iterator();
+		while (it.hasNext()) {
+			HashMap.Entry pair = (HashMap.Entry) it.next();
+			try {
+				int xid = (int) pair.getKey();
+				TransactionParticipant transaction = (TransactionParticipant)pair.getValue();
+				if(transaction.votedYes == 1) {
+					if(transaction.commited == 0) {
+//						wait
+					}
+					else if (transaction.commited == 1) {
+						try {
+							commit(xid);
+						} catch (TransactionAbortedException e) {
+							System.out.println("Transaction aborted.");
+						}
+					}
+					else {
+						abort(xid);
+					}
+				}else abort(xid);
+						
+			} catch (InvalidTransactionException e) {
+				
+			}
+		}
+		
+	}
+	
 }
