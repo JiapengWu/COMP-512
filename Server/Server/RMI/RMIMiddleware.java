@@ -31,10 +31,11 @@ public class RMIMiddleware implements IResourceManager {
 	private static int middleware_port = 3199;
 	private static int server_port = 3199;
 
-	private TransactionManager tm;
+	protected TransactionManager tm = new TransactionManager();
 
 	public RMIMiddleware(String s_serverName2) {
-		tm.restore();
+		TransactionManager restoredTM = tm.restore();
+		tm = restoredTM;
 	}
 
 	public static void main(String args[]) {
@@ -76,7 +77,9 @@ public class RMIMiddleware implements IResourceManager {
 			}
 
 			// let TransactionManager know about the stubs
-			setStubs(mw, new ArrayList<IResourceManager>({flightRM, carRM,roomRM}));
+			HashMap< Integer,IResourceManager> stubs = new HashMap< Integer,IResourceManager>();
+			stubs.put(1,flightRM); stubs.put(2,roomRM); stubs.put(3,carRM); 
+			mw.tm.stubs = stubs;
 
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {
@@ -104,9 +107,7 @@ public class RMIMiddleware implements IResourceManager {
 		}
 	}
 
-	public static void setStubs(RMIMiddleware mw, ArrayList<IResourceManager> stubs){
-		mw.tm.stubs = stubs;
-	}
+	
 
 	public static void getResourceManagers(String args[]) throws Exception {
 
@@ -394,5 +395,31 @@ public class RMIMiddleware implements IResourceManager {
 		// do nothing at the middleware
 		return true;
 	}
+
+
+	// TODO ????
+	@Override
+	public boolean prepare(int xid)
+        throws RemoteException, TransactionAbortedException, InvalidTransactionException{
+        	return -1;
+        }
+
+    @Override
+    public void resetCrashes() throws RemoteException{
+    	tm.crashMode = 0;
+    }
+
+    @Override
+    public void crashMiddleware(int mode) throws RemoteException{
+    	tm.crashMode = mode;
+    }
+
+    @Override
+    public void crashResourceManager(String name, int mode)
+        throws RemoteException{
+        if (name.equals("flight")) flightRM.crashResourceManager(mode);
+        else if (name.equals("car")) carRM.crashResourceManager(mode);
+        else roomRM.crashResourceManager(mode)
+        }
 	
 }

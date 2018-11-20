@@ -12,9 +12,8 @@ public class TransactionManager{
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
 	private ConcurrentHashMap<Integer, Thread> timeTable;
-	private DiskManager dm;
-	public ArrayList<IResourceManager> stubs;
-	public HashMap<Integer, TransactionCoordinator> txns;
+	public HashMap< Integer,IResourceManager> stubs; // {1: flightRM, 2: roomRM, 3: carRM}
+	protected HashMap<Integer, TransactionCoordinator> txns;
 
 	/* crash mode: 0 - unset
 	1. Crash before sending vote request
@@ -29,7 +28,7 @@ public class TransactionManager{
 	protected int crashMode = 0; 
 
 	public TransactionManager(){
-		ArrayList<IResourceManager> = new ArrayList<IResourceManager>();
+		HashMap< Integer,IResourceManager> = new HashMap<Integer,IResourceManager>();
 		txnIdCounter = 0;
 		abortedTXN = new HashSet<Integer>();
 		timeTable = new ConcurrentHashMap<Integer, Thread>();
@@ -37,9 +36,34 @@ public class TransactionManager{
 	}
 
 
-	public void restore(){
-		// TODO: DM need to read logs and recover all attributes
-
+	// return a TM for middleware to use later
+	public TransactionManager restore(){
+		// DM need to read logs about all transactions
+		try{
+			HashMap<Integer, TransactionCoordinator> old_txns = DiskManager.readLog(name);
+		}
+		// if no prior TM log exist, just create a new one and return
+		catch (IOException e){
+			return new TransactionManager();
+		}
+		// else process leftover transactions
+		TransactionManager tm = new TransactionManager();
+		tm.txns = old_txns;
+		for (TransactionCoordinator trans: old_txns.values()){
+			if (trans.started == 1){
+				if(trans.committed==1){
+					sendDecision(trans,1);
+				}
+				else{
+					sendDecision(trans,0);
+				}
+			}
+			else{
+				sendDecision(trans,0);
+			}
+		}
+		
+		return tm;
 	}
 
 
@@ -59,43 +83,49 @@ public class TransactionManager{
 
 	public void commit(int txnId) 
 		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
+		// prepare for 2PC
 		TransactionCoordinator trans = txns.get(txnId);
-		
 		synchronized (abortedTXN) {
 			if (abortedTXN.contains(txnId))
 				throw new TransactionAbortedException(txnId);
 		}
 		if (trans==null) throw new InvalidTransactionException(txnID);
-
 		trans.started = 1;
 		txns.put(txnId, trans);
 		// write "start2PC" to logs
-		dm.writeLog("Coordinator", name, txns);
+		DiskManager.writeLog("Coordinator", name, txns);
+		if (crashMode ==1) System.exit(1);
+
+		// TODO: add timeout to all RMs
 		// get votes from participants
 		int decision = 1;
-		for (IResourceManager rm: stubs) decision &= voteReply(xid); // if any stub vote no, decision will be 0
+		for (Integer rmIdx: trans.RMSet) decision &= stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
 
 		// write decision to log
 		trans.commited = (decision==1)? 1:-1;
 		txns.put(txnId, trans);
-		dm.writeLog("Coordinator", name, txns);
+		DiskManager.writeLog("Coordinator", name, txns);
 		
 		// send decision to all participants
 		sendDecision(trans, decision);
 
 	}
 
+	
 
 	// send commit or abort decision to all participants. Decision: 1 -- commit, 0 -- abort
 	public void sendDecision(TransactionCoordinator trans, int decision) 
 		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
 		
 		killTimer(trans.xid);
-		for (IResourceManager rm: trans.RMSet){
-			if (decision==1) rm.commit(txnId);
-			else rm.abort(txnId);
+		if (decision==1) {
+			for (Integer rm: trans.RMSet) stubs.get(rmIdx).commit(txnId);
+			removeTxn(trans.xid);
 		}
-		removeTxn(trans.xid);
+		else{
+			abort(trans.xid);
+		}
+		
 	}
 
 
@@ -108,7 +138,7 @@ public class TransactionManager{
 
 	public void start(int txnId){
 		initTimer(txnId);
-		for (IResourceManager rm: stubs) rm.start(txnId);
+		for (Integer rmIdx: trans.RMSet) stubs.get(rmIdx).start(txnId);
 	}
 
 
@@ -190,7 +220,7 @@ public class TransactionManager{
 				continue;
 			}
 		}
-    for (IResourceManager rm: stubs) rm.shutdown();
+    for (IResourceManager rm: stubs.values()) rm.shutdown();
     new Thread() {
 	    @Override
 	    public void run() {
