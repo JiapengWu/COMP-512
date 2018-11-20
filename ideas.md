@@ -9,57 +9,93 @@ Middleware (ie, coordinator):
 TransactionManager/Coordinator:
 	+ TxnCounter (Atomic)
 	+ HealthManager HM
-	+ map: <xid, set of RMs involved>
+	+ map: <xid, Transactions(C)>
 	- commit(xid): 
-		1) log "start commit"+xid+[RMs involved]
-		2) RM.voteReply(xid) for all RM in map[xid]. get responses from all RMs in list
-		3) if all(list)==Yes: sendDecision(commit) for all RM in map[xid]
-			else: sendDecision(abort) for all RMs
-		4) log "commited/aborted"+ xid+[all RMs involved]
+		1) log "start commit"+xid[RMs involved]
+		2) RM.voteReply(xid) for all RM in map[xid].RMs. get responses  from all RMs in list. If remoteException, decision=abort
+		3) if all(list)==Yes, decision=commit. 
+		4) sendDecision(decision) to all RM in map[xid]
 		5) return true/false
 	- abort(xid):
-		1) log "start abort"+xid+[RMs involved]
+		1) log "start abort"
 		2) sendDecision(abort) for all RMs
-		3) log "aborted"+xid+[all RMs involved]
+		3) log "aborted"
 		4) return
-	- restoreDecision(): {required?}
-		1) Commits = set of xid that has "commit" in log
-		2) finished = set of xid that has "commited/aborted" in log
-		3) resendSet = Commits\finished
-		4) sendDecision(xid) for xid in resendSet
-	- sendDecision(commit/abort,RMset):
-		send commit/abort decision to all RMs in RMset
+	- prepare(): 
+		0) (<xid, Transactions(C)>) map=DM.restore()
+		1) started = set of xid that has "start2PC" in log
+		2) decided = set of xid that has "commit/abort" decision in log
+		3) resendSet = started\decided. ie, started2PC, but crashed before all participants reply, so abort all
+		4) sendDecision(xid, decision) for xid in decided
+		5) sendDecision(xid, abort) for all xid in resendSet
+ 	- sendDecision(commit/abort, xid):
+		1) Log decision+ xid
+		2) send commit/abort decision to all RMs in map[xid].RMs
+	
 
 
-HealthManager:`
+
+HealthManager:
 	+ map <xid, Thread>: check if client is still alive
 	+ set(xid): aborted transactions
 	>> need to check if RMs are still connected?
 
 
-ResourceManager/Coordinator:
+ResourceManager/participant:
 	+ DiskManager DM
+	+ map <xid, Transactions(P)>
 	+ LockManager LM
 	+ RMHashtable m_data: the final stable version of data
-	+ Image logs: store after images, writes:<xid, RMHashtable> & deletes:<xid, RMHashtable>
-	+ Decision logs: store "yes/no" (after vote before commit) + "commited/aborted" (finished transactions)
-	+ Map <xid, RMHashtable>
-	- voteReq(xid): 
+	- voteReply(xid): 
+		// when to vote no?
+		return true/false
 	- commit(xid):
-	- start():
-		1) DM.restore()
-		2) >> send reply again for all logged xids?
+		write "commit"+xid into log
+		map[xid].commited=1
+		applyCommit(xid)
+		map.remove(xid)
+	- abort(xid):
+		map[xid].commited=-1 
+		write "abort"+xid
+		map.remove(xid)
+	- prepare():
+		1) (<xid, Transactions(P)>) map=DM.restore()
+		2) if votedYes == 1
+			if commited == 0: (ask around) wait
+			elif: commited == 1: commit
+			else: abort
+		   else: abort
 	- applyWrites(xid, writes, delets)
 	- read/write data 
 
 
+Transactions (P):
+	+ votedYes: int (0: not set, 1: voted Yes, -1: voted No)
+	+ commited: int (0: not set, 1: commited, -1: aborted)
+	+ set of [RMHashtable], ie, after image
+	+ xid
+
+Transactions (C):
+	+ started: int (0: not set, 1: started 2PC)
+	+ xid
+	+ decision: int (0: no decision, 1: everyone commit, -1: everyone abort)
+	+ set of RMs involved
+
+
 DiskManager:
-	- restore(xid): RMHashtable
-		check if there's halfway data for xid
-	- writeWAL(name, RMHashtable):
+	- restore( class ): <xid, Transaction>
+		check if there's any log.
+		if class==1: 
+			read log file, get a map of <xid, Transaction(P)>.
+		else  get a map of <xid, Transaction(C)>
+		return this map
+
+	- writeWAL(xid, Object(Transaction), RMName):
+
+		update Transaction(?) with xid in hashmap format "RMName.json"
 		name is hostname+xid. Write RMHashtable to disk
 	- deleteWAL(name):
-		delete WAL if there exist one
+		delete WAL with xid entry if there exist one
 	- commitAndDeleteWAL(xid):
 		get WAL, apply changes to disk, delete the WAL.
 		1) data = restore(xid)

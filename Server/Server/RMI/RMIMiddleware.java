@@ -19,7 +19,7 @@ import Server.LockManager.DeadlockException;
 public class RMIMiddleware implements IResourceManager {
 	private static String s_serverName = "MiddleWare";
 	private static final String s_rmiPrefix = "group6_";
-	private static int TIMEOUT_IN_SEC = 10000;
+	private static int TIMEOUT_IN_SEC = 20;
 
 	static RMIMiddleware mw;
 

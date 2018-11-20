@@ -8,7 +8,7 @@ package Server.Common;
 import java.util.HashMap;
 
 // A specialization of HashMap with some extra diagnostics
-public class RMHashMap extends HashMap<String, RMItem>
+public class RMHashMap extends HashMap<String, RMItem> implements Serializable
 {
 	public RMHashMap() {
 		super();
