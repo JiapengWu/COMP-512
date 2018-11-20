@@ -45,7 +45,7 @@ public class TransactionManager{
 
 	// return a TM for middleware to use later
 	@SuppressWarnings("unchecked")
-	public TransactionManager restore() throws RemoteException, InvalidTransactionException{
+	public TransactionManager restore() throws RemoteException, InvalidTransactionException, TransactionAbortedException{
 		// DM need to read logs about all transactions
 		HashMap<Integer, TransactionCoordinator> old_txns = null;
 		try{
@@ -128,7 +128,7 @@ public class TransactionManager{
 	}
 
 	
-	public boolean prepare(TransactionCoordinator trans){
+	public void prepare(TransactionCoordinator trans){
 		// prepare for 2PC
 		trans.started = 1;
 		txns.put(trans.xid, trans);

@@ -5,10 +5,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Vector;
-
 
 import Server.Common.InvalidTransactionException;
 import Server.Common.Trace;
@@ -33,7 +32,15 @@ public class RMIMiddleware implements IResourceManager {
 	protected TransactionManager tm = new TransactionManager();
 
 	public RMIMiddleware(String s_serverName2) {
-		TransactionManager restoredTM = tm.restore();
+		TransactionManager restoredTM = null;
+		while(true) {
+			try {
+				restoredTM = tm.restore();
+				break;
+			} catch (RemoteException | InvalidTransactionException | TransactionAbortedException e) {
+			}
+		}
+		
 		tm = restoredTM;
 	}
 
@@ -396,13 +403,6 @@ public class RMIMiddleware implements IResourceManager {
 	}
 
 
-	// TODO ????
-	@Override
-	public boolean prepare(int xid)
-        throws RemoteException, TransactionAbortedException, InvalidTransactionException{
-        	return -1;
-        }
-
     @Override
     public void resetCrashes() throws RemoteException{
     	tm.crashMode = 0;
@@ -416,9 +416,14 @@ public class RMIMiddleware implements IResourceManager {
     @Override
     public void crashResourceManager(String name, int mode)
         throws RemoteException{
-        if (name.equals("flight")) flightRM.crashResourceManager(mode);
-        else if (name.equals("car")) carRM.crashResourceManager(mode);
-        else roomRM.crashResourceManager(mode)
+        if (name.equals("flight")) flightRM.crashResourceManager(name, mode);
+        else if (name.equals("car")) carRM.crashResourceManager(name, mode);
+        else roomRM.crashResourceManager(name, mode);
         }
+
+	@Override
+	public boolean voteReply(int id) throws RemoteException, InvalidTransactionException {
+		return true;
+	}
 	
 }
