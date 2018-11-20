@@ -5,9 +5,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Vector;
+
 
 import Server.Common.InvalidTransactionException;
 import Server.Common.Trace;
@@ -395,7 +396,12 @@ public class RMIMiddleware implements IResourceManager {
 	}
 
 
-	
+	// TODO ????
+	@Override
+	public boolean prepare(int xid)
+        throws RemoteException, TransactionAbortedException, InvalidTransactionException{
+        	return -1;
+        }
 
     @Override
     public void resetCrashes() throws RemoteException{
@@ -410,15 +416,9 @@ public class RMIMiddleware implements IResourceManager {
     @Override
     public void crashResourceManager(String name, int mode)
         throws RemoteException{
-        if (name.equals("flight")) flightRM.crashResourceManager(name, mode);
-        else if (name.equals("car")) carRM.crashResourceManager(name, mode);
-        else roomRM.crashResourceManager(name, mode);
+        if (name.equals("flight")) flightRM.crashResourceManager(mode);
+        else if (name.equals("car")) carRM.crashResourceManager(mode);
+        else roomRM.crashResourceManager(mode)
         }
-
-	@Override
-	public boolean voteReply(int id)
-			throws RemoteException,  InvalidTransactionException {
-		return false;
-	}
 	
 }

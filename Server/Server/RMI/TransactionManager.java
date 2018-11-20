@@ -45,7 +45,7 @@ public class TransactionManager{
 
 	// return a TM for middleware to use later
 	@SuppressWarnings("unchecked")
-	public TransactionManager restore(){
+	public TransactionManager restore() throws RemoteException, InvalidTransactionException{
 		// DM need to read logs about all transactions
 		HashMap<Integer, TransactionCoordinator> old_txns = null;
 		try{
@@ -56,22 +56,23 @@ public class TransactionManager{
 			return new TransactionManager();
 		}
 		// else process leftover transactions
-		TransactionManager tm = new TransactionManager();
-		tm.txns = old_txns;
 		for (TransactionCoordinator trans: old_txns.values()){
+			// for transactions that started 2PC:
 			if (trans.started == 1){
 				if(trans.decision==1){
 					sendDecision(trans,true);
 				}
 				else{
+					trans.decision=-1;
+					old_txns.put(trans.xid, trans);
 					sendDecision(trans,false);
 				}
 			}
-			else{
-				sendDecision(trans,false);
-			}
 		}
-		
+		DiskManager.writeLog("Coordinator", name, old_txns);
+		TransactionManager tm = new TransactionManager();
+		tm.txns = old_txns;
+
 		return tm;
 	}
 
@@ -96,37 +97,45 @@ public class TransactionManager{
 
 	public void commit(int txnId) 
 		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
-		// prepare for 2PC
 		TransactionCoordinator trans = txns.get(txnId);
 		synchronized (abortedTXN) {
 			if (abortedTXN.contains(txnId))
 				throw new TransactionAbortedException(txnId);
 		}
 		if (trans==null) throw new InvalidTransactionException(txnId);
-		trans.started = 1;
-		txns.put(txnId, trans);
-		// write "start2PC" to logs
-		DiskManager.writeLog("Coordinator", name, txns);
+
+		prepare(trans);
+
 		if (crashMode ==1) System.exit(1);
 
 		// TODO: add timeout to all RMs
 		// get votes from participants
 		boolean decision = true;
-		
-//		TODO: timeout
-		for (Integer rmIdx: trans.rmSet) decision &= stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
-
+		for (Integer rmIdx: trans.rmSet) {
+			decision &= stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
+			if (crashMode ==3) System.exit(1);
+		}
+		if (crashMode ==4) System.exit(1);
 		// write decision to log
 		trans.decision = (decision==true)? 1:-1;
 		txns.put(txnId, trans);
 		DiskManager.writeLog("Coordinator", name, txns);
-		
+		if (crashMode ==5) System.exit(1);
 		// send decision to all participants
 		sendDecision(trans, decision);
+		if (crashMode ==7) System.exit(1);
 
 	}
 
 	
+	public boolean prepare(TransactionCoordinator trans){
+		// prepare for 2PC
+		trans.started = 1;
+		txns.put(trans.xid, trans);
+		// write "start2PC" to logs
+		DiskManager.writeLog("Coordinator", name, txns);
+	}
+
 
 	// send commit or abort decision to all participants. Decision: 1 -- commit, 0 -- abort
 	public void sendDecision(TransactionCoordinator trans, boolean decision) 
@@ -136,6 +145,9 @@ public class TransactionManager{
 		for (Integer rmIdx: trans.rmSet) {
 			if (decision) stubs.get(rmIdx).commit(trans.xid);
 			else stubs.get(rmIdx).abort(trans.xid);
+
+			// crash after sending some but not all decisions
+			if (crashMode ==6) System.exit(1);
 		}
 		removeTxn(trans.xid);
 		
