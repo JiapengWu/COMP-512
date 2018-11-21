@@ -32,15 +32,15 @@ public class RMIResourceManager extends ResourceManager
 		try {
 			// Create a new Server object
 			RMIResourceManager server = new RMIResourceManager(s_rmiPrefix + s_serverName);
-			
-			while(true) {
-				try {
-					server.restore();
-					break;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
+			server.restore();
+//			while(true) {
+//				try {
+//					server.restore();
+//					break;
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+//			}
 
 			// Dynamically generate the stub (MiddleWare proxy)
 			IResourceManager resourceManager = (IResourceManager) UnicastRemoteObject.exportObject(server, port);
