@@ -548,7 +548,7 @@ public class ResourceManager implements IResourceManager {
 			throws RemoteException, InvalidTransactionException {
 
 		try {
-			Thread.sleep(2000);
+			Thread.sleep(4000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

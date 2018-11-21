@@ -3,12 +3,9 @@ package Server.RMI;
 
 import java.io.FileNotFoundException;
 import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map.Entry;
 
 import Server.Common.DiskManager;
 import Server.Common.InvalidTransactionException;
@@ -28,19 +25,28 @@ public class TransactionManager{
 	protected Hashtable<Integer, TransactionCoordinator> txns;
 
 	/* crash mode: 0 - unset
-	1. Crash before sending vote request
+	1. Crash before sending vote request --ok
 	2. Crash after sending vote request and before receiving any replies
-	3. Crash after receiving some replies but not all
-	4. Crash after receiving all replies but before deciding
-	5. Crash after deciding but before sending decision
-	6. Crash after sending some but not all decisions
-	7. Crash after having sent all decisions
+	3. Crash after receiving some replies but not all -- ok
+	4. Crash after receiving all replies but before deciding --ok
+	5. Crash after deciding but before sending decision -- ok
+	6. Crash after sending some but not all decisions --ok
+	7. Crash after having sent all decisions --ok
 	8. Recovery of the coordinator (if you have decided to implement coordinator recovery)
 	*/
 	protected int crashMode = 0; 
 
 	public TransactionManager(){
-		stubs = new Hashtable<Integer,IResourceManager>();
+		this.stubs = new Hashtable<Integer, IResourceManager>();
+		txnIdCounter = 0;
+		abortedTXN = new HashSet<Integer>();
+		timeTable = new ConcurrentHashMap<Integer, Thread>();
+		txns = new Hashtable<Integer, TransactionCoordinator>();
+		//Trace.info("construct new TM");
+	}
+
+	public TransactionManager(Hashtable< Integer,IResourceManager> stubs){
+		this.stubs =stubs;
 		txnIdCounter = 0;
 		abortedTXN = new HashSet<Integer>();
 		timeTable = new ConcurrentHashMap<Integer, Thread>();
@@ -51,7 +57,8 @@ public class TransactionManager{
 
 	// return a TM for middleware to use later
 	@SuppressWarnings("unchecked")
-	public TransactionManager restore() throws RemoteException, InvalidTransactionException, TransactionAbortedException{
+	public TransactionManager restore(Hashtable< Integer,IResourceManager> stubs) 
+		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
 		Trace.info("restoring...");
 		// DM need to read logs about all transactions
 		Hashtable<Integer, TransactionCoordinator> old_txns = null;
@@ -62,47 +69,70 @@ public class TransactionManager{
 		}
 		// if no prior TM log exist, just create a new one and return
 		catch (FileNotFoundException e){
-			return new TransactionManager();
+			return new TransactionManager(stubs);
 		}
 		catch (Exception e){
 			e.printStackTrace();
 		}
-		Trace.info("Recover old transaction");
+		Trace.info("Recovering old transaction");
 		// else process ongoing transactions before crash
-		for (int xid: old_txns.keySet())
+		HashSet<Integer> lastAborted = new HashSet<Integer>();
+		int lastTxnCounter = 0;
+
+		Iterator<Integer> itr = old_txns.keySet().iterator();
+		while (itr.hasNext())
 		{
-			TransactionCoordinator trans = old_txns.get(xid);
-			Trace.info("transaction #"+Integer.toString(trans.xid)+": trans.started=="+Integer.toString(trans.started)+"; trans.decision=="+Integer.toString(trans.decision));
-			
+			int xid = (int) itr.next();
+			TransactionCoordinator trans =  old_txns.get(xid);
+			lastTxnCounter = Math.max(lastTxnCounter,xid);
+			Trace.info(String.format("Transaction #%d, started=%d, decision=%d,EOT=%d",xid, trans.started, trans.decision, trans.EOT));
 			// already end-of-transactions: just ignore
-			if (trans.EOT == 1) {
-				old_txns.remove(xid);
+			
+			if (trans.EOT == 1)
+			{
+				Trace.info(String.format("removing trans #%d",xid));
+				itr.remove();
 				continue;
 			}
 			// for transactions that started 2PC:
-			else if (trans.started == 1){
+			else if (trans.started == 1)
+			{
 				// already made decision: resend decision to all participants
-				if(trans.decision==1){
+				if(trans.decision==1)
+				{
+					Trace.info(String.format("sending COMMIT to trans #%d",xid));
 					sendDecision(trans,true);
 				}
 				// haven't made decision: abort
-				else{
+				else
+				{
+					Trace.info(String.format("sending ABORT to trans #%d",xid));
 					trans.decision=-1;
 					old_txns.put(trans.xid, trans);
 					sendDecision(trans,false);
+					lastAborted.add(xid);
 				}
+				trans.EOT = 1;
+				old_txns.put(xid, trans);
 			}
-			else{
+			else
+			{
 				// for transactions that haven't started 2PC: abort
-				trans.started =1;
-				trans.decision=-1;
-				old_txns.put(trans.xid, trans);
+				Trace.info(String.format("sending ABORT to trans #%d",xid));
 				sendDecision(trans,false);
+				lastAborted.add(xid);
+
+				trans.EOT = 1;
+				old_txns.put(xid, trans);
 			}
 		}
+		Trace.info(String.format("From log: \n map <xid, Transaction> has size %d; txnCounter=%d",old_txns.size(),lastTxnCounter));
 		DiskManager.writeLog(name, old_txns);
-		TransactionManager tm = new TransactionManager();
+		// full (?) recovery of "abortedTXN" and "txnCounter"
+		TransactionManager tm = new TransactionManager(stubs);
 		tm.txns = old_txns;
+		tm.abortedTXN = lastAborted;
+		tm.txnIdCounter = lastTxnCounter+1;
 
 		return tm;
 	}
@@ -112,6 +142,7 @@ public class TransactionManager{
 	public void abort(int txnID) throws RemoteException, InvalidTransactionException {
 		if (timeTable.get(txnID) == null)
 			throw new InvalidTransactionException(txnID);
+		killTimer(txnID);
 		TransactionCoordinator trans = txns.get(txnID);
 		if (trans==null) throw new InvalidTransactionException(txnID);
 	
@@ -130,11 +161,13 @@ public class TransactionManager{
 	public void commit(int txnId) 
 		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
 		TransactionCoordinator trans = txns.get(txnId);
+
 		synchronized (abortedTXN) {
 			if (abortedTXN.contains(txnId))
 				throw new TransactionAbortedException(txnId);
 		}
 		if (trans==null) throw new InvalidTransactionException(txnId);
+		killTimer(trans.xid);
 
 		prepare(trans);
 
@@ -167,7 +200,7 @@ public class TransactionManager{
 		}
 
 		decision = !voteResults.contains(false) && !timeout;
-		Trace.info(String.format("Coordinate decision : %s. Timeout: %s", decision, timeout));
+		Trace.info(String.format("Coordinator decision : %s. Timeout: %s", decision, timeout));
 		if (crashMode ==4) System.exit(1);
 		// write decision to log
 		trans.decision = (decision==true)? 1:-1;
@@ -195,19 +228,17 @@ public class TransactionManager{
 
 
 	/* send commit or abort decision to all participants. 
-	@param decision: 1 -- commit, 0 -- abort
+	@param decision: true-- commit, false -- abort
 	*/
 	public void sendDecision(TransactionCoordinator trans, boolean decision) 
 		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
-		
-		killTimer(trans.xid);
-		for (Integer rmIdx: trans.rmSet) {
+		for (Integer rmIdx: trans.rmSet) {	
 			if (decision) stubs.get(rmIdx).commit(trans.xid);
 			else stubs.get(rmIdx).abort(trans.xid);
 			// crash after sending some but not all decisions
 			if (crashMode ==6) System.exit(1);
 		}
-		
+		Trace.info(String.format("Sent decision of transaction #%d too all Participants",trans.xid));
 	}
 
 

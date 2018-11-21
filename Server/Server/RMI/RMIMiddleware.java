@@ -31,11 +31,12 @@ public class RMIMiddleware implements IResourceManager {
 
 	protected TransactionManager tm = new TransactionManager();
 
-	public RMIMiddleware(String s_serverName2) {
+	public RMIMiddleware(String s_serverName2, Hashtable< Integer,IResourceManager> stubs) {
 		TransactionManager restoredTM = null;
 		while(true) {
 			try {
-				restoredTM = tm.restore();
+				tm.stubs = stubs;
+				restoredTM = tm.restore(stubs);
 				break;
 			} catch (RemoteException | InvalidTransactionException | TransactionAbortedException e) {
 			}
@@ -55,26 +56,6 @@ public class RMIMiddleware implements IResourceManager {
 				System.exit(1);
 			}
 
-			// Create a new Server object
-			IResourceManager mw_RM = null;
-			try {
-				mw = new RMIMiddleware(s_serverName);
-				// Dynamically generate the stub (MiddleWare proxy
-				mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			Registry client_registry;
-			try {
-				client_registry = LocateRegistry.createRegistry(middleware_port);
-			} catch (RemoteException e) {
-				client_registry = LocateRegistry.getRegistry(middleware_port);
-				e.printStackTrace();
-			}
-			final Registry registry = client_registry;
-			registry.rebind(s_rmiPrefix + s_serverName, mw_RM); // group6_MiddleWare
-
 			try {
 				getResourceManagers(args);
 			} catch (Exception e) {
@@ -85,7 +66,25 @@ public class RMIMiddleware implements IResourceManager {
 			// let TransactionManager know about the stubs
 			Hashtable< Integer,IResourceManager> stubs = new Hashtable< Integer,IResourceManager>();
 			stubs.put(1,flightRM); stubs.put(2,roomRM); stubs.put(3,carRM); 
-			mw.tm.stubs = stubs;
+			// Create a new Server object
+			IResourceManager mw_RM = null;
+			try {
+				mw = new RMIMiddleware(s_serverName, stubs);
+				// Dynamically generate the stub (MiddleWare proxy
+				mw_RM = (IResourceManager) UnicastRemoteObject.exportObject(mw, middleware_port);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			Registry client_registry;
+			try {
+				client_registry = LocateRegistry.createRegistry(middleware_port);
+			} catch (RemoteException e) {
+				client_registry = LocateRegistry.getRegistry(middleware_port);
+				e.printStackTrace();
+			}
+			final Registry registry = client_registry;
+			registry.rebind(s_rmiPrefix + s_serverName, mw_RM); // group6_MiddleWare
+			
 
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {
