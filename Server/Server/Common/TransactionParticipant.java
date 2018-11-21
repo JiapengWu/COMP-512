@@ -1,6 +1,8 @@
 package Server.Common;
 
-public class TransactionParticipant extends Transaction{
+import java.io.Serializable;
+
+public class TransactionParticipant extends Transaction implements Serializable{
 
 	public RMHashMap xCopies = new RMHashMap();
 	public RMHashMap xWrites = new RMHashMap();
