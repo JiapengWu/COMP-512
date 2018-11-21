@@ -97,7 +97,7 @@ public class TransactionManager{
 				old_txns.put(trans.xid, trans);
 				sendDecision(trans,false);
 			}
-		
+		}
 		DiskManager.writeLog(name, old_txns);
 		TransactionManager tm = new TransactionManager();
 		tm.txns = old_txns;
