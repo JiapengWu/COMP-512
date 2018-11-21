@@ -7,8 +7,9 @@ Middleware (ie, coordinator):
 	
 
 TransactionManager/Coordinator:
+	+ timetable <xid, Thread>: check if client is still alive
+	+ set(xid): aborted transactions
 	+ TxnCounter (Atomic)
-	+ HealthManager HM
 	+ map: <xid, Transactions(C)>
 	- commit(xid): 
 		1) log "start commit"+xid[RMs involved]
@@ -32,14 +33,6 @@ TransactionManager/Coordinator:
  	- sendDecision(commit/abort, xid):
 		1) Log decision+ xid
 		2) send commit/abort decision to all RMs in map[xid].RMs
-	
-
-
-
-HealthManager:
-	+ map <xid, Thread>: check if client is still alive
-	+ set(xid): aborted transactions
-	>> need to check if RMs are still connected?
 
 
 ResourceManager/participant:
@@ -75,6 +68,7 @@ Transactions (P):
 	+ commited: int (0: not set, 1: commited, -1: aborted)
 	+ set of [RMHashtable], ie, after image
 	+ xid
+
 
 Transactions (C):
 	+ started: int (0: not set, 1: started 2PC)

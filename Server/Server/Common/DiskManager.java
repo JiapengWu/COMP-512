@@ -74,4 +74,42 @@ public class DiskManager {
 	    	ex.printStackTrace();
 	    }
 	}
+	
+	public static RMHashMap readMData(String RMName) throws FileNotFoundException, IOException {
+		RMHashMap result = null;
+		try (
+				InputStream file = new FileInputStream(String.format("%s_m_data.ser", RMName));
+			      InputStream buffer = new BufferedInputStream(file);
+			      ObjectInput input = new ObjectInputStream (buffer);
+	    ){
+			 result = (RMHashMap) input.readObject();;
+	    }
+	    catch(ClassNotFoundException ex){
+	    	ex.printStackTrace();
+	    }
+		return result;
+	}
+	
+	public static void writeMData(String RMName, RMHashMap m_data) {
+		try (
+	      OutputStream file = new FileOutputStream(String.format("%s_m_data.ser", RMName));
+	      OutputStream buffer = new BufferedOutputStream(file);
+	      ObjectOutput output = new ObjectOutputStream(buffer);
+	    ){
+	      output.writeObject(m_data);
+	    }  
+	    catch(IOException ex){
+	    	ex.printStackTrace();
+	    }
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }

@@ -650,11 +650,15 @@ public abstract class Client
 				}
 				System.out.println("Committing to a transaction");
 				int xid = toInt(arguments.elementAt(1));
+				
 				try{
 					m_resourceManager.commit(xid);
 				}
 				catch (TransactionAbortedException e){
 					System.out.println("Transaction cannot be commited -- already aborted");
+					break;
+				}catch(RemoteException e) {
+					System.out.println("Remote exception.");
 					break;
 				}
 
@@ -668,7 +672,13 @@ public abstract class Client
 				}
 				System.out.println("Aborting a transaction");
 				int xid = toInt(arguments.elementAt(1));
-				m_resourceManager.abort(xid);
+				try {					
+					m_resourceManager.abort(xid);
+				}
+				catch(RemoteException e) {
+					System.out.println("Remote exception.");
+					break;
+				}
 				System.out.println("Transaction aborted");
 				break;
 			}

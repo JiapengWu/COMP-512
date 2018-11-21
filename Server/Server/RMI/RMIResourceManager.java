@@ -10,7 +10,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
+import Server.Common.InvalidTransactionException;
 import Server.Common.ResourceManager;
+import Server.Common.TransactionAbortedException;
 import Server.Interface.IResourceManager;
 
 public class RMIResourceManager extends ResourceManager
@@ -18,7 +20,6 @@ public class RMIResourceManager extends ResourceManager
 	private static String s_serverName = "Server";
 	private static String s_rmiPrefix = "group6_";
 	private static int port = 3199;
-
 
 	public static void main(String args[])
 	{
@@ -31,6 +32,15 @@ public class RMIResourceManager extends ResourceManager
 		try {
 			// Create a new Server object
 			RMIResourceManager server = new RMIResourceManager(s_rmiPrefix + s_serverName);
+			
+			while(true) {
+				try {
+					server.restore();
+					break;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 
 			// Dynamically generate the stub (MiddleWare proxy)
 			IResourceManager resourceManager = (IResourceManager) UnicastRemoteObject.exportObject(server, port);

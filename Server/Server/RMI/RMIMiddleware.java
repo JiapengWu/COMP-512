@@ -36,7 +36,7 @@ public class RMIMiddleware implements IResourceManager {
 		while(true) {
 			try {
 				tm.stubs = stubs;
-				restoredTM = tm.restore(stubs);
+				restoredTM = tm.restore();
 				break;
 			} catch (RemoteException | InvalidTransactionException | TransactionAbortedException e) {
 			}

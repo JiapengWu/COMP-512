@@ -183,35 +183,34 @@ public class TransactionManager {
 		if (crashMode == 1)
 			System.exit(1);
 
-		// TODO: add timeout to all RMs
 		// get votes from participants
 		boolean decision = true;
 		boolean timeout = false;
 		LinkedList<Boolean> voteResults = new LinkedList<Boolean>();
+		LinkedList<Boolean> timeoutList = new LinkedList<Boolean>();
 
 		Trace.info("start sending vote request...");
 
 		ExecutorService service = Executors.newCachedThreadPool();
 
-		long start = System.currentTimeMillis();
+//		long start = System.currentTimeMillis();
 		for (Integer rmIdx : trans.rmSet) {
-			ExecutionWithTimeout execution = new ExecutionWithTimeout(new VoteReqThread(txnId, rmIdx, voteResults));
+			ExecutionWithTimeout execution = new ExecutionWithTimeout(new VoteReqThread(txnId, rmIdx, voteResults), 
+					timeoutList);
 			service.execute(execution);
 		}
 		service.shutdown();
 
 		try {
-			service.awaitTermination(TIMEOUT_VOTE_IN_SEC, TimeUnit.SECONDS);
-			long end = System.currentTimeMillis();
-			if(end - start >= TIMEOUT_VOTE_IN_SEC * 1000) {
-				timeout = true;
-			}
+			service.awaitTermination(TIMEOUT_VOTE_IN_SEC + 1, TimeUnit.SECONDS);
+			timeout = timeoutList.contains(false);
 		} catch (InterruptedException e) {
 			service.shutdownNow();
 		}
 
 		decision = !voteResults.contains(false) && !timeout;
 		Trace.info(String.format("Coordinator decision : %s. Timeout: %s", decision, timeout));
+		
 		if (crashMode ==4) System.exit(1);
 		// write decision to log
 		trans.decision = (decision == true) ? 1 : -1;
@@ -232,9 +231,11 @@ public class TransactionManager {
 
 	public class ExecutionWithTimeout implements Runnable {
 		Runnable voteReqThread;
+		LinkedList<Boolean> timeoutList;
 
-		public ExecutionWithTimeout(Runnable voteReqThread) {
+		public ExecutionWithTimeout(Runnable voteReqThread, LinkedList<Boolean> timeoutList) {
 			this.voteReqThread = voteReqThread;
+			this.timeoutList = timeoutList;
 		}
 
 		@Override
@@ -248,12 +249,14 @@ public class TransactionManager {
 			} catch (ExecutionException e) {
 				e.printStackTrace();
 			} catch (TimeoutException e) {
+				synchronized(timeoutList) {					
+					this.timeoutList.add(false);
+				}
 				Trace.info("Time out");
 			} finally {
 				service.shutdownNow();
 			}
 		}
-
 	}
 
 	public class VoteReqThread implements Runnable {
@@ -280,7 +283,7 @@ public class TransactionManager {
 				synchronized (voteResults) {
 					voteResults.add(false);
 				}
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 	}
