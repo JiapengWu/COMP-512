@@ -12,20 +12,20 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 
 public class DiskManager {
 	
 	@SuppressWarnings("unchecked")
-	public static HashMap<Integer, ? extends Transaction> readLog(String RMName) throws FileNotFoundException, IOException{
-		HashMap<Integer, Transaction> result = new HashMap<Integer, Transaction>();
+	public static Hashtable<Integer, ? extends Transaction> readLog(String RMName) throws FileNotFoundException, IOException{
+		Hashtable<Integer, Transaction> result = new Hashtable<Integer, Transaction>();
 		try (
 			  InputStream file = new FileInputStream(String.format("%s.ser", RMName));
 		      InputStream buffer = new BufferedInputStream(file);
 		      ObjectInput input = new ObjectInputStream (buffer);
 		    ){
-			 result = (HashMap<Integer,Transaction>) input.readObject();;
+			 result = (Hashtable<Integer,Transaction>) input.readObject();;
 		    }  
 		    catch(ClassNotFoundException ex){
 		    	ex.printStackTrace();
@@ -34,7 +34,7 @@ public class DiskManager {
 	}
 	
 //	name is hostname+xid. Write RMHashtable to disk
-	public static void writeLog(String RMName, HashMap<Integer, ? extends Transaction> map) {
+	public static void writeLog(String RMName, Hashtable<Integer, ? extends Transaction> map) {
 		try (
 	      OutputStream file = new FileOutputStream(String.format("%s.ser", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);

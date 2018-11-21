@@ -8,9 +8,10 @@ package Server.Common;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Vector;
 
@@ -25,7 +26,7 @@ public class ResourceManager implements IResourceManager {
 	int crashMode = -1;
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
-	protected HashMap<Integer, TransactionParticipant> map = new HashMap<Integer, TransactionParticipant>();
+	protected Hashtable<Integer, TransactionParticipant> map = new Hashtable<Integer, TransactionParticipant>();
 	protected LockManager lm = new LockManager();
 	// Transaction history record from start to commit, to handle abort
 
@@ -566,19 +567,20 @@ public class ResourceManager implements IResourceManager {
 	@SuppressWarnings("unchecked")
 	public void restore() {
 
-		HashMap<Integer, TransactionParticipant> log = null;
+		Hashtable<Integer, TransactionParticipant> log = null;
 		try {
-			log = (HashMap<Integer, TransactionParticipant>) DiskManager.readLog(m_name);
+			log = (Hashtable<Integer, TransactionParticipant>) DiskManager.readLog(m_name);
 		} catch (IOException e) {
 			System.out.println("File dones't exist, nothing to restore.");
 		}
 
 		if(this.crashMode == 4) System.exit(0);
 		this.map = log;
-		Iterator it = map.entrySet().iterator();
-		while (it.hasNext()) {
-			@SuppressWarnings("unchecked")
-			HashMap.Entry<Integer, TransactionParticipant> pair = (HashMap.Entry<Integer, TransactionParticipant>) it.next();
+
+        Set<Entry<Integer, TransactionParticipant>> entires = log.entrySet();
+        
+        
+		for(Entry<Integer, TransactionParticipant> pair: entires){
 			try {
 				int xid = (int) pair.getKey();
 				TransactionParticipant transaction = (TransactionParticipant)pair.getValue();

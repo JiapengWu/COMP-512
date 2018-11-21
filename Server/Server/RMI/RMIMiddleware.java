@@ -5,8 +5,8 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import Server.Common.InvalidTransactionException;
@@ -83,7 +83,7 @@ public class RMIMiddleware implements IResourceManager {
 			}
 
 			// let TransactionManager know about the stubs
-			HashMap< Integer,IResourceManager> stubs = new HashMap< Integer,IResourceManager>();
+			Hashtable< Integer,IResourceManager> stubs = new Hashtable< Integer,IResourceManager>();
 			stubs.put(1,flightRM); stubs.put(2,roomRM); stubs.put(3,carRM); 
 			mw.tm.stubs = stubs;
 

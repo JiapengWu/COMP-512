@@ -5,16 +5,17 @@ import java.io.FileNotFoundException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Server.Common.DiskManager;
 import Server.Common.InvalidTransactionException;
+import Server.Common.Trace;
 import Server.Common.TransactionAbortedException;
 import Server.Common.TransactionCoordinator;
 import Server.Interface.IResourceManager;
-import Server.Common.Trace;
 
 public class TransactionManager{
 	public static final int TIMEOUT_IN_SEC = 1000;
@@ -22,8 +23,8 @@ public class TransactionManager{
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
 	private ConcurrentHashMap<Integer, Thread> timeTable;
-	public HashMap<Integer, IResourceManager> stubs; // {1: flightRM, 2: roomRM, 3: carRM}
-	protected HashMap<Integer, TransactionCoordinator> txns;
+	public Hashtable<Integer, IResourceManager> stubs; // {1: flightRM, 2: roomRM, 3: carRM}
+	protected Hashtable<Integer, TransactionCoordinator> txns;
 
 	/* crash mode: 0 - unset
 	1. Crash before sending vote request
@@ -38,11 +39,11 @@ public class TransactionManager{
 	protected int crashMode = 0; 
 
 	public TransactionManager(){
-		stubs = new HashMap<Integer,IResourceManager>();
+		stubs = new Hashtable<Integer,IResourceManager>();
 		txnIdCounter = 0;
 		abortedTXN = new HashSet<Integer>();
 		timeTable = new ConcurrentHashMap<Integer, Thread>();
-		txns = new HashMap<Integer, TransactionCoordinator>();
+		txns = new Hashtable<Integer, TransactionCoordinator>();
 		//Trace.info("construct new TM");
 	}
 
@@ -52,10 +53,10 @@ public class TransactionManager{
 	public TransactionManager restore() throws RemoteException, InvalidTransactionException, TransactionAbortedException{
 		Trace.info("restoring...");
 		// DM need to read logs about all transactions
-		HashMap<Integer, TransactionCoordinator> old_txns = null;
+		Hashtable<Integer, TransactionCoordinator> old_txns = null;
 		HashSet<Integer> priorTxns = null;
 		try{
-			old_txns = (HashMap<Integer, TransactionCoordinator>) DiskManager.readLog(name);
+			old_txns = (Hashtable<Integer, TransactionCoordinator>) DiskManager.readLog(name);
 			//priorTxns = DiskManager.readAliveTransactions(name);
 		}
 		// if no prior TM log exist, just create a new one and return
