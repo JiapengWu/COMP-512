@@ -19,6 +19,7 @@ import Server.Interface.IResourceManager;
 
 public class TransactionManager{
 	public static final int TIMEOUT_IN_SEC = 1000;
+	public static final int TIMEOUT_VOTE_IN_SEC = 3;
 	private String name = "MiddleWare"; 
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
@@ -157,9 +158,10 @@ public class TransactionManager{
 		
 		for(Thread voteReqThread: voteReqThreads) {
 			try {
-				voteReqThread.join(2000);
+				voteReqThread.join(TIMEOUT_VOTE_IN_SEC * 1000);
 			} catch (InterruptedException e) {
 				timeout = true;
+				Trace.info("start sending vote request...");
 				break;
 			}
 		}

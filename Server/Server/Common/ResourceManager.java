@@ -547,6 +547,12 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException {
+		try {
+			wait(3000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		boolean decision = true;
 		if(this.crashMode == 1) System.exit(0);
 		if(abortedTXN.contains(id)) {
