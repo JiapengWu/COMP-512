@@ -154,7 +154,7 @@ public class TransactionManager{
 		
 		killTimer(trans.xid);
 		for (Integer rmIdx: trans.rmSet) {
-			if (decision==1) stubs.get(rmIdx).commit(trans.xid);
+			if (decision) stubs.get(rmIdx).commit(trans.xid);
 			else stubs.get(rmIdx).abort(trans.xid);
 
 			// crash after sending some but not all decisions
