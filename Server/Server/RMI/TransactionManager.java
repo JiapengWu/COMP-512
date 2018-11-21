@@ -24,7 +24,6 @@ public class TransactionManager{
 	private ConcurrentHashMap<Integer, Thread> timeTable;
 	public HashMap<Integer, IResourceManager> stubs; // {1: flightRM, 2: roomRM, 3: carRM}
 	protected HashMap<Integer, TransactionCoordinator> txns;
-	
 
 	/* crash mode: 0 - unset
 	1. Crash before sending vote request
@@ -98,7 +97,6 @@ public class TransactionManager{
 				old_txns.put(trans.xid, trans);
 				sendDecision(trans,false);
 			}
-		}
 		
 		DiskManager.writeLog(name, old_txns);
 		TransactionManager tm = new TransactionManager();
@@ -147,7 +145,7 @@ public class TransactionManager{
 		LinkedList<Boolean> voteResults = new LinkedList<Boolean>();
 		LinkedList<Thread> voteReqThreads = new LinkedList<Thread>();
 		
-		
+		Trace.info("start sending vote request...");
 		for (Integer rmIdx: trans.rmSet) {
 			Thread cur = new Thread(new VoteReqThread(txnId, rmIdx, voteResults));
 			voteReqThreads.add(cur);
@@ -165,8 +163,8 @@ public class TransactionManager{
 			}
 		}
 
-		decision = voteResults.contains(false) && !timeout;
-		
+		decision = !voteResults.contains(false) && !timeout;
+		Trace.info(String.format("Coordinate decision : %s. Timeout: %s", decision, timeout));
 		if (crashMode ==4) System.exit(1);
 		// write decision to log
 		trans.decision = (decision==true)? 1:-1;
@@ -281,6 +279,7 @@ public class TransactionManager{
 		public void run() {
 			try {
 				boolean decision = stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
+				Trace.info(String.format("Vote request received from #%d RM, the result is %s", rmIdx, decision));
 				synchronized (voteResults) {
 					voteResults.add(decision);
 				}
