@@ -160,7 +160,8 @@ public class TransactionManager {
 		try {
 			sendDecision(trans, false);
 		} catch (TransactionAbortedException e) {
-			;
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		synchronized (abortedTXN) {
 			abortedTXN.add(txnID);
@@ -301,16 +302,54 @@ public class TransactionManager {
 	 * 
 	 * @param decision: 1 -- commit, 0 -- abort
 	 */
-	public void sendDecision(TransactionCoordinator trans, boolean decision) 
-		throws RemoteException, InvalidTransactionException, TransactionAbortedException{
+	public void sendDecision(TransactionCoordinator trans, boolean decision) throws InvalidTransactionException, TransactionAbortedException {
+		
+//		for (Integer rmIdx: trans.rmSet) {	
+//			
+//			new Thread(new DecisionThread(rmIdx, trans.xid, decision)).start();
+//			// crash after sending some but not all decisions
+//			if (crashMode == 6)
+//				System.exit(1);
+//		}
+		
 		for (Integer rmIdx: trans.rmSet) {	
-			if (decision) stubs.get(rmIdx).commit(trans.xid);
-			else stubs.get(rmIdx).abort(trans.xid);
+			try {
+				if (decision)stubs.get(rmIdx).commit(trans.xid);
+				else stubs.get(rmIdx).abort(trans.xid);
+			} catch (RemoteException e) {
+				Trace.warn(String.format("Romote exception at server #%d", rmIdx));
+			}
 			// crash after sending some but not all decisions
 			if (crashMode == 6)
 				System.exit(1);
 		}
-		Trace.info(String.format("Sent decision of transaction #%d too all Participants",trans.xid));
+		Trace.info(String.format("Sent decision of transaction #%d to all Participants",trans.xid));
+	}
+	
+	public class DecisionThread implements Runnable{
+		int rmIdx;
+		int xid;
+		boolean decision;
+		public DecisionThread(int rmIdx, int xid, boolean decision){
+			this.rmIdx = rmIdx;
+			this.xid = xid;
+			this.decision = decision;
+		}
+		@Override
+		public void run() {
+			try {
+				Trace.info(String.format("send commit decision %s to RM #%d", decision, rmIdx));
+				if (decision)stubs.get(rmIdx).commit(xid);
+				else stubs.get(rmIdx).abort(xid);
+			} catch (RemoteException e) {
+				Trace.warn("Remote Exception");
+			} catch (InvalidTransactionException e) {
+				Trace.warn("Invalid transaction.");
+			} catch (TransactionAbortedException e) {
+				Trace.warn("Transaction aborted.");
+			}
+		}
+		
 	}
 
 
@@ -328,7 +367,12 @@ public class TransactionManager {
 		DiskManager.writeLog(name, txns);
 
 		for (IResourceManager stub : stubs.values())
-			stub.start(txnId);
+			try {				
+				stub.start(txnId);
+			}catch(RemoteException e) {
+				Trace.info(String.format("Server %s failed to start", stub));
+			}
+		
 	}
 
 	// update the RM stub invovled with this transaction.
