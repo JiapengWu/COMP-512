@@ -283,8 +283,12 @@ public class TransactionManager{
 				synchronized (voteResults) {
 					voteResults.add(decision);
 				}
-			} catch (RemoteException | InvalidTransactionException e) {
+			} catch (Exception e) {
+				synchronized (voteResults) {
+					voteResults.add(false);
+				}
 				e.printStackTrace();
+				
 			}
 		}
 	}
