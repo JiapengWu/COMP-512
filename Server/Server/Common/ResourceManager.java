@@ -10,7 +10,6 @@ import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Vector;
@@ -547,10 +546,10 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException {
+
 		try {
-			wait(3000);
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		boolean decision = true;
