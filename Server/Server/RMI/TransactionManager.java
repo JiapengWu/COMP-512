@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Server.Common.DiskManager;
@@ -78,7 +79,7 @@ public class TransactionManager{
 				sendDecision(trans,false);
 			}
 		}
-		DiskManager.writeLog("Coordinator", name, old_txns);
+		DiskManager.writeLog(name, old_txns);
 		TransactionManager tm = new TransactionManager();
 		tm.txns = old_txns;
 
@@ -120,15 +121,35 @@ public class TransactionManager{
 		// TODO: add timeout to all RMs
 		// get votes from participants
 		boolean decision = true;
+		boolean timeout = false;
+		LinkedList<Boolean> voteResults = new LinkedList<Boolean>();
+		LinkedList<Thread> voteReqThreads = new LinkedList<Thread>();
+		
+		
 		for (Integer rmIdx: trans.rmSet) {
-			decision &= stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
+			Thread cur = new Thread(new VoteReqThread(txnId, rmIdx, voteResults));
+			voteReqThreads.add(cur);
+			cur.start();
+
 			if (crashMode ==3) System.exit(1);
 		}
+		
+		for(Thread voteReqThread: voteReqThreads) {
+			try {
+				voteReqThread.join(2000);
+			} catch (InterruptedException e) {
+				timeout = true;
+				break;
+			}
+		}
+
+		decision = voteResults.contains(false) && !timeout;
+		
 		if (crashMode ==4) System.exit(1);
 		// write decision to log
 		trans.decision = (decision==true)? 1:-1;
 		txns.put(txnId, trans);
-		DiskManager.writeLog("Coordinator", name, txns);
+		DiskManager.writeLog(name, txns);
 		if (crashMode ==5) System.exit(1);
 		// send decision to all participants
 		sendDecision(trans, decision);
@@ -142,7 +163,7 @@ public class TransactionManager{
 		trans.started = 1;
 		txns.put(trans.xid, trans);
 		// write "start2PC" to logs
-		DiskManager.writeLog("Coordinator", name, txns);
+		DiskManager.writeLog(name, txns);
 	}
 
 
@@ -215,6 +236,29 @@ public class TransactionManager{
 		}
 	}
 
+	public class VoteReqThread implements Runnable {
+		private int txnId = 0;
+		private int rmIdx = 0;
+		private LinkedList<Boolean> voteResults;
+
+		public VoteReqThread(int txnId, int rmIdx, LinkedList<Boolean> voteResults) {
+			this.voteResults = voteResults;
+			this.rmIdx = rmIdx;
+			this.txnId = txnId;
+		}
+
+		@Override
+		public void run() {
+			try {
+				boolean decision = stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
+				synchronized (voteResults) {
+					voteResults.add(decision);
+				}
+			} catch (RemoteException | InvalidTransactionException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 	public void initTimer(int xid) {
 		Thread cur = new Thread(new TimeOutThread(xid));

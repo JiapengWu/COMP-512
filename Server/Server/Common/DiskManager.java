@@ -13,6 +13,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class DiskManager {
 	
@@ -33,8 +34,7 @@ public class DiskManager {
 	}
 	
 //	name is hostname+xid. Write RMHashtable to disk
-	public static void writeLog(String className, String RMName, HashMap<Integer, ? extends Transaction> map) {
-//		Class transactionType = className.equals("Participant")? TransactionParticipant.class:TransactionCoordinator.class;
+	public static void writeLog(String RMName, HashMap<Integer, ? extends Transaction> map) {
 		try (
 	      OutputStream file = new FileOutputStream(String.format("%s.ser", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);
@@ -45,6 +45,34 @@ public class DiskManager {
 	    catch(IOException ex){
 	    	ex.printStackTrace();
 	    }
-		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static HashSet<Integer> readAliveTransactions() throws FileNotFoundException, IOException {
+		HashSet<Integer> result = null;
+		try (
+				InputStream file = new FileInputStream(String.format("active_transaction.ser"));
+			      InputStream buffer = new BufferedInputStream(file);
+			      ObjectInput input = new ObjectInputStream (buffer);
+	    ){
+			 result = (HashSet<Integer>) input.readObject();;
+	    }
+	    catch(ClassNotFoundException ex){
+	    	ex.printStackTrace();
+	    }
+		return result;
+	}
+	
+	public static void writeAliveTransactions(HashSet<Integer> activeSet) {
+		try (
+	      OutputStream file = new FileOutputStream(String.format("active_transaction.ser"));
+	      OutputStream buffer = new BufferedOutputStream(file);
+	      ObjectOutput output = new ObjectOutputStream(buffer);
+	    ){
+	      output.writeObject(activeSet);
+	    }  
+	    catch(IOException ex){
+	    	ex.printStackTrace();
+	    }
 	}
 }

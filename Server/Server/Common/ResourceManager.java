@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
@@ -19,6 +20,8 @@ import Server.LockManager.LockManager;
 import Server.LockManager.TransactionLockObject;
 
 public class ResourceManager implements IResourceManager {
+
+	private HashSet<Integer> abortedTXN;
 	int crashMode = -1;
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
@@ -48,6 +51,7 @@ public class ResourceManager implements IResourceManager {
 		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
 		this.map.remove(xid);
 		lm.UnlockAll(xid);
+		abortedTXN.add(xid);
 	}
 
 //	- commit(xid):
@@ -542,17 +546,21 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException {
-
+		boolean decision = true;
 		if(this.crashMode == 1) System.exit(0);
+		if(abortedTXN.contains(id)) {
+			decision = false;
+		}
 		//desision
 		
-		map.get(id).votedYes = 1;
+		
+		map.get(id).votedYes = decision? 1:-1;
 		// TODO: when do we vote no?
 		DiskManager.writeLog("Participant", this.m_name, map);
 
 		if(this.crashMode == 2) System.exit(0);
 		if(this.crashMode == 3) shutdown();
-		return true;
+		return decision;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -576,6 +584,7 @@ public class ResourceManager implements IResourceManager {
 				TransactionParticipant transaction = (TransactionParticipant)pair.getValue();
 				if(transaction.votedYes == 1) {
 					if(transaction.commited == 0) {
+						// on middleware giving commit command, escape and commit
 						while(true) {
 							
 						}
