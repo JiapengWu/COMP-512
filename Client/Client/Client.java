@@ -700,7 +700,7 @@ public abstract class Client
 			}
 
 			case CrashMiddleware:{
-				if (arguments.size() !=1) {
+				if (arguments.size() !=2) {
 					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mCrashMiddleware command expects 1 arg, mode");
 					break;
 				}
@@ -711,7 +711,7 @@ public abstract class Client
 			}
 
 			case CrashResourceManager:{
-				if (arguments.size() !=2) {
+				if (arguments.size() !=3) {
 					System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mCrashResourceManager command expects 2 arg: RM name (flight|car|room), mode");
 					break;
 				}

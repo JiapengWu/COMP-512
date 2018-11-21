@@ -25,7 +25,7 @@ public class DiskManager {
 		      InputStream buffer = new BufferedInputStream(file);
 		      ObjectInput input = new ObjectInputStream (buffer);
 		    ){
-			 result = (HashMap<Integer, Transaction>) input.readObject();;
+			 result = (HashMap<Integer,Transaction>) input.readObject();;
 		    }  
 		    catch(ClassNotFoundException ex){
 		    	ex.printStackTrace();

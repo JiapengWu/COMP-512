@@ -1,6 +1,8 @@
 package Server.Common;
 
-public class Transaction {
+import java.io.Serializable;
+
+public class Transaction implements Serializable{
 	public int xid;
 	
 	public Transaction(int xid) {

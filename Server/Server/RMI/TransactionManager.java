@@ -1,6 +1,7 @@
 package Server.RMI;
 
-import java.io.IOException;
+
+import java.io.FileNotFoundException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,9 +14,10 @@ import Server.Common.InvalidTransactionException;
 import Server.Common.TransactionAbortedException;
 import Server.Common.TransactionCoordinator;
 import Server.Interface.IResourceManager;
+import Server.Common.Trace;
 
 public class TransactionManager{
-	public static final int TIMEOUT_IN_SEC = 60;
+	public static final int TIMEOUT_IN_SEC = 1000;
 	private String name = "MiddleWare"; 
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
@@ -41,25 +43,42 @@ public class TransactionManager{
 		abortedTXN = new HashSet<Integer>();
 		timeTable = new ConcurrentHashMap<Integer, Thread>();
 		txns = new HashMap<Integer, TransactionCoordinator>();
+		//Trace.info("construct new TM");
 	}
 
 
 	// return a TM for middleware to use later
 	@SuppressWarnings("unchecked")
 	public TransactionManager restore() throws RemoteException, InvalidTransactionException, TransactionAbortedException{
+		Trace.info("restoring...");
 		// DM need to read logs about all transactions
 		HashMap<Integer, TransactionCoordinator> old_txns = null;
+		HashSet<Integer> priorTxns = null;
 		try{
 			old_txns = (HashMap<Integer, TransactionCoordinator>) DiskManager.readLog(name);
+			//priorTxns = DiskManager.readAliveTransactions(name);
 		}
 		// if no prior TM log exist, just create a new one and return
-		catch (IOException e){
+		catch (FileNotFoundException e){
 			return new TransactionManager();
 		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		Trace.info("Recover old transaction");
 		// else process ongoing transactions before crash
-		for (TransactionCoordinator trans: old_txns.values()){
+		for (int xid: old_txns.keySet())
+		{
+			TransactionCoordinator trans = old_txns.get(xid);
+			Trace.info("transaction #"+Integer.toString(trans.xid)+": trans.started=="+Integer.toString(trans.started)+"; trans.decision=="+Integer.toString(trans.decision));
+			
+			// already end-of-transactions: just ignore
+			if (trans.EOT == 1) {
+				old_txns.remove(xid);
+				continue;
+			}
 			// for transactions that started 2PC:
-			if (trans.started == 1){
+			else if (trans.started == 1){
 				// already made decision: resend decision to all participants
 				if(trans.decision==1){
 					sendDecision(trans,true);
@@ -78,7 +97,7 @@ public class TransactionManager{
 				old_txns.put(trans.xid, trans);
 				sendDecision(trans,false);
 			}
-		}
+		
 		DiskManager.writeLog(name, old_txns);
 		TransactionManager tm = new TransactionManager();
 		tm.txns = old_txns;
@@ -102,6 +121,7 @@ public class TransactionManager{
 		synchronized (abortedTXN) {
 			abortedTXN.add(txnID);
 		}
+		
 	}
 
 
@@ -154,7 +174,11 @@ public class TransactionManager{
 		// send decision to all participants
 		sendDecision(trans, decision);
 		if (crashMode ==7) System.exit(1);
-
+		
+		trans.EOT = 1;
+		txns.put(txnId, trans);
+		DiskManager.writeLog(name,txns);
+		removeTxn(trans.xid);
 	}
 
 	
@@ -177,11 +201,9 @@ public class TransactionManager{
 		for (Integer rmIdx: trans.rmSet) {
 			if (decision) stubs.get(rmIdx).commit(trans.xid);
 			else stubs.get(rmIdx).abort(trans.xid);
-
 			// crash after sending some but not all decisions
 			if (crashMode ==6) System.exit(1);
 		}
-		removeTxn(trans.xid);
 		
 	}
 
@@ -195,8 +217,11 @@ public class TransactionManager{
 
 	public void start(int txnId) throws RemoteException{
 		initTimer(txnId);
-		TransactionCoordinator trans = txns.get(txnId);
-		for (Integer rmIdx: trans.rmSet) stubs.get(rmIdx).start(txnId);
+		TransactionCoordinator trans = new TransactionCoordinator(txnId);
+		txns.put(txnId, trans);
+		DiskManager.writeLog(name, txns);
+		
+		for (IResourceManager stub: stubs.values()) stub.start(txnId);
 	}
 
 
@@ -204,8 +229,11 @@ public class TransactionManager{
 	// @param: rm: 1: flight, 2: car, 3:room
 	public void updateRMSet(int xid, int rm){
 		TransactionCoordinator trans = txns.get(xid);
+		if (trans.rmSet.contains(rm)) return;
+
 		trans.rmSet.add(rm);
 		txns.put(xid, trans);
+		DiskManager.writeLog(name, txns);
 	}
 
 
