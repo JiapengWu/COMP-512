@@ -547,21 +547,20 @@ public class ResourceManager implements IResourceManager {
 	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException {
 
-		try {
-			Thread.sleep(4000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			Trace.info("Waiting for 4 seconds.");
+//			Thread.sleep(4000);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
 		boolean decision = true;
 		if(this.crashMode == 1) System.exit(0);
 		if(abortedTXN.contains(id)) {
 			decision = false;
 		}
-		//desision
 		
-		
+		TransactionParticipant transaction = map.get(id);
 		map.get(id).votedYes = decision? 1:-1;
-		// TODO: when do we vote no?
 		DiskManager.writeLog(this.m_name, map);
 
 		if(this.crashMode == 2) System.exit(0);

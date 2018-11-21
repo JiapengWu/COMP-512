@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.Hashtable;
 
 public class DiskManager {
-	
 	@SuppressWarnings("unchecked")
 	public static Hashtable<Integer, ? extends Transaction> readLog(String RMName) throws FileNotFoundException, IOException{
 		Hashtable<Integer, Transaction> result = new Hashtable<Integer, Transaction>();
