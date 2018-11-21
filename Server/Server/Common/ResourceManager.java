@@ -44,10 +44,10 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public void abort(int xid) throws InvalidTransactionException {
 		map.get(xid).commited = -1;
-		DiskManager.writeLog("Participant", this.m_name, map);
+		DiskManager.writeLog(this.m_name, map);
 		if (map.get(xid)==null) throw new InvalidTransactionException(xid);
 
-		DiskManager.writeLog("Participant", this.m_name, map);
+		DiskManager.writeLog(this.m_name, map);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
 		this.map.remove(xid);
 		lm.UnlockAll(xid);
@@ -64,7 +64,7 @@ public class ResourceManager implements IResourceManager {
 		if(this.crashMode == 4) System.exit(0);
 		
 		map.get(xid).commited = 1;
-		DiskManager.writeLog("Participant", this.m_name, map);
+		DiskManager.writeLog(this.m_name, map);
 		TransactionParticipant transaction = map.get(xid);
 		if (transaction == null) throw new InvalidTransactionException(xid);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction commit with id " + Integer.toString(xid));
@@ -556,7 +556,7 @@ public class ResourceManager implements IResourceManager {
 		
 		map.get(id).votedYes = decision? 1:-1;
 		// TODO: when do we vote no?
-		DiskManager.writeLog("Participant", this.m_name, map);
+		DiskManager.writeLog(this.m_name, map);
 
 		if(this.crashMode == 2) System.exit(0);
 		if(this.crashMode == 3) shutdown();

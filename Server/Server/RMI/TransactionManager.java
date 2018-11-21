@@ -24,6 +24,7 @@ public class TransactionManager{
 	private ConcurrentHashMap<Integer, Thread> timeTable;
 	public HashMap<Integer, IResourceManager> stubs; // {1: flightRM, 2: roomRM, 3: carRM}
 	protected HashMap<Integer, TransactionCoordinator> txns;
+	
 
 	/* crash mode: 0 - unset
 	1. Crash before sending vote request
@@ -97,6 +98,7 @@ public class TransactionManager{
 				old_txns.put(trans.xid, trans);
 				sendDecision(trans,false);
 			}
+		}
 		
 		DiskManager.writeLog(name, old_txns);
 		TransactionManager tm = new TransactionManager();
