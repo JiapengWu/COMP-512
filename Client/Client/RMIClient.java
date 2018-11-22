@@ -10,11 +10,10 @@ import Server.Interface.IResourceManager;
 public class RMIClient extends Client
 {
 	private static String s_serverHost = "localhost";
-	private static int s_serverPort = 3199;
+	private static int s_serverPort = 3100;
 	private static String s_serverName = "Server";
 
 
-	//TODO: REPLACE 'ALEX' WITH YOUR GROUP NUMBER TO COMPILE
 	private static String s_rmiPrefix = "group6_";
 
 	public static void main(String args[])
@@ -43,6 +42,8 @@ public class RMIClient extends Client
 		try {
 			RMIClient client = new RMIClient();
 			client.connectServer();
+			new Thread(client.new MiddleWareHealthCheckThread()).start();
+			System.out.println("Main thread continued");
 			client.start();
 		}
 		catch (Exception e) {
@@ -51,6 +52,36 @@ public class RMIClient extends Client
 			System.exit(1);
 		}
 	}
+	
+	public class MiddleWareHealthCheckThread implements Runnable{
+		public MiddleWareHealthCheckThread() {
+		}
+		@Override
+		public void run() {
+			System.out.println("Health checking thread is up");
+			while(true) {
+				try {
+					m_resourceManager.ping();
+//						Trace.info("Ping successful");
+				} catch (RemoteException e) {
+					try {
+						System.out.println("Reconnecting middleware");
+						connectServer();
+						System.out.println("Reconnected");
+					}catch (Exception e1) {
+						e1.printStackTrace();
+					}
+				}
+				
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					System.out.println("Health check interrupted.");
+				}
+			}
+		}
+	}
+	
 
 	public RMIClient()
 	{
@@ -79,7 +110,7 @@ public class RMIClient extends Client
 						first = false;
 					}
 				}
-				Thread.sleep(500);
+				Thread.sleep(100);
 			}
 		}
 		catch (Exception e) {

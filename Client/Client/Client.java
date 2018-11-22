@@ -638,6 +638,7 @@ public abstract class Client
 			// Transactions:
 			case Start:{
 				System.out.println("Starting a transaction");
+				System.out.println(m_resourceManager);
 				int xid = m_resourceManager.start();
 				if (xid >-1) System.out.println("Transaction started, xid="+Integer.toString(xid));
 				else System.out.println("Cannot transaction");

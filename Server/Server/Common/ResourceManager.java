@@ -27,7 +27,7 @@ public class ResourceManager implements IResourceManager {
 	private int crashMode = -1;
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
-	private final static int TIMEOUT_IN_SEC = 10;
+	private final static int TIMEOUT_IN_SEC = 1000;
 	private ConcurrentHashMap<Integer, Thread> timeTable = new ConcurrentHashMap<Integer, Thread>();
 	
 	protected Hashtable<Integer, TransactionParticipant> map = new Hashtable<Integer, TransactionParticipant>();
@@ -62,7 +62,6 @@ public class ResourceManager implements IResourceManager {
 			e.printStackTrace();
 		}
 
-
 		Trace.info("Recovering old transaction");
 		if(this.crashMode == 5) System.exit(0);
 		System.out.println(map);
@@ -80,7 +79,6 @@ public class ResourceManager implements IResourceManager {
 					if(transaction.commited == 0) {
 						// currently do nothing, can implement asking around protocol:
 						// ask the other server hosts whether this xid has been committed, if one of the server committed, this commit as well
-						// if commit from middleware arrived, escape and commit
 //						waitingForCoordinatorCommit.put(xid, new Thread() {
 //							@Override
 //							public void run() {
@@ -110,7 +108,6 @@ public class ResourceManager implements IResourceManager {
 						Trace.info(String.format("Aborting transaction %d", xid));
 						abort(xid);
 					}
-					
 				}
 				// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
 				// the vote method will return false
@@ -125,6 +122,7 @@ public class ResourceManager implements IResourceManager {
 				
 			}
 		}
+		Trace.info("Recover done");
 		
 	}
 	/*
@@ -660,6 +658,7 @@ public class ResourceManager implements IResourceManager {
 //		} catch (InterruptedException e) {
 //			e.printStackTrace();
 //		}
+		
 		if (map.get(id)==null) throw new InvalidTransactionException(id);
 		killTimer(id);
 		this.timeTable.remove(id);
@@ -679,6 +678,7 @@ public class ResourceManager implements IResourceManager {
 		}
 		// crashing here is equivalent to voting no, coordinator will sent abort to all servers
 		if(this.crashMode == 2) System.exit(0);
+
 		return decision;
 	}
 	
@@ -726,6 +726,12 @@ public class ResourceManager implements IResourceManager {
 			}
 			
 		}
+	}
+
+	@Override
+	public boolean ping() throws RemoteException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 	
 }
