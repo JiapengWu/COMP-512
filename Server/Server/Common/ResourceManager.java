@@ -64,7 +64,6 @@ public class ResourceManager implements IResourceManager {
 					if(transaction.commited == 0) {
 						// currently do nothing, can implement asking around protocol:
 						// ask the other server hosts whether this xid has been committed, if one of the server committed, this commit as well
-						// if commit from middleware arrived, escape and commit
 //						waitingForCoordinatorCommit.put(xid, new Thread() {
 //							@Override
 //							public void run() {
@@ -632,7 +631,7 @@ public class ResourceManager implements IResourceManager {
 		}
 
 		if(this.crashMode == 2) System.exit(0);
-		if(this.crashMode == 3) shutdown();
+
 		return decision;
 	}
 	

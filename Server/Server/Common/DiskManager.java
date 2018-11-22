@@ -15,6 +15,8 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Hashtable;
 
+import Server.RMI.TransactionManager;
+
 public class DiskManager {
 	@SuppressWarnings("unchecked")
 	public static Hashtable<Integer, ? extends Transaction> readLog(String RMName) throws FileNotFoundException, IOException{
@@ -103,6 +105,36 @@ public class DiskManager {
 	    }
 	}
 	
+
+
+	// for full recovery of coordinator
+	public static TransactionManager.TMMeta readTMMetaLog(String RMName) throws FileNotFoundException, IOException{
+		TransactionManager.TMMeta result = null;
+		try (
+			  InputStream file = new FileInputStream(String.format("%s.meta", RMName));
+		      InputStream buffer = new BufferedInputStream(file);
+		      ObjectInput input = new ObjectInputStream (buffer);
+		    ){
+			 result = (TransactionManager.TMMeta) input.readObject();;
+		    }  
+		    catch(ClassNotFoundException ex){
+		    	ex.printStackTrace();
+		    }
+		return result;
+	}
+
+	public static void writeTMMetaLog(String RMName, TransactionManager.TMMeta data) {
+		try (
+	      OutputStream file = new FileOutputStream(String.format("%s.meta", RMName));
+	      OutputStream buffer = new BufferedOutputStream(file);
+	      ObjectOutput output = new ObjectOutputStream(buffer);
+	    ){
+	      output.writeObject(data);
+	    }  
+	    catch(IOException ex){
+	    	ex.printStackTrace();
+	    }
+	}
 	
 	
 	

@@ -1,5 +1,6 @@
 package Server.RMI;
 
+import java.io.Serializable;
 import java.io.FileNotFoundException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -44,6 +45,17 @@ public class TransactionManager {
 	*/
 	protected int crashMode = 0; 
 
+	public static class TMMeta implements Serializable{
+		int counter;
+		HashSet<Integer> aborted;
+		public TMMeta(int counter, HashSet<Integer> aborted){
+			this.counter = counter;
+			this.aborted = aborted;
+		}
+
+
+	}
+
 	public TransactionManager(){
 		this.stubs = new Hashtable<Integer, IResourceManager>();
 		txnIdCounter = 0;
@@ -71,9 +83,10 @@ public class TransactionManager {
 		Trace.info("restoring...");
 		// DM need to read logs about all transactions
 		Hashtable<Integer, TransactionCoordinator> old_txns = null;
-		HashSet<Integer> priorTxns = null;
+		TMMeta old_tmMeta = null;
 		try {
 			old_txns = (Hashtable<Integer, TransactionCoordinator>) DiskManager.readLog(name);
+			old_tmMeta = DiskManager.readTMMetaLog(name);
 			// priorTxns = DiskManager.readAliveTransactions(name);
 		}
 		// if no prior TM log exist, just create a new one and return
@@ -85,17 +98,14 @@ public class TransactionManager {
 		}
 		Trace.info("Recovering old transaction");
 		// else process ongoing transactions before crash
-		HashSet<Integer> lastAborted = new HashSet<Integer>();
-		int lastTxnCounter = 0;
-
+		
 		Iterator<Integer> itr = old_txns.keySet().iterator();
 		while (itr.hasNext())
 		{
 			int xid = (int) itr.next();
 			TransactionCoordinator trans =  old_txns.get(xid);
-			lastTxnCounter = Math.max(lastTxnCounter,xid);
 			Trace.info(String.format("Transaction #%d, started=%d, decision=%d,EOT=%d",xid, trans.started, trans.decision, trans.EOT));
-
+			if (crashMode == 8) System.exit(1);
 			// already end-of-transactions: just ignore
 			
 			if (trans.EOT == 1)
@@ -120,7 +130,7 @@ public class TransactionManager {
 					trans.decision=-1;
 					old_txns.put(trans.xid, trans);
 					sendDecision(trans,false);
-					lastAborted.add(xid);
+					old_tmMeta.aborted.add(xid);
 				}
 				trans.EOT = 1;
 				old_txns.put(xid, trans);
@@ -130,23 +140,25 @@ public class TransactionManager {
 				// for transactions that haven't started 2PC: abort
 				Trace.info(String.format("sending ABORT to trans #%d",xid));
 				sendDecision(trans,false);
-				lastAborted.add(xid);
-
+				old_tmMeta.aborted.add(xid);
 				trans.EOT = 1;
 				old_txns.put(xid, trans);
 
 			}
 		}
-		Trace.info(String.format("From log: \n map <xid, Transaction> has size %d; txnCounter=%d",old_txns.size(),lastTxnCounter));
-		DiskManager.writeLog(name, old_txns);
+		Trace.info(String.format("From log: \n map <xid, Transaction> has size %d; txnCounter=%d",old_txns.size(),old_tmMeta.counter));
+		
 		// full (?) recovery of "abortedTXN" and "txnCounter"
 		TransactionManager tm = new TransactionManager(stubs);
 		tm.txns = old_txns;
-		tm.abortedTXN = lastAborted;
-		tm.txnIdCounter = lastTxnCounter+1;
+		tm.abortedTXN = old_tmMeta.aborted;
+		tm.txnIdCounter = old_tmMeta.counter + 1;
 
+		DiskManager.writeLog(name, old_txns);
+		DiskManager.writeTMMetaLog(name, new TMMeta(tm.txnIdCounter, tm.abortedTXN));
 		return tm;
 	}
+
 
 	// client abort, no need to vote
 	public void abort(int txnID) throws RemoteException, InvalidTransactionException {
@@ -165,6 +177,7 @@ public class TransactionManager {
 		synchronized (abortedTXN) {
 			abortedTXN.add(txnID);
 		}
+		DiskManager.writeTMMetaLog(name, new TMMeta(txnIdCounter, abortedTXN));
 
 	}
 
@@ -326,6 +339,7 @@ public class TransactionManager {
 		TransactionCoordinator trans = new TransactionCoordinator(txnId);
 		txns.put(txnId, trans);
 		DiskManager.writeLog(name, txns);
+		DiskManager.writeTMMetaLog(name, new TMMeta(txnIdCounter, abortedTXN));
 
 		for (IResourceManager stub : stubs.values())
 			stub.start(txnId);
