@@ -15,7 +15,8 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Hashtable;
 
-import Server.RMI.TransactionManager;
+import Server.Common.ResourceManager.RMMeta;
+import Server.Common.TransactionManager.TMMeta;
 
 public class DiskManager {
 	@SuppressWarnings("unchecked")
@@ -77,14 +78,14 @@ public class DiskManager {
 	    }
 	}
 	
-	public static RMHashMap readMData(String RMName) throws FileNotFoundException, IOException {
-		RMHashMap result = null;
+	public static RMMeta readRMMeta(String RMName) throws FileNotFoundException, IOException {
+		RMMeta result = null;
 		try (
 				InputStream file = new FileInputStream(String.format("%s_m_data.ser", RMName));
 			      InputStream buffer = new BufferedInputStream(file);
 			      ObjectInput input = new ObjectInputStream (buffer);
 	    ){
-			 result = (RMHashMap) input.readObject();;
+			 result = (RMMeta) input.readObject();;
 	    }
 	    catch(ClassNotFoundException ex){
 	    	ex.printStackTrace();
@@ -92,7 +93,7 @@ public class DiskManager {
 		return result;
 	}
 	
-	public static void writeMData(String RMName, RMHashMap m_data) {
+	public static void writeRMMeta(String RMName, RMMeta m_data) {
 		try (
 	      OutputStream file = new FileOutputStream(String.format("%s_m_data.ser", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);
@@ -108,14 +109,14 @@ public class DiskManager {
 
 
 	// for full recovery of coordinator
-	public static TransactionManager.TMMeta readTMMetaLog(String RMName) throws FileNotFoundException, IOException{
-		TransactionManager.TMMeta result = null;
+	public static TMMeta readTMMetaLog(String RMName) throws FileNotFoundException, IOException{
+		TMMeta result = null;
 		try (
 			  InputStream file = new FileInputStream(String.format("%s.meta", RMName));
 		      InputStream buffer = new BufferedInputStream(file);
 		      ObjectInput input = new ObjectInputStream (buffer);
 		    ){
-			 result = (TransactionManager.TMMeta) input.readObject();;
+			 result = (TMMeta) input.readObject();;
 		    }  
 		    catch(ClassNotFoundException ex){
 		    	ex.printStackTrace();
@@ -123,7 +124,7 @@ public class DiskManager {
 		return result;
 	}
 
-	public static void writeTMMetaLog(String RMName, TransactionManager.TMMeta data) {
+	public static void writeTMMetaLog(String RMName, TMMeta data) {
 		try (
 	      OutputStream file = new FileOutputStream(String.format("%s.meta", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);

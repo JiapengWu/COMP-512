@@ -7,6 +7,7 @@ package Server.Common;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -29,14 +30,24 @@ public class ResourceManager implements IResourceManager {
 	protected RMHashMap m_data = new RMHashMap();
 	private final static int TIMEOUT_IN_SEC = 1000;
 	private ConcurrentHashMap<Integer, Thread> timeTable = new ConcurrentHashMap<Integer, Thread>();
+//	private ConcurrentHashMap<Integer, Thread> waitForCommit = new ConcurrentHashMap<Integer, Thread>();
 	
 	protected Hashtable<Integer, TransactionParticipant> map = new Hashtable<Integer, TransactionParticipant>();
 	protected LockManager lm = new LockManager();
-//	protected Hashtable<Integer, Thread> waitingForCoordinatorCommit = new Hashtable<Integer, Thread>();
 	// Transaction history record from start to commit, to handle abort
 
 	public ResourceManager(String p_name) {
 		m_name = p_name;
+	}
+	
+	public class RMMeta implements Serializable{
+		private HashSet<Integer> abortedTXN;
+		private RMHashMap m_data;
+		private int crashMode;
+		private RMMeta(ResourceManager source) {
+			this.abortedTXN = source.abortedTXN;
+			this.m_data = source.m_data;
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -52,10 +63,12 @@ public class ResourceManager implements IResourceManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		RMHashMap dataLog = null; 
+		RMMeta dataLog = null; 
 		try {
-			dataLog = (RMHashMap)DiskManager.readMData(m_name);
-			this.m_data = dataLog;
+			dataLog = (RMMeta)DiskManager.readRMMeta(m_name);
+			this.m_data = dataLog.m_data;
+			this.abortedTXN = dataLog.abortedTXN;
+			this.crashMode = dataLog.crashMode;
 		} catch (FileNotFoundException e) {
 			System.out.println("Database log file dones't exist, nothing to restore.");
 		} catch (IOException e) {
@@ -79,7 +92,7 @@ public class ResourceManager implements IResourceManager {
 					if(transaction.commited == 0) {
 						// currently do nothing, can implement asking around protocol:
 						// ask the other server hosts whether this xid has been committed, if one of the server committed, this commit as well
-//						waitingForCoordinatorCommit.put(xid, new Thread() {
+//						waitForCommit.put(xid, new Thread() {
 //							@Override
 //							public void run() {
 //								try {
@@ -144,6 +157,7 @@ public class ResourceManager implements IResourceManager {
 		
 		DiskManager.writeLog(this.m_name, map);
 		abortedTXN.add(xid);
+		DiskManager.writeRMMeta(m_name, new RMMeta(this));
 	}
 
 	
@@ -153,7 +167,7 @@ public class ResourceManager implements IResourceManager {
 		if (transaction == null) throw new InvalidTransactionException(xid);
 		if(this.crashMode == 3) System.exit(0);
 		transaction.commited = 1;
-		DiskManager.writeLog(this.m_name, map);
+		DiskManager.writeLog(m_name, map);
 		if(this.crashMode == 4) System.exit(0);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction commit with id " + Integer.toString(xid));
 		// Apply writes (including deletes)
@@ -171,8 +185,8 @@ public class ResourceManager implements IResourceManager {
 		}
 		// empty history
 		this.map.remove(xid);
-		DiskManager.writeLog(this.m_name, map);
-		DiskManager.writeMData(m_name, m_data);
+		DiskManager.writeLog(m_name, map);
+		DiskManager.writeRMMeta(m_name, new RMMeta(this));
 		lm.UnlockAll(xid);
 	}
 

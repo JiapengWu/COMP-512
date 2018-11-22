@@ -13,6 +13,7 @@ import java.util.Vector;
 import Server.Common.InvalidTransactionException;
 import Server.Common.Trace;
 import Server.Common.TransactionAbortedException;
+import Server.Common.TransactionManager;
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
 

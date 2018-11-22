@@ -1,4 +1,4 @@
-package Server.RMI;
+package Server.Common;
 
 import java.io.Serializable;
 import java.io.FileNotFoundException;
@@ -16,11 +16,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import Server.Common.DiskManager;
-import Server.Common.InvalidTransactionException;
-import Server.Common.Trace;
-import Server.Common.TransactionAbortedException;
-import Server.Common.TransactionCoordinator;
 import Server.Interface.IResourceManager;
 
 public class TransactionManager {
