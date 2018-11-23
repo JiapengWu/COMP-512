@@ -236,8 +236,9 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Reads a data item
-	protected RMItem readData(int xid, String key) throws DeadlockException, InvalidTransactionException {
+	protected RMItem readData(int xid, String key) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		// if we haven deleted it, then we don't return anything
+		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
 		TransactionParticipant transaction = this.map.get(xid);
 		if (transaction == null) throw new InvalidTransactionException(xid);
 		RMHashMap deletes = transaction.xDeletes;
@@ -267,9 +268,11 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Writes a data item
-	protected void writeData(int xid, String key, RMItem value) throws DeadlockException {
+	protected void writeData(int xid, String key, RMItem value) throws DeadlockException, TransactionAbortedException, InvalidTransactionException {
+		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
 		lm.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
 		TransactionParticipant transaction = this.map.get(xid);
+		if (transaction == null) throw new InvalidTransactionException(xid);
 		RMHashMap copy = transaction.xCopies;
 		synchronized (copy) {
 			copy.put(key, value);
@@ -299,7 +302,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Deletes the encar item
-	protected boolean deleteItem(int xid, String key) throws DeadlockException, InvalidTransactionException {
+	protected boolean deleteItem(int xid, String key) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		Trace.info("RM::deleteItem(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem) readData(xid, key);
 		// Check if there is such an item in the storage
@@ -320,7 +323,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Query the number of available seats/rooms/cars
-	protected int queryNum(int xid, String key) throws DeadlockException, InvalidTransactionException {
+	protected int queryNum(int xid, String key) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem) readData(xid, key);
 		int value = 0;
@@ -332,7 +335,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Query the price of an item
-	protected int queryPrice(int xid, String key) throws DeadlockException, InvalidTransactionException {
+	protected int queryPrice(int xid, String key) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		Trace.info("RM::queryPrice(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem) readData(xid, key);
 		int value = 0;
@@ -344,7 +347,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// unReserve an Item
-	protected boolean unReserveItem(int xid, int customerID, String key, String location) throws DeadlockException, InvalidTransactionException {
+	protected boolean unReserveItem(int xid, int customerID, String key, String location) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		Trace.info("RM::unReserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called");
 		// Read customer object if it exists (and read lock it)
 		Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
@@ -379,7 +382,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Reserve an item
-	protected boolean reserveItem(int xid, int customerID, String key, String location) throws DeadlockException, InvalidTransactionException {
+	protected boolean reserveItem(int xid, int customerID, String key, String location) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called");
 		// Read customer object if it exists (and read lock it)
 		Customer customer = (Customer) readData(xid, Customer.getKey(customerID));

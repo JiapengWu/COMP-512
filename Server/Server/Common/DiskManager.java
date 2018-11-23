@@ -109,7 +109,6 @@ public class DiskManager {
 	}
 	
 
-
 	// for full recovery of coordinator
 	public static TMMeta readTMMetaLog(String RMName) throws FileNotFoundException, IOException{
 		TMMeta result = null;

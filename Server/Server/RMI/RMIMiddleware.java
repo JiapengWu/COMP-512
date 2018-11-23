@@ -33,9 +33,9 @@ public class RMIMiddleware implements IResourceManager {
 
 	protected TransactionManager tm = new TransactionManager();
 
-	public RMIMiddleware(String s_serverName2, Hashtable< Integer,IResourceManager> stubs) {
+	public RMIMiddleware(String s_serverName2, Hashtable<Integer, IResourceManager> stubs) {
 		TransactionManager restoredTM = null;
-		while(true) {
+		while (true) {
 			try {
 				tm.stubs = stubs;
 				restoredTM = tm.restore();
@@ -45,7 +45,7 @@ public class RMIMiddleware implements IResourceManager {
 				break;
 			}
 		}
-		
+
 		tm = restoredTM;
 	}
 
@@ -68,8 +68,10 @@ public class RMIMiddleware implements IResourceManager {
 			}
 
 			// let TransactionManager know about the stubs
-			Hashtable< Integer,IResourceManager> stubs = new Hashtable< Integer,IResourceManager>();
-			stubs.put(1,flightRM); stubs.put(2,roomRM); stubs.put(3,carRM); 
+			Hashtable<Integer, IResourceManager> stubs = new Hashtable<Integer, IResourceManager>();
+			stubs.put(1, flightRM);
+			stubs.put(2, roomRM);
+			stubs.put(3, carRM);
 			// Create a new Server object
 			IResourceManager mw_RM = null;
 			try {
@@ -88,7 +90,7 @@ public class RMIMiddleware implements IResourceManager {
 			}
 			final Registry registry = client_registry;
 			registry.rebind(s_rmiPrefix + s_serverName, mw_RM); // group6_MiddleWare
-			
+
 			new Thread(mw.new ServerHealthCheckThread(args)).start();
 
 			Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -117,47 +119,49 @@ public class RMIMiddleware implements IResourceManager {
 		}
 	}
 
-	public class ServerHealthCheckThread implements Runnable{
+	public class ServerHealthCheckThread implements Runnable {
 		String[] args;
+
 		public ServerHealthCheckThread(String[] args) {
 			this.args = args;
 		}
+
 		@Override
 		public void run() {
-			while(true) {
-				for(IResourceManager ir: new IResourceManager[]{flightRM, carRM, roomRM}) {
+			while (true) {
+				for (IResourceManager ir : new IResourceManager[] { flightRM, carRM, roomRM }) {
 					try {
 						ir.ping();
 					} catch (RemoteException e) {
 						boolean first = true;
-							while(true) {
-								try {
-									if(first) {										
-										Trace.info("Reconnecting servers...");
-									}
-									getResourceManagers(this.args);
-									tm.stubs.put(1,flightRM); tm.stubs.put(2,roomRM); tm.stubs.put(3,carRM); 
-									Trace.info("Reconnected.");
-									break;
-								} catch (ConnectException e1) {
-									first = false;
-								} catch (Exception e1) {
-									e1.printStackTrace();
+						while (true) {
+							try {
+								if (first) {
+									Trace.info("Reconnecting servers...");
 								}
+								getResourceManagers(this.args);
+								tm.stubs.put(1, flightRM);
+								tm.stubs.put(2, roomRM);
+								tm.stubs.put(3, carRM);
+								Trace.info("Reconnected.");
+								break;
+							} catch (ConnectException e1) {
+								first = false;
+							} catch (Exception e1) {
+								e1.printStackTrace();
 							}
+						}
 					}
 				}
-				
+
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					Trace.warn("Health check interrupted.");
 				}
-				
 			}
 		}
 	}
-	
 
 	public static void getResourceManagers(String args[]) throws Exception {
 
@@ -182,7 +186,7 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
-//		System.out.println(flightRM);
+		// System.out.println(flightRM);
 		return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
 	}
 
@@ -231,7 +235,9 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		customerIdx.remove(customerID);
-		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
+		tm.updateRMSet(id, 1);
+		tm.updateRMSet(id, 2);
+		tm.updateRMSet(id, 3);
 		return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID)
 				&& roomRM.deleteCustomer(id, customerID);
 	}
@@ -264,10 +270,12 @@ public class RMIMiddleware implements IResourceManager {
 	public String queryCustomerInfo(int id, int customerID)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
-		if(!customerIdx.contains(customerID)) {
+		if (!customerIdx.contains(customerID)) {
 			return String.format("Customer %d doesn't exists.", customerID);
 		}
-		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
+		tm.updateRMSet(id, 1);
+		tm.updateRMSet(id, 2);
+		tm.updateRMSet(id, 3);
 		String carSummary = "";
 		try {
 			carSummary = carRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
@@ -322,7 +330,9 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		this.customerIdx.add(cid);
 		tm.resetTimer(id);
-		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
+		tm.updateRMSet(id, 1);
+		tm.updateRMSet(id, 2);
+		tm.updateRMSet(id, 3);
 		return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
 	}
 
@@ -355,7 +365,9 @@ public class RMIMiddleware implements IResourceManager {
 			boolean room)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
-		tm.updateRMSet(id, 1);tm.updateRMSet(id, 2);tm.updateRMSet(id, 3);
+		tm.updateRMSet(id, 1);
+		tm.updateRMSet(id, 2);
+		tm.updateRMSet(id, 3);
 		Vector<String> history = new Vector<String>();
 		for (String fn : flightNumbers) {
 			if (reserveFlight(id, customerID, Integer.parseInt(fn)))
@@ -440,34 +452,34 @@ public class RMIMiddleware implements IResourceManager {
 		return tm.shutdown();
 	}
 
-
 	@Override
-	public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
+	public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
 		// do nothing at the middleware
 		return true;
 	}
 
+	@Override
+	public void resetCrashes() throws RemoteException {
+		tm.crashMode = 0;
+		flightRM.resetCrashes();
+		carRM.resetCrashes();
+		roomRM.resetCrashes();
+	}
 
-    @Override
-    public void resetCrashes() throws RemoteException{
-    	tm.crashMode = 0;
-    	flightRM.resetCrashes();
-    	carRM.resetCrashes();
-    	roomRM.resetCrashes();
-    }
+	@Override
+	public void crashMiddleware(int mode) throws RemoteException {
+		tm.crashMode = mode;
+	}
 
-    @Override
-    public void crashMiddleware(int mode) throws RemoteException{
-    	tm.crashMode = mode;
-    }
-
-    @Override
-    public void crashResourceManager(String name, int mode)
-        throws RemoteException{
-        if (name.equals("flight")) flightRM.crashResourceManager(name, mode);
-        else if (name.equals("car")) carRM.crashResourceManager(name, mode);
-        else roomRM.crashResourceManager(name, mode);
-        }
+	@Override
+	public void crashResourceManager(String name, int mode) throws RemoteException {
+		if (name.equals("flight"))
+			flightRM.crashResourceManager(name, mode);
+		else if (name.equals("car"))
+			carRM.crashResourceManager(name, mode);
+		else
+			roomRM.crashResourceManager(name, mode);
+	}
 
 	@Override
 	public boolean voteReply(int id) throws RemoteException, InvalidTransactionException {
@@ -478,5 +490,5 @@ public class RMIMiddleware implements IResourceManager {
 	public boolean ping() throws RemoteException {
 		return true;
 	}
-	
+
 }
