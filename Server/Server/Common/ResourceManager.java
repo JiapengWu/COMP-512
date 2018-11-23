@@ -7,6 +7,7 @@ package Server.Common;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -14,6 +15,7 @@ import java.util.Hashtable;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
@@ -23,48 +25,75 @@ import Server.LockManager.TransactionLockObject;
 public class ResourceManager implements IResourceManager {
 
 	private HashSet<Integer> abortedTXN = new HashSet<Integer>();
-	int crashMode = -1;
+	private int crashMode = -1;
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
+	private final static int TIMEOUT_IN_SEC = 1000;
+	private ConcurrentHashMap<Integer, Thread> timeTable = new ConcurrentHashMap<Integer, Thread>();
+//	private ConcurrentHashMap<Integer, Thread> waitForCommit = new ConcurrentHashMap<Integer, Thread>();
+	
 	protected Hashtable<Integer, TransactionParticipant> map = new Hashtable<Integer, TransactionParticipant>();
 	protected LockManager lm = new LockManager();
-//	protected Hashtable<Integer, Thread> waitingForCoordinatorCommit = new Hashtable<Integer, Thread>();
 	// Transaction history record from start to commit, to handle abort
 
 	public ResourceManager(String p_name) {
 		m_name = p_name;
 	}
+	
+	public class RMMeta implements Serializable{
+		private HashSet<Integer> abortedTXN;
+		private RMHashMap m_data;
+		private int crashMode;
+		private RMMeta(ResourceManager source) {
+			this.abortedTXN = source.abortedTXN;
+			this.m_data = source.m_data;
+		}
+	}
 
 	@SuppressWarnings("unchecked")
 	public void restore() {
 		Trace.info("Restoring..");
-		Hashtable<Integer, TransactionParticipant> log = null;
+		Hashtable<Integer, TransactionParticipant> transactionsLog = null;
 		try {
-			log = (Hashtable<Integer, TransactionParticipant>) DiskManager.readLog(m_name);
-			m_data = (RMHashMap)DiskManager.readMData(m_name);
+			transactionsLog = (Hashtable<Integer, TransactionParticipant>) DiskManager.readLog(m_name);
+			this.map = transactionsLog;
 		} catch (FileNotFoundException e) {
-			System.out.println("File dones't exist, nothing to restore.");
+			System.out.println("Transcation log file dones't exist, nothing to restore.");
 			return;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		RMMeta dataLog = null; 
+		try {
+			dataLog = (RMMeta)DiskManager.readRMMeta(m_name);
+			this.m_data = dataLog.m_data;
+			this.abortedTXN = dataLog.abortedTXN;
+			this.crashMode = dataLog.crashMode;
+		} catch (FileNotFoundException e) {
+			System.out.println("Database log file dones't exist, nothing to restore.");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		Trace.info("Recovering old transaction");
 		if(this.crashMode == 5) System.exit(0);
-		this.map = log;
+		System.out.println(map);
+		System.out.println(m_data);
+		
 
-        Set<Entry<Integer, TransactionParticipant>> entires = log.entrySet();
+        Set<Entry<Integer, TransactionParticipant>> entires = transactionsLog.entrySet();
 		for(Entry<Integer, TransactionParticipant> pair: entires){
 			try {
 				int xid = (int) pair.getKey();
 				TransactionParticipant transaction = (TransactionParticipant)pair.getValue();
-				Trace.info(String.format("Transaction #%d, started=%d, decision=%d,EOT=%d",
+				Trace.info(String.format("Transaction #%d, votedYes=%d, commited=%d",
 						xid, transaction.votedYes, transaction.commited));
 				if(transaction.votedYes == 1) {
 					if(transaction.commited == 0) {
 						// currently do nothing, can implement asking around protocol:
 						// ask the other server hosts whether this xid has been committed, if one of the server committed, this commit as well
-//						waitingForCoordinatorCommit.put(xid, new Thread() {
+
+//						waitForCommit.put(xid, new Thread() {
 //							@Override
 //							public void run() {
 //								try {
@@ -81,6 +110,7 @@ public class ResourceManager implements IResourceManager {
 					// if the transaction actually committed, then it will not be in the log 
 					else if (transaction.commited == 1) {
 						try {
+							Trace.info(String.format("Committing transaction %d", xid));
 							commit(xid);
 						} catch (TransactionAbortedException e) {
 							System.out.println("Transaction aborted.");
@@ -89,19 +119,24 @@ public class ResourceManager implements IResourceManager {
 					else {
 						// I have a record of abort, but it could crash after writing the record before the actual abort
 						// if the transaction actually aborted, then it will not be in the log 
+						Trace.info(String.format("Aborting transaction %d", xid));
 						abort(xid);
 					}
-					
 				}
 				// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
 				// the vote method will return false
-				else abort(xid); 
+
+				else {					
+					Trace.info(String.format("Aborting transaction %d", xid));
+					abort(xid); 
+				}
 				
 						
 			} catch (InvalidTransactionException e) {
 				
 			}
 		}
+		Trace.info("Recover done");
 		
 	}
 	/*
@@ -111,7 +146,10 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public void abort(int xid) throws InvalidTransactionException {
 		if (map.get(xid)==null) throw new InvalidTransactionException(xid);
+		killTimer(xid);
+		this.timeTable.remove(xid);
 		
+		if(this.crashMode == 3) System.exit(0);
 		map.get(xid).commited = -1;
 		DiskManager.writeLog(this.m_name, map);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
@@ -120,6 +158,7 @@ public class ResourceManager implements IResourceManager {
 		
 		DiskManager.writeLog(this.m_name, map);
 		abortedTXN.add(xid);
+		DiskManager.writeRMMeta(m_name, new RMMeta(this));
 	}
 
 	
@@ -127,8 +166,9 @@ public class ResourceManager implements IResourceManager {
 	public void commit(int xid) throws InvalidTransactionException,TransactionAbortedException {
 		TransactionParticipant transaction = map.get(xid);
 		if (transaction == null) throw new InvalidTransactionException(xid);
+		if(this.crashMode == 3) System.exit(0);
 		transaction.commited = 1;
-		DiskManager.writeLog(this.m_name, map);
+		DiskManager.writeLog(m_name, map);
 		if(this.crashMode == 4) System.exit(0);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction commit with id " + Integer.toString(xid));
 		// Apply writes (including deletes)
@@ -146,7 +186,8 @@ public class ResourceManager implements IResourceManager {
 		}
 		// empty history
 		this.map.remove(xid);
-		DiskManager.writeLog(this.m_name, map);
+		DiskManager.writeLog(m_name, map);
+		DiskManager.writeRMMeta(m_name, new RMMeta(this));
 		lm.UnlockAll(xid);
 	}
 
@@ -172,13 +213,28 @@ public class ResourceManager implements IResourceManager {
 			map.put(xid, transaction);
 			System.out.println(map);
 		}
+		initTimer(xid);
 		// printMem(xid);
 	}
 
+	private void initTimer(int xid) {
+		Thread cur = new Thread(new TimeOutThread(xid));
+		cur.start();
+		timeTable.put(xid, cur);
+	}
+	
+	public void killTimer(int id) {
+		Thread cur = timeTable.get(id);
+		if (cur != null) {
+			cur.interrupt();
+		}
+	}
+
 	// Reads a data item
-	protected RMItem readData(int xid, String key) throws DeadlockException {
+	protected RMItem readData(int xid, String key) throws DeadlockException, InvalidTransactionException {
 		// if we haven deleted it, then we don't return anything
 		TransactionParticipant transaction = this.map.get(xid);
+		if (transaction == null) throw new InvalidTransactionException(xid);
 		RMHashMap deletes = transaction.xDeletes;
 		synchronized (deletes) {
 			if(deletes.containsKey(key)) {
@@ -238,7 +294,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Deletes the encar item
-	protected boolean deleteItem(int xid, String key) throws DeadlockException {
+	protected boolean deleteItem(int xid, String key) throws DeadlockException, InvalidTransactionException {
 		Trace.info("RM::deleteItem(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem) readData(xid, key);
 		// Check if there is such an item in the storage
@@ -259,7 +315,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Query the number of available seats/rooms/cars
-	protected int queryNum(int xid, String key) throws DeadlockException {
+	protected int queryNum(int xid, String key) throws DeadlockException, InvalidTransactionException {
 		Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem) readData(xid, key);
 		int value = 0;
@@ -271,7 +327,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Query the price of an item
-	protected int queryPrice(int xid, String key) throws DeadlockException {
+	protected int queryPrice(int xid, String key) throws DeadlockException, InvalidTransactionException {
 		Trace.info("RM::queryPrice(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem) readData(xid, key);
 		int value = 0;
@@ -283,7 +339,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// unReserve an Item
-	protected boolean unReserveItem(int xid, int customerID, String key, String location) throws DeadlockException {
+	protected boolean unReserveItem(int xid, int customerID, String key, String location) throws DeadlockException, InvalidTransactionException {
 		Trace.info("RM::unReserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called");
 		// Read customer object if it exists (and read lock it)
 		Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
@@ -318,7 +374,7 @@ public class ResourceManager implements IResourceManager {
 	}
 
 	// Reserve an item
-	protected boolean reserveItem(int xid, int customerID, String key, String location) throws DeadlockException {
+	protected boolean reserveItem(int xid, int customerID, String key, String location) throws DeadlockException, InvalidTransactionException {
 		Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called");
 		// Read customer object if it exists (and read lock it)
 		Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
@@ -617,7 +673,13 @@ public class ResourceManager implements IResourceManager {
 //		} catch (InterruptedException e) {
 //			e.printStackTrace();
 //		}
+		
+		if (map.get(id)==null) throw new InvalidTransactionException(id);
+		killTimer(id);
+		this.timeTable.remove(id);
 		boolean decision = true;
+		// if crash here, we don't need to write any log since coordinator will receive error, telling all participants to abort
+		// when server wakes up, the transaction won't even appear in the log, which is equivalent to have aborted
 		if(this.crashMode == 1) System.exit(0);
 		if(abortedTXN.contains(id)) {
 			decision = false;
@@ -629,7 +691,7 @@ public class ResourceManager implements IResourceManager {
 			transaction.votedYes = decision? 1:-1;
 			DiskManager.writeLog(this.m_name, map);
 		}
-
+		// crashing here is equivalent to voting no, coordinator will sent abort to all servers
 		if(this.crashMode == 2) System.exit(0);
 
 		return decision;
@@ -654,6 +716,37 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public void crashResourceManager(String name, int mode) throws RemoteException {
 		this.crashMode = mode; 
+	}
+	
+	public class TimeOutThread implements Runnable {
+		private int xid = 0;
+
+		public TimeOutThread(int xid) {
+			this.xid = xid;
+		}
+
+		@Override
+		public void run() {
+			try {
+				Thread.sleep(TIMEOUT_IN_SEC * 1000);
+			} catch (InterruptedException e) {
+				 System.out.println(Integer.toString(xid) + " interrupted.");
+				 return;
+			}
+			try {
+				System.out.println(Integer.toString(xid) + " timeout, aborting...");
+				abort(this.xid);
+			} catch (InvalidTransactionException e1) {
+				System.out.println(Integer.toString(xid) + " abort invalid transaction.");
+			}
+			
+		}
+	}
+
+	@Override
+	public boolean ping() throws RemoteException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 	
 }

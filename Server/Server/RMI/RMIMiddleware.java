@@ -1,5 +1,6 @@
 package Server.RMI;
 
+import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -12,6 +13,7 @@ import java.util.Vector;
 import Server.Common.InvalidTransactionException;
 import Server.Common.Trace;
 import Server.Common.TransactionAbortedException;
+import Server.Common.TransactionManager;
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
 
@@ -26,8 +28,8 @@ public class RMIMiddleware implements IResourceManager {
 	private static IResourceManager roomRM;
 
 	private HashSet<Integer> customerIdx = new HashSet<Integer>();
-	private static int middleware_port = 3199;
-	private static int server_port = 3199;
+	private static int middleware_port = 3100;
+	private static int server_port = 3099;
 
 	protected TransactionManager tm = new TransactionManager();
 
@@ -85,6 +87,7 @@ public class RMIMiddleware implements IResourceManager {
 			final Registry registry = client_registry;
 			registry.rebind(s_rmiPrefix + s_serverName, mw_RM); // group6_MiddleWare
 			
+			new Thread(mw.new ServerHealthCheckThread(args)).start();
 
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {
@@ -112,6 +115,46 @@ public class RMIMiddleware implements IResourceManager {
 		}
 	}
 
+	public class ServerHealthCheckThread implements Runnable{
+		String[] args;
+		public ServerHealthCheckThread(String[] args) {
+			this.args = args;
+		}
+		@Override
+		public void run() {
+			while(true) {
+				for(IResourceManager ir: new IResourceManager[]{flightRM, carRM, roomRM}) {
+					try {
+						ir.ping();
+					} catch (RemoteException e) {
+						boolean first = true;
+							while(true) {
+								try {
+									if(first) {										
+										Trace.info("Reconnecting servers...");
+									}
+									getResourceManagers(this.args);
+									tm.stubs.put(1,flightRM); tm.stubs.put(2,roomRM); tm.stubs.put(3,carRM); 
+									Trace.info("Reconnected.");
+									break;
+								} catch (ConnectException e1) {
+									first = false;
+								} catch (Exception e1) {
+									e1.printStackTrace();
+								}
+							}
+					}
+				}
+				
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					Trace.warn("Health check interrupted.");
+				}
+				
+			}
+		}
+	}
 	
 
 	public static void getResourceManagers(String args[]) throws Exception {
@@ -137,6 +180,7 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
+		System.out.println(flightRM);
 		return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
 	}
 
@@ -425,6 +469,11 @@ public class RMIMiddleware implements IResourceManager {
 
 	@Override
 	public boolean voteReply(int id) throws RemoteException, InvalidTransactionException {
+		return true;
+	}
+
+	@Override
+	public boolean ping() throws RemoteException {
 		return true;
 	}
 	

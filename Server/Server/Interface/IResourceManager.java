@@ -4,9 +4,9 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Vector;
 
-import Server.LockManager.DeadlockException;
 import Server.Common.InvalidTransactionException;
 import Server.Common.TransactionAbortedException;
+import Server.LockManager.DeadlockException;
 /** 
  * Simplified version from CSE 593 Univ. of Washington
  *
@@ -238,7 +238,8 @@ public interface IResourceManager extends Remote
     public boolean unReserveRoom(int id, int customerID, String location) 
     throws RemoteException,DeadlockException, InvalidTransactionException,TransactionAbortedException; 
 
-
+    public boolean ping() throws RemoteException; 
+    
     /* project 3 */
     public boolean prepare(int xid)
         throws RemoteException, TransactionAbortedException, InvalidTransactionException;
