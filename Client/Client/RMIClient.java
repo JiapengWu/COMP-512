@@ -10,7 +10,7 @@ import Server.Interface.IResourceManager;
 public class RMIClient extends Client
 {
 	private static String s_serverHost = "localhost";
-	private static int s_serverPort = 3100;
+	private static int s_serverPort = 3099;
 	private static String s_serverName = "Server";
 
 

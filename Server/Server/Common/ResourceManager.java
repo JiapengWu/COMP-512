@@ -43,7 +43,6 @@ public class ResourceManager implements IResourceManager {
 	public class RMMeta implements Serializable{
 		private HashSet<Integer> abortedTXN;
 		private RMHashMap m_data;
-		private int crashMode;
 		private RMMeta(ResourceManager source) {
 			this.abortedTXN = source.abortedTXN;
 			this.m_data = source.m_data;
@@ -68,7 +67,6 @@ public class ResourceManager implements IResourceManager {
 			dataLog = (RMMeta)DiskManager.readRMMeta(m_name);
 			this.m_data = dataLog.m_data;
 			this.abortedTXN = dataLog.abortedTXN;
-			this.crashMode = dataLog.crashMode;
 		} catch (FileNotFoundException e) {
 			System.out.println("Database log file dones't exist, nothing to restore.");
 		} catch (IOException e) {
@@ -79,6 +77,8 @@ public class ResourceManager implements IResourceManager {
 		if(this.crashMode == 5) System.exit(0);
 		System.out.println(map);
 		System.out.println(m_data);
+
+		System.out.println(abortedTXN);
 		
 
         Set<Entry<Integer, TransactionParticipant>> entires = transactionsLog.entrySet();
@@ -89,23 +89,23 @@ public class ResourceManager implements IResourceManager {
 				Trace.info(String.format("Transaction #%d, votedYes=%d, commited=%d",
 						xid, transaction.votedYes, transaction.commited));
 				if(transaction.votedYes == 1) {
-					if(transaction.commited == 0) {
-						// currently do nothing, can implement asking around protocol:
-						// ask the other server hosts whether this xid has been committed, if one of the server committed, this commit as well
+					
+					/* currently do nothing, can implement asking around protocol:
+					ask the other server hosts whether this xid has been committed, if one of the server committed, this commit as well
+					waitForCommit.put(xid, new Thread() {
+						@Override
+						public void run() {
+							try {
+								// wait for a billion year
+								sleep(Long.MAX_VALUE);
+							} catch (InterruptedException e) {
+								
+							}
+						}
 
-//						waitForCommit.put(xid, new Thread() {
-//							@Override
-//							public void run() {
-//								try {
-//									// wait for a billion year
-//									sleep(Long.MAX_VALUE);
-//								} catch (InterruptedException e) {
-//									
-//								}
-//							}
-//
-//						});
-					}
+					});
+					*/
+					if(transaction.commited == 0) {}
 					// I have a record of committed, but it could crash after writing the record but before commit
 					// if the transaction actually committed, then it will not be in the log 
 					else if (transaction.commited == 1) {
@@ -164,11 +164,14 @@ public class ResourceManager implements IResourceManager {
 	
 	@Override
 	public void commit(int xid) throws InvalidTransactionException,TransactionAbortedException {
+		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
 		TransactionParticipant transaction = map.get(xid);
 		if (transaction == null) throw new InvalidTransactionException(xid);
 		if(this.crashMode == 3) System.exit(0);
 		transaction.commited = 1;
+		
 		DiskManager.writeLog(m_name, map);
+		
 		if(this.crashMode == 4) System.exit(0);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction commit with id " + Integer.toString(xid));
 		// Apply writes (including deletes)
@@ -186,7 +189,9 @@ public class ResourceManager implements IResourceManager {
 		}
 		// empty history
 		this.map.remove(xid);
+		
 		DiskManager.writeLog(m_name, map);
+		
 		DiskManager.writeRMMeta(m_name, new RMMeta(this));
 		lm.UnlockAll(xid);
 	}

@@ -1,7 +1,7 @@
 package Server.Common;
 
-import java.io.Serializable;
 import java.io.FileNotFoundException;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,7 +20,7 @@ import Server.Interface.IResourceManager;
 
 public class TransactionManager {
 	public static final int TIMEOUT_IN_SEC = 1000;
-	public static final int TIMEOUT_VOTE_IN_SEC = 3;
+	public static final int TIMEOUT_VOTE_IN_SEC = 10;
 	private String name = "MiddleWare";
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
@@ -411,11 +411,11 @@ public class TransactionManager {
 		DiskManager.writeTMMetaLog(name, new TMMeta(txnIdCounter, abortedTXN));
 
 		for (IResourceManager stub : stubs.values()) {
-			Trace.info("Starting at stub " + stub);
+//			Trace.info("Starting at stub " + stub);
 			try {
 				stub.start(txnId);
 			}catch(RemoteException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				Trace.info(String.format("Server %s failed to start", stub));
 			}
 		}

@@ -28,7 +28,7 @@ public class RMIMiddleware implements IResourceManager {
 	private static IResourceManager roomRM;
 
 	private HashSet<Integer> customerIdx = new HashSet<Integer>();
-	private static int middleware_port = 3100;
+	private static int middleware_port = 3099;
 	private static int server_port = 3099;
 
 	protected TransactionManager tm = new TransactionManager();
@@ -180,7 +180,7 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
-		System.out.println(flightRM);
+//		System.out.println(flightRM);
 		return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
 	}
 
