@@ -288,11 +288,11 @@ public class TransactionManager {
 			while(!Thread.currentThread().isInterrupted()){				
 				try {
 					boolean decision = stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
-					if(crashMode == 3) System.exit(0);
 					Trace.info(String.format("Vote request received from #%d RM, the result is %s", rmIdx, decision));
 					synchronized (voteResults) {
 						voteResults.add(decision);
 					}
+					if(crashMode == 3) System.exit(0);
 					break;
 				}catch(RemoteException e) {
 					try {
