@@ -671,7 +671,7 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException {
-
+		Trace.info("received vote request for  transaction#"+Integer.toString(id));
 //		try {
 //			Trace.info("Waiting for 4 seconds.");
 //			Thread.sleep(4000);
