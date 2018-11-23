@@ -200,27 +200,12 @@ public class TransactionManager {
 
 		Trace.info("start sending vote request...");
 
-//		ExecutorService service = Executors.newCachedThreadPool();
-
-//		long start = System.currentTimeMillis();
-//		for (Integer rmIdx : trans.rmSet) {
-//			ExecutionWithTimeout execution = new ExecutionWithTimeout(new VoteReqThread(txnId, rmIdx, voteResults), 
-//					timeoutList);
-//			service.execute(execution);
-//		}
-//		service.shutdown();
-//
-//		try {
-//			service.awaitTermination(TIMEOUT_VOTE_IN_SEC + 1, TimeUnit.SECONDS);
-//			timeout = timeoutList.contains(false);
-//		} catch (InterruptedException e) {
-//			service.shutdownNow();
-//		}
 		for (Integer rmIdx : trans.rmSet) {
 			Thread voteThread = new Thread(new VoteReqThread(txnId, rmIdx, voteResults, timeoutList));
 			voteThreads.add(voteThread);
 			voteThread.start();
 		}
+		if(crashMode == 2) System.exit(0);
 		
 		for(Thread t: voteThreads) {
 			try {
@@ -303,6 +288,7 @@ public class TransactionManager {
 			while(!Thread.currentThread().isInterrupted()){				
 				try {
 					boolean decision = stubs.get(rmIdx).voteReply(txnId); // if any stub vote no, decision will be 0
+					if(crashMode == 3) System.exit(0);
 					Trace.info(String.format("Vote request received from #%d RM, the result is %s", rmIdx, decision));
 					synchronized (voteResults) {
 						voteResults.add(decision);
