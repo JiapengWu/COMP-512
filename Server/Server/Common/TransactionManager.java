@@ -217,8 +217,8 @@ public class TransactionManager {
 			}
 		}
 		timeout = timeoutList.contains(false);
-
-		decision = !voteResults.contains(false) && !timeout;
+		decision = !voteResults.contains(false) && voteResults.size() == trans.rmSet.size();
+		decision = decision && !timeout;
 		Trace.info(String.format("Coordinator decision : %s. Timeout: %s", decision, timeout));
 		
 		if (crashMode ==4) System.exit(1);
