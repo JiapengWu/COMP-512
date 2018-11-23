@@ -25,7 +25,7 @@ import Server.LockManager.TransactionLockObject;
 public class ResourceManager implements IResourceManager {
 
 	private HashSet<Integer> abortedTXN = new HashSet<Integer>();
-	private int crashMode = -1;
+	public int crashMode = -1;
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
 	private final static int TIMEOUT_IN_SEC = 1000;

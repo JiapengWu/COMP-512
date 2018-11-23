@@ -128,7 +128,7 @@ public class DiskManager {
 	}
 
 
-	public static void writeTMMetaLog(String RMName, TMMeta data) {F
+	public static void writeTMMetaLog(String RMName, TMMeta data) {
 		try (
 	      OutputStream file = new FileOutputStream(String.format("%s.meta", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);

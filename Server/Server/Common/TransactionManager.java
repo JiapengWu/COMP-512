@@ -38,7 +38,7 @@ public class TransactionManager {
 	7. Crash after having sent all decisions --ok
 	8. Recovery of the coordinator (if you have decided to implement coordinator recovery)
 	*/
-	protected int crashMode = 0; 
+	public int crashMode = 0; 
 
 	public static class TMMeta implements Serializable{
 		int counter;
@@ -142,7 +142,7 @@ public class TransactionManager {
 			}
 		}
 		Trace.info(String.format("From log: \n map <xid, Transaction> has size %d; txnCounter=%d",old_txns.size(),old_tmMeta.counter));
-		
+		if (crashMode == 8) System.exit(1);
 		// full (?) recovery of "abortedTXN" and "txnCounter"
 		TransactionManager tm = new TransactionManager(stubs);
 		tm.txns = old_txns;
