@@ -150,7 +150,7 @@ public class TransactionManager {
 		Trace.info(String.format("From log: \n map <xid, Transaction> has size %d; txnCounter=%d", old_txns.size(),
 				old_tmMeta.counter));
 		
-		File f = new File("crash");
+		File f = new File("crash_mw");
 		if (f.exists()) System.exit(1);
 		// full (?) recovery of "abortedTXN" and "txnCounter"
 		TransactionManager tm = new TransactionManager(stubs);

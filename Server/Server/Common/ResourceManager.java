@@ -83,7 +83,6 @@ public class ResourceManager implements IResourceManager {
 			e.printStackTrace();
 		}
 		Trace.info("Recovering old transaction");
-		if(this.crashMode == 5) System.exit(0);
 		System.out.println(map);
 		System.out.println(m_data);
 
@@ -145,7 +144,7 @@ public class ResourceManager implements IResourceManager {
 				
 			}
 		}
-		File f = new File("crash");
+		File f = new File("crash_rm");
 		if (f.exists()) System.exit(1);
 		Trace.info("Recover done");
 		
@@ -738,6 +737,14 @@ public class ResourceManager implements IResourceManager {
 	@Override
 	public void crashResourceManager(String name, int mode) throws RemoteException {
 		this.crashMode = mode; 
+		if(mode == 5) {
+			File f = new File("crash_rm");
+			try {
+				f.createNewFile();
+			} catch (IOException e) {
+				Trace.error("File already exists");
+			}
+		}
 	}
 	
 	public class TimeOutThread implements Runnable {

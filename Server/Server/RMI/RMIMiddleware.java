@@ -472,7 +472,7 @@ public class RMIMiddleware implements IResourceManager {
 	public void crashMiddleware(int mode) throws RemoteException {
 		tm.crashMode = mode;
 		if(mode == 8) {
-			File f = new File("crash");
+			File f = new File("crash_mw");
 			try {
 				f.createNewFile();
 			} catch (IOException e) {
