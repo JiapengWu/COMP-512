@@ -5,6 +5,7 @@
 
 package Server.Common;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
@@ -26,6 +27,7 @@ public class ResourceManager implements IResourceManager {
 
 	private HashSet<Integer> abortedTXN = new HashSet<Integer>();
 	public int crashMode = -1;
+	protected String masterRecord = "A";
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
 	private final static int TIMEOUT_IN_SEC = 1000;
@@ -43,6 +45,7 @@ public class ResourceManager implements IResourceManager {
 	public class RMMeta implements Serializable{
 		private HashSet<Integer> abortedTXN;
 		private RMHashMap m_data;
+		
 		private RMMeta(ResourceManager source) {
 			this.abortedTXN = source.abortedTXN;
 			this.m_data = source.m_data;
@@ -54,6 +57,7 @@ public class ResourceManager implements IResourceManager {
 		Trace.info("Restoring..");
 		Hashtable<Integer, TransactionParticipant> transactionsLog = null;
 		try {
+			
 			transactionsLog = (Hashtable<Integer, TransactionParticipant>) DiskManager.readLog(m_name);
 			this.map = transactionsLog;
 		} catch (FileNotFoundException e) {
@@ -64,15 +68,20 @@ public class ResourceManager implements IResourceManager {
 		}
 		RMMeta dataLog = null; 
 		try {
-			dataLog = (RMMeta)DiskManager.readRMMeta(m_name);
+			String masterRecord = "";
+			try {
+				masterRecord = DiskManager.readMasterRecord(m_name);
+			}catch(FileNotFoundException e){
+				System.out.println("Database log file dones't exist, nothing to restore.");
+				return;
+			}
+			dataLog = (RMMeta)DiskManager.readRMMeta(m_name, masterRecord);
 			this.m_data = dataLog.m_data;
 			this.abortedTXN = dataLog.abortedTXN;
-		} catch (FileNotFoundException e) {
-			System.out.println("Database log file dones't exist, nothing to restore.");
-		} catch (IOException e) {
+		}
+		 catch (IOException e) {
 			e.printStackTrace();
 		}
-
 		Trace.info("Recovering old transaction");
 		if(this.crashMode == 5) System.exit(0);
 		System.out.println(map);
@@ -136,6 +145,8 @@ public class ResourceManager implements IResourceManager {
 				
 			}
 		}
+		File f = new File("crash");
+		if (f.exists()) System.exit(1);
 		Trace.info("Recover done");
 		
 	}
@@ -158,7 +169,7 @@ public class ResourceManager implements IResourceManager {
 		
 		DiskManager.writeLog(this.m_name, map);
 		abortedTXN.add(xid);
-		DiskManager.writeRMMeta(m_name, new RMMeta(this));
+		DiskManager.writeRMMeta(m_name, new RMMeta(this), masterRecord);
 	}
 
 	
@@ -192,7 +203,10 @@ public class ResourceManager implements IResourceManager {
 		
 		DiskManager.writeLog(m_name, map);
 		
-		DiskManager.writeRMMeta(m_name, new RMMeta(this));
+		this.masterRecord = masterRecord.equals("A")? "B" : "A";
+
+		DiskManager.writeRMMeta(m_name, new RMMeta(this), masterRecord);
+		DiskManager.writeMasterRecord(m_name, masterRecord);
 		lm.UnlockAll(xid);
 	}
 
@@ -738,7 +752,7 @@ public class ResourceManager implements IResourceManager {
 			try {
 				Thread.sleep(TIMEOUT_IN_SEC * 1000);
 			} catch (InterruptedException e) {
-				 System.out.println(Integer.toString(xid) + " interrupted.");
+//				 System.out.println(Integer.toString(xid) + " interrupted.");
 				 return;
 			}
 			try {
@@ -753,7 +767,6 @@ public class ResourceManager implements IResourceManager {
 
 	@Override
 	public boolean ping() throws RemoteException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 	

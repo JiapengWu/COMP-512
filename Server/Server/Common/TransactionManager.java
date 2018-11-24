@@ -1,5 +1,6 @@
 package Server.Common;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -97,8 +98,8 @@ public class TransactionManager {
 			TransactionCoordinator trans = old_txns.get(xid);
 			Trace.info(String.format("Transaction #%d, started=%d, decision=%d,EOT=%d", xid, trans.started,
 					trans.decision, trans.EOT));
-			if (crashMode == 8)
-				System.exit(1);
+		
+			
 			// already end-of-transactions: just ignore
 
 			if (trans.EOT == 1) {
@@ -148,8 +149,9 @@ public class TransactionManager {
 		}
 		Trace.info(String.format("From log: \n map <xid, Transaction> has size %d; txnCounter=%d", old_txns.size(),
 				old_tmMeta.counter));
-		if (crashMode == 8)
-			System.exit(1);
+		
+		File f = new File("crash");
+		if (f.exists()) System.exit(1);
 		// full (?) recovery of "abortedTXN" and "txnCounter"
 		TransactionManager tm = new TransactionManager(stubs);
 		tm.txns = old_txns;

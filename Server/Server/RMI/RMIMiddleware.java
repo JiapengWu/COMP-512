@@ -1,5 +1,7 @@
 package Server.RMI;
 
+import java.io.File;
+import java.io.IOException;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -469,6 +471,14 @@ public class RMIMiddleware implements IResourceManager {
 	@Override
 	public void crashMiddleware(int mode) throws RemoteException {
 		tm.crashMode = mode;
+		if(mode == 8) {
+			File f = new File("crash");
+			try {
+				f.createNewFile();
+			} catch (IOException e) {
+				Trace.error("File already exists");
+			}
+		}
 	}
 
 	@Override
