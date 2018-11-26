@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.rmi.ConnectException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -308,7 +309,11 @@ public class TransactionManager {
 					if (crashMode == 3)
 						System.exit(0);
 					break;
-				} catch (RemoteException e) {
+				}
+				catch (ConnectException e){
+					continue;
+				} 
+				catch (RemoteException e) {
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e1) {
@@ -318,7 +323,9 @@ public class TransactionManager {
 						}
 						return;
 					}
-				} catch (Exception e) {
+				} 
+
+				catch (Exception e) {
 					Trace.info(String.format("Exception receiving vote request", rmIdx));
 					synchronized (voteResults) {
 						voteResults.add(false);
