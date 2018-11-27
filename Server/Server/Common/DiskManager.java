@@ -20,13 +20,12 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Hashtable;
 
-import Server.Common.ResourceManager.RMMeta;
 import Server.Common.TransactionManager.TMMeta;
 
 
 public class DiskManager {
 	@SuppressWarnings("unchecked")
-	public static Hashtable<Integer, ? extends Transaction> readLog(String RMName) throws FileNotFoundException, IOException{
+	public static Hashtable<Integer, ? extends Transaction> readTransactions(String RMName) throws FileNotFoundException, IOException{
 		Hashtable<Integer, Transaction> result = new Hashtable<Integer, Transaction>();
 		try (
 			  InputStream file = new FileInputStream(String.format("%s.ser", RMName));
@@ -42,7 +41,7 @@ public class DiskManager {
 	}
 	
 //	name is hostname+xid. Write RMHashtable to disk
-	public static void writeLog(String RMName, Hashtable<Integer, ? extends Transaction> map) {
+	public static void writeTransactions(String RMName, Hashtable<Integer, ? extends Transaction> map) {
 		try (
 	      OutputStream file = new FileOutputStream(String.format("%s.ser", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);
@@ -55,50 +54,57 @@ public class DiskManager {
 	    }
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static HashSet<Integer> readAliveTransactions() throws FileNotFoundException, IOException {
-		HashSet<Integer> result = null;
+	public static Transaction readTransaction(String RMName) throws FileNotFoundException, IOException{
+		Transaction result = null;
 		try (
-				InputStream file = new FileInputStream(String.format("active_transaction.ser"));
-			      InputStream buffer = new BufferedInputStream(file);
-			      ObjectInput input = new ObjectInputStream (buffer);
-	    ){
-			 result = (HashSet<Integer>) input.readObject();;
-	    }
-	    catch(ClassNotFoundException ex){
-	    	ex.printStackTrace();
-	    }
+			  InputStream file = new FileInputStream(String.format("%s_transaction.ser", RMName));
+		      InputStream buffer = new BufferedInputStream(file);
+		      ObjectInput input = new ObjectInputStream (buffer);
+		    ){
+			 result = (Transaction) input.readObject();;
+		    }  
+		    catch(ClassNotFoundException ex){
+		    	ex.printStackTrace();
+		    }
 		return result;
 	}
 	
-	public static void writeAliveTransactions(HashSet<Integer> activeSet) {
+//	name is hostname+xid. Write RMHashtable to disk
+	public static void writeTransaction(String RMName, Transaction transaction) {
 		try (
-	      OutputStream file = new FileOutputStream(String.format("active_transaction.ser"));
+	      OutputStream file = new FileOutputStream(String.format("%s_transaction.ser", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);
 	      ObjectOutput output = new ObjectOutputStream(buffer);
 	    ){
-	      output.writeObject(activeSet);
+	      output.writeObject(transaction);
 	    }  
 	    catch(IOException ex){
 	    	ex.printStackTrace();
 	    }
 	}
 	
-	public static RMMeta readRMMeta(String RMName, String masterRecord) throws FileNotFoundException, IOException {
-		RMMeta result = null;
+	public static void deleteLog(String RMName) {
+		File file = new File(String.format("%s_transaction.ser", RMName));
+	    file.delete();
+	}
+    
+
+	
+	public static RMHashMap readRMData(String RMName, String masterRecord) throws FileNotFoundException, IOException {
+		RMHashMap result = null;
 		try (
 				InputStream file = new FileInputStream(String.format("%s_%s_m_data.ser", RMName, masterRecord));
 			      InputStream buffer = new BufferedInputStream(file);
 			      ObjectInput input = new ObjectInputStream (buffer);
 	    ){
-			 result = (RMMeta) input.readObject();
+			 result = (RMHashMap) input.readObject();
 	    }
 	    catch(ClassNotFoundException | FileNotFoundException ex){
 	    }
 		return result;
 	}
 	
-	public static void writeRMMeta(String RMName, RMMeta m_data, String masterRecord) {
+	public static void writeRMData(String RMName, RMHashMap m_data, String masterRecord) {
 		try (
 	      OutputStream file = new FileOutputStream(String.format("%s_%s_m_data.ser", RMName, masterRecord));
 	      OutputStream buffer = new BufferedOutputStream(file);
@@ -111,13 +117,6 @@ public class DiskManager {
 	    }
 	}
 	
-	public static void deleteRMMeta(String RMName, String masterRecord) {
-		String fname = String.format("%s_%s_m_data.ser", RMName, masterRecord);
-		File file = new File(fname);
-        if(file.delete()){
-            System.out.println(fname + " deleted");
-        }else System.out.println(fname + " doesn't exists");
-	}
 	
 	public static void writeMasterRecord(String RMName, String masterRecord){
 		String fname = String.format("%s_master_record.ser", RMName);
