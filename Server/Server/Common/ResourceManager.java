@@ -43,12 +43,12 @@ public class ResourceManager implements IResourceManager {
 		Trace.info("Restoring..");
 		TransactionParticipant transactionLog = null;
 		try {
-			
 			transactionLog = (TransactionParticipant) DiskManager.readTransaction(m_name);
-			this.transactions.put(transactionLog.xid, transactionLog);
+			if(transactionLog != null) {				
+				this.transactions.put(transactionLog.xid, transactionLog);
+			}
 		} catch (FileNotFoundException e) {
 			System.out.println("Transcation log file dones't exist, nothing to restore.");
-			return;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -58,56 +58,67 @@ public class ResourceManager implements IResourceManager {
 			try {
 				masterRecord = DiskManager.readMasterRecord(m_name);
 				System.out.println(String.format("Reading from file %s.ser", masterRecord));
-			}catch(FileNotFoundException e){
+			}catch(IOException e){
 				System.out.println("Database log file dones't exist, nothing to restore.");
-				return;
 			}
 			dataLog = (RMHashMap)DiskManager.readRMData(m_name, masterRecord);
-			this.m_data = dataLog;
+			if(dataLog != null) {
+				this.m_data = dataLog;
+				Trace.info("Recovered data:");
+				System.out.println(m_data);
+			}
+			
 		}
 		 catch (IOException e) {
 			e.printStackTrace();
 		}
-		Trace.info("Recovering old transaction");
-		System.out.println(transactions);
-		System.out.println(m_data);
 		
-		try {
-			int xid = transactionLog.xid;
-			Trace.info(String.format("Transaction #%d, votedYes=%d, commited=%d",
-					xid, transactionLog.votedYes, transactionLog.commited));
-			if(transactionLog.votedYes == 1) {
-				
-				// currently do nothing
-				if(transactionLog.commited == 0) {}
-				// I have a record of committed, but it could crash after writing the record but before commit
-				// if the transaction actually committed, then it will not be in the log 
-				else if (transactionLog.commited == 1) {
-					try {
-						Trace.info(String.format("Committing transaction %d", xid));
-						commit(xid);
-					} catch (TransactionAbortedException e) {
-						System.out.println("Transaction aborted.");
+		
+		if(transactionLog != null) {
+			try {
+				Trace.info("Recovered transaction:");
+				System.out.println(transactionLog);
+				int xid = transactionLog.xid;
+				Trace.info(String.format("Transaction #%d, votedYes=%d, commited=%d",
+						xid, transactionLog.votedYes, transactionLog.commited));
+				if(transactionLog.votedYes == 1) {
+					
+					// currently do nothing
+					if(transactionLog.commited == 0) {}
+					// I have a record of committed, but it could crash after writing the record but before commit
+					// if the transaction actually committed, then it will not be in the log 
+					else if (transactionLog.commited == 1) {
+						try {
+							Trace.info(String.format("Committing transaction %d", xid));
+							commit(xid);
+						} catch (TransactionAbortedException e) {
+							System.out.println("Transaction aborted.");
+						}
 					}
 				}
-			}
-			// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
-			// the vote method will return false
+				// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
+				// the vote method will return false
 
-			else {	
-				Trace.info(String.format("Aborting transaction %d", xid));
-				abort(xid); 
+				else {	
+					Trace.info(String.format("Aborting transaction %d", xid));
+					abort(xid); 
+				}
+				
+						
+			} catch (InvalidTransactionException e) {
+				
 			}
-			
-					
-		} catch (InvalidTransactionException e) {
-			
 		}
+		
 		
 		Trace.info("Recover done");
 		File f = new File("crash_rm");
-		if (f.exists()) Trace.info("Crashing after recovery...");System.exit(1);
-		
+
+		if (f.exists()) {
+			Trace.info("Crashing after recovery..."); 
+			System.exit(1);
+		}
+		return;
 	}
 	/*
 	 * Transaction related operations
@@ -672,6 +683,7 @@ public class ResourceManager implements IResourceManager {
 					transaction.xCopies.remove(key);
 				}
 			}
+			Trace.info("Writing updated copy into log.");
 			DiskManager.writeRMData(m_name, transaction.xCopies, masterRecord.equals("A")? "B" : "A");
 		}
 		// crashing here is equivalent to voting no, coordinator will sent abort to all servers
