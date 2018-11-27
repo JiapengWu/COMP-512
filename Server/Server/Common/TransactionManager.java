@@ -108,13 +108,18 @@ public class TransactionManager {
 					}
 					
 				}
-				// 
+				// Havn't made decision from all participants
 				else if(trans.decision == 0) {
 					Trace.info(String.format("sending vote request to trans #%d", xid));
+					boolean decision = false;
 					try {
-						commit(trans.xid);
+						decision = getVotes(trans);
+						trans.decision = (decision == true) ? 1 : -1;
+						
+						sendDecision(trans, decision, false);
+
 					} catch (InvalidTransactionException e) {
-						Trace.warn("During recovery resend COMMIT failed");
+						Trace.warn(String.format("During recovery resend %s failed" ,decision?"COMMIT":"ABORT"));
 					}
 				}
 				// decision is abort: abort on all servers
@@ -194,37 +199,7 @@ public class TransactionManager {
 			System.exit(1);
 
 		// get votes from participants
-		boolean decision = true;
-		boolean timeout = false;
-		LinkedList<Boolean> voteResults = new LinkedList<Boolean>();
-		LinkedList<Boolean> timeoutList = new LinkedList<Boolean>();
-		LinkedList<Thread> voteThreads = new LinkedList<Thread>();
-
-		Trace.info("start sending vote request...");
-
-		for (Integer rmIdx : trans.rmSet) {
-			Thread voteThread = new Thread(new VoteReqThread(txnId, rmIdx, voteResults, timeoutList));
-			voteThreads.add(voteThread);
-			voteThread.start();
-			// if(crashMode == 3) System.exit(0);
-		}
-
-		for (Thread t : voteThreads) {
-			try {
-				t.join(TIMEOUT_VOTE_IN_SEC * 1000);
-				t.interrupt();
-				t.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		timeout = timeoutList.contains(false);
-		decision = !voteResults.contains(false) && voteResults.size() == trans.rmSet.size();
-		decision = decision && !timeout;
-
-		if (crashMode == 4)
-			System.exit(1);
-		Trace.info(String.format("Coordinator decision : %s. Timeout: %s", decision, timeout));
+		boolean decision = getVotes(trans);
 
 		// write decision to log
 		trans.decision = (decision == true) ? 1 : -1;
@@ -302,6 +277,49 @@ public class TransactionManager {
 		txns.put(trans.xid, trans);
 		// write "start2PC" to logs
 		DiskManager.writeTransactions(name, txns);
+	}
+
+
+	/*
+	Get votes from all RMs for this transaction
+	*/
+	public boolean getVotes(TransactionCoordinator trans)
+	{
+		int txnId = trans.xid;
+		boolean decision = true;
+		boolean timeout = false;
+		LinkedList<Boolean> voteResults = new LinkedList<Boolean>();
+		LinkedList<Boolean> timeoutList = new LinkedList<Boolean>();
+		LinkedList<Thread> voteThreads = new LinkedList<Thread>();
+
+		Trace.info("start sending vote request...");
+
+		for (Integer rmIdx : trans.rmSet) {
+			Thread voteThread = new Thread(new VoteReqThread(txnId, rmIdx, voteResults, timeoutList));
+			voteThreads.add(voteThread);
+			voteThread.start();
+			// if(crashMode == 3) System.exit(0);
+		}
+
+		for (Thread t : voteThreads) {
+			try {
+				t.join(TIMEOUT_VOTE_IN_SEC * 1000);
+				t.interrupt();
+				t.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		timeout = timeoutList.contains(false);
+		decision = !voteResults.contains(false) && voteResults.size() == trans.rmSet.size();
+		decision = decision && !timeout;
+
+		if (crashMode == 4)
+			System.exit(1);
+		Trace.info(String.format("Coordinator decision : %s. Timeout: %s", decision, timeout));
+
+		return decision;
+
 	}
 
 	/*
