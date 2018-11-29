@@ -150,7 +150,7 @@ public class TransactionManager {
 		if (f.exists()) System.exit(1);
 		// full (?) recovery of "abortedTXN" and "txnCounter"
 		TransactionManager tm = new TransactionManager(stubs);
-		tm.txns = old_txns;
+		// tm.txns = old_txns;
 		tm.abortedTXN = old_tmMeta.aborted;
 		tm.txnIdCounter = old_tmMeta.counter + 1;
 
