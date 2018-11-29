@@ -1,34 +1,35 @@
 package Server.LockManager;
 
+import java.io.Serializable;
 import java.util.BitSet;
 import java.util.Vector;
 
 import Server.Common.Trace;
 
-public class LockManager
+public class LockManager implements Serializable
 {
 	private static int TABLE_SIZE = 2039;
 	private static int DEADLOCK_TIMEOUT = 10000;
 
-	private static TPHashTable lockTable = new TPHashTable(LockManager.TABLE_SIZE);
-	private static TPHashTable stampTable = new TPHashTable(LockManager.TABLE_SIZE);
-	private static TPHashTable waitTable = new TPHashTable(LockManager.TABLE_SIZE);
+	public TPHashTable lockTable = new TPHashTable(LockManager.TABLE_SIZE);
+	public TPHashTable stampTable = new TPHashTable(LockManager.TABLE_SIZE);
+	public TPHashTable waitTable = new TPHashTable(LockManager.TABLE_SIZE);
 
 	
-	public static void main(String[] args) throws DeadlockException {
-		LockManager lm = new LockManager();
-		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_READ);
-
-		System.out.println(lockTable.allElements().toString());
+//	public static void main(String[] args) throws DeadlockException {
+//		LockManager lm = new LockManager();
+//		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_READ);
+//
+//		System.out.println(lockTable.allElements().toString());
+////		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
+//		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_WRITE);
+//
+//		System.out.println(lockTable.allElements().toString());
+//		lm.UnlockAll(1);
+//		System.out.println(lockTable.allElements().toString());
 //		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
-		lm.Lock(1, "x", TransactionLockObject.LockType.LOCK_WRITE);
-
-		System.out.println(lockTable.allElements().toString());
-		lm.UnlockAll(1);
-		System.out.println(lockTable.allElements().toString());
-		lm.Lock(2, "x", TransactionLockObject.LockType.LOCK_READ);
-		System.out.println(lockTable.allElements().toString());
-	}
+//		System.out.println(lockTable.allElements().toString());
+//	}
 	
 	public LockManager(){
 		super();

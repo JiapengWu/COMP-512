@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 
 import Server.Common.TransactionManager.TMMeta;
+import Server.LockManager.LockManager;
 
 
 public class DiskManager {
@@ -54,39 +55,39 @@ public class DiskManager {
 	    }
 	}
 	
-	public static Transaction readTransaction(String RMName) throws FileNotFoundException, IOException{
-		Transaction result = null;
-		try (
-			  InputStream file = new FileInputStream(String.format("%s_transaction.ser", RMName));
-		      InputStream buffer = new BufferedInputStream(file);
-		      ObjectInput input = new ObjectInputStream (buffer);
-		    ){
-			 result = (Transaction) input.readObject();;
-		    }  
-		    catch(ClassNotFoundException ex){
-		    	ex.printStackTrace();
-		    }
-		return result;
-	}
-	
-//	name is hostname+xid. Write RMHashtable to disk
-	public static void writeTransaction(String RMName, Transaction transaction) {
-		try (
-	      OutputStream file = new FileOutputStream(String.format("%s_transaction.ser", RMName));
-	      OutputStream buffer = new BufferedOutputStream(file);
-	      ObjectOutput output = new ObjectOutputStream(buffer);
-	    ){
-	      output.writeObject(transaction);
-	    }  
-	    catch(IOException ex){
-	    	ex.printStackTrace();
-	    }
-	}
-	
-	public static void deleteLog(String RMName) {
-		File file = new File(String.format("%s_transaction.ser", RMName));
-	    file.delete();
-	}
+//	public static Transaction readTransaction(String RMName) throws FileNotFoundException, IOException{
+//		Transaction result = null;
+//		try (
+//			  InputStream file = new FileInputStream(String.format("%s_transaction.ser", RMName));
+//		      InputStream buffer = new BufferedInputStream(file);
+//		      ObjectInput input = new ObjectInputStream (buffer);
+//		    ){
+//			 result = (Transaction) input.readObject();;
+//		    }  
+//		    catch(ClassNotFoundException ex){
+//		    	ex.printStackTrace();
+//		    }
+//		return result;
+//	}
+//	
+////	name is hostname+xid. Write RMHashtable to disk
+//	public static void writeTransaction(String RMName, Transaction transaction) {
+//		try (
+//	      OutputStream file = new FileOutputStream(String.format("%s_transaction.ser", RMName));
+//	      OutputStream buffer = new BufferedOutputStream(file);
+//	      ObjectOutput output = new ObjectOutputStream(buffer);
+//	    ){
+//	      output.writeObject(transaction);
+//	    }  
+//	    catch(IOException ex){
+//	    	ex.printStackTrace();
+//	    }
+//	}
+//	
+//	public static void deleteLog(String RMName) {
+//		File file = new File(String.format("%s_transaction.ser", RMName));
+//	    file.delete();
+//	}
     
 
 	
@@ -198,7 +199,36 @@ public class DiskManager {
 	    }
 	}
 	
+	@SuppressWarnings("unchecked")
+	public static LockManager readLockManager(String RMName) throws FileNotFoundException, IOException{
+		LockManager result = null;
 
+		try (
+			  InputStream file = new FileInputStream(String.format("%s_lock_manager.ser", RMName));
+		      InputStream buffer = new BufferedInputStream(file);
+		      ObjectInput input = new ObjectInputStream (buffer);
+		    ){
+			 result = (LockManager) input.readObject();;
+		    }  
+		    catch(ClassNotFoundException ex){
+		    	
+		    }
+		return result;
+	}
+
+
+	public static void writeLockManager(String RMName, LockManager lockManager) {
+		try (
+	      OutputStream file = new FileOutputStream(String.format("%s_lock_manager.ser", RMName));
+	      OutputStream buffer = new BufferedOutputStream(file);
+	      ObjectOutput output = new ObjectOutputStream(buffer);
+	    ){
+	      output.writeObject(lockManager);
+	    }  
+	    catch(IOException ex){
+	    	ex.printStackTrace();
+	    }
+	}
 	
 	
 	

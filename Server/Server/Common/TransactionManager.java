@@ -199,7 +199,12 @@ public class TransactionManager {
 
 		// get votes from participants
 		boolean decision = getVotes(trans);
-
+		
+		// wait for server to shutdown 
+		try {
+			Thread.sleep(200);
+		} catch (InterruptedException e) {}
+		
 		// write decision to log
 		trans.decision = (decision == true) ? 1 : -1;
 		txns.put(txnId, trans);
@@ -216,6 +221,60 @@ public class TransactionManager {
 		if(!decision) {			
 			throw new TransactionAbortedException(txnId);
 		}
+	}
+
+
+	public void prepare(TransactionCoordinator trans) {
+		// prepare for 2PC
+		trans.started = 1;
+		txns.put(trans.xid, trans);
+		// write "start2PC" to logs
+		DiskManager.writeTransactions(name, txns);
+	}
+
+
+	/*
+	Get votes from all RMs for this transaction
+	*/
+	public boolean getVotes(TransactionCoordinator trans)
+	{
+		int txnId = trans.xid;
+		boolean decision = true;
+		boolean timeout = false;
+		LinkedList<Boolean> voteResults = new LinkedList<Boolean>();
+		LinkedList<Boolean> timeoutList = new LinkedList<Boolean>();
+		LinkedList<Thread> voteThreads = new LinkedList<Thread>();
+
+		Trace.info("start sending vote request...");
+
+		for (Integer rmIdx : trans.rmSet) {
+			Thread voteThread = new Thread(new VoteReqThread(txnId, rmIdx, voteResults, timeoutList));
+			voteThreads.add(voteThread);
+			voteThread.start();
+		}
+
+		for (Thread t : voteThreads) {
+			try {
+				t.join(TIMEOUT_VOTE_IN_SEC * 1000);
+				t.interrupt();
+				t.join();
+				if(timeoutList.contains(false)) {
+					break;
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		timeout = timeoutList.contains(false);
+		decision = !voteResults.contains(false) && voteResults.size() == trans.rmSet.size();
+		decision = decision && !timeout;
+
+		if (crashMode == 4)
+			System.exit(1);
+		Trace.info(String.format("Coordinator decision : %s. Timeout: %s", decision, timeout));
+
+		return decision;
+
 	}
 
 	public class VoteReqThread implements Runnable {
@@ -280,59 +339,6 @@ public class TransactionManager {
 		}
 	}
 
-	public void prepare(TransactionCoordinator trans) {
-		// prepare for 2PC
-		trans.started = 1;
-		txns.put(trans.xid, trans);
-		// write "start2PC" to logs
-		DiskManager.writeTransactions(name, txns);
-	}
-
-
-	/*
-	Get votes from all RMs for this transaction
-	*/
-	public boolean getVotes(TransactionCoordinator trans)
-	{
-		int txnId = trans.xid;
-		boolean decision = true;
-		boolean timeout = false;
-		LinkedList<Boolean> voteResults = new LinkedList<Boolean>();
-		LinkedList<Boolean> timeoutList = new LinkedList<Boolean>();
-		LinkedList<Thread> voteThreads = new LinkedList<Thread>();
-
-		Trace.info("start sending vote request...");
-
-		for (Integer rmIdx : trans.rmSet) {
-			Thread voteThread = new Thread(new VoteReqThread(txnId, rmIdx, voteResults, timeoutList));
-			voteThreads.add(voteThread);
-			voteThread.start();
-		}
-
-		for (Thread t : voteThreads) {
-			try {
-				t.join(TIMEOUT_VOTE_IN_SEC * 1000);
-				t.interrupt();
-				t.join();
-				if(timeoutList.contains(false)) {
-					break;
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		timeout = timeoutList.contains(false);
-		decision = !voteResults.contains(false) && voteResults.size() == trans.rmSet.size();
-		decision = decision && !timeout;
-
-		if (crashMode == 4)
-			System.exit(1);
-		Trace.info(String.format("Coordinator decision : %s. Timeout: %s", decision, timeout));
-
-		return decision;
-
-	}
-
 	/*
 	 * send commit or abort decision to all participants.
 	 * 
@@ -371,34 +377,6 @@ public class TransactionManager {
 		Trace.info(String.format("Sent decision of transaction #%d to all Participants", trans.xid));
 	}
 
-	public class DecisionThread implements Runnable {
-		int rmIdx;
-		int xid;
-		boolean decision;
-
-		public DecisionThread(int rmIdx, int xid, boolean decision) {
-			this.rmIdx = rmIdx;
-			this.xid = xid;
-			this.decision = decision;
-		}
-
-		@Override
-		public void run() {
-			try {
-				Trace.info(String.format("send commit decision %s to RM #%d", decision, rmIdx));
-				if (decision)
-					stubs.get(rmIdx).commit(xid);
-				else
-					stubs.get(rmIdx).abort(xid);
-			} catch (RemoteException e) {
-				Trace.warn("Remote Exception");
-			} catch (InvalidTransactionException e) {
-				Trace.warn("Invalid transaction.");
-			} catch (TransactionAbortedException e) {
-				Trace.warn("Transaction aborted.");
-			}
-		}
-	}
 
 	public synchronized int start() throws RemoteException {
 		int xid = txnIdCounter;

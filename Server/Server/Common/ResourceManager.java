@@ -12,6 +12,7 @@ import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,19 +40,21 @@ public class ResourceManager implements IResourceManager {
 		m_name = p_name;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void restore() {
 		Trace.info("Restoring..");
-		TransactionParticipant transactionLog = null;
+		Hashtable<Integer, TransactionParticipant> transactionsLog = null;
 		try {
-			transactionLog = (TransactionParticipant) DiskManager.readTransaction(m_name);
-			if(transactionLog != null) {				
-				this.transactions.put(transactionLog.xid, transactionLog);
+			transactionsLog = (Hashtable<Integer, TransactionParticipant>) DiskManager.readTransactions(m_name);
+			if(transactionsLog != null) {				
+				this.transactions = transactionsLog;
 			}
 		} catch (FileNotFoundException e) {
 			System.out.println("Transcation log file dones't exist, nothing to restore.");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 		RMHashMap dataLog = null; 
 		try {
 			String masterRecord = "";
@@ -72,6 +75,20 @@ public class ResourceManager implements IResourceManager {
 			e.printStackTrace();
 		}
 		
+		LockManager lmLog = null;
+		try {
+			lmLog = (LockManager)DiskManager.readLockManager(m_name);
+			if(lmLog != null) {
+				lm = lmLog;
+				Trace.info("Recovered Lock Manager:");
+//				System.out.println(lmLog.lockTable.allElements().toString());
+			}
+		}catch (FileNotFoundException e) {
+			System.out.println("LockManager file dones't exist, nothing to restore.");
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		HashSet<Integer> abortedTXNLog = null;
 		try {
 			abortedTXNLog = (HashSet<Integer>)DiskManager.readAbortedList(m_name);
@@ -80,45 +97,56 @@ public class ResourceManager implements IResourceManager {
 				Trace.info("Recovered abortedTXN:");
 				System.out.println(abortedTXN);
 			}
+		}catch (FileNotFoundException e) {
+			System.out.println("Aborted transaction list dones't exist, nothing to restore.");
 		}catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		if(transactionLog != null) {
-			try {
-				Trace.info("Recovered transaction:");
-				System.out.println(transactionLog);
-				int xid = transactionLog.xid;
-				Trace.info(String.format("Transaction #%d, votedYes=%d, commited=%d",
-						xid, transactionLog.votedYes, transactionLog.commited));
-				if(transactionLog.votedYes == 1) {
-					
-					// currently do nothing
-					if(transactionLog.commited == 0) {}
-					// I have a record of committed, but it could crash after writing the record but before commit
-					// if the transaction actually committed, then it will not be in the log 
-					else if (transactionLog.commited == 1) {
-						try {
-							Trace.info(String.format("Committing transaction %d", xid));
-							commit(xid);
-						} 
-						catch (TransactionAbortedException e) {}
+		if(transactionsLog != null) {
+			Set<Entry<Integer, TransactionParticipant>> entires = transactionsLog.entrySet();
+			for(Entry<Integer, TransactionParticipant> pair: entires){
+				try {
+					int xid = (int) pair.getKey();
+					TransactionParticipant transaction = (TransactionParticipant)pair.getValue();
+					Trace.info(String.format("Transaction #%d, votedYes=%d, commited=%d",
+							xid, transaction.votedYes, transaction.commited));
+					if(transaction.votedYes == 1) {
+						
+						if(transaction.commited == 0) {}
+						// I have a record of committed, but it could crash after writing the record but before commit
+						// if the transaction actually committed, then it will not be in the log 
+						else if (transaction.commited == 1) {
+							try {
+								Trace.info(String.format("Committing transaction %d", xid));
+								commit(xid);
+							} catch (TransactionAbortedException e) {
+								System.out.println("Transaction aborted.");
+							}
+						}
+						else {
+							// I have a record of abort, but it could crash after writing the record before the actual abort
+							// if the transaction actually aborted, then it will not be in the log 
+							Trace.info(String.format("Aborting transaction %d", xid));
+							try {
+								abort(xid);
+							} catch (TransactionAbortedException e) {}
+						}
 					}
-					else {
+					// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
+					// the vote method will return false
+					else if(transaction.votedYes == 0){					
+						Trace.info(String.format("Aborting transaction %d", xid));
 						try {
 							abort(xid);
-						} catch (TransactionAbortedException e) {}
+						} catch (TransactionAbortedException e) {} 
 					}
+							
+				} catch (InvalidTransactionException e) {
+					
 				}
-				// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
-				// the vote method will return false
-				else {
-					transactions.remove(xid);
-				}
-
-			} catch (InvalidTransactionException e) {}
+			}
 		}
-		
 		
 		Trace.info("Recover done");
 		File f = new File("crash_rm");
@@ -136,9 +164,8 @@ public class ResourceManager implements IResourceManager {
 		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
 		TransactionParticipant transaction = transactions.get(xid);
 		if (transaction==null) throw new InvalidTransactionException(xid);
-		if(this.crashMode == 3) System.exit(0);
 		transaction.commited = -1;
-		DiskManager.writeTransaction(m_name, transaction);
+		DiskManager.writeTransactions(m_name, transactions);
 		killTimer(xid);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
 		this.timeTable.remove(xid);
@@ -146,8 +173,9 @@ public class ResourceManager implements IResourceManager {
 		if(this.crashMode == 4) System.exit(0);
 		lm.UnlockAll(xid);
 		abortedTXN.add(xid);
-		DiskManager.deleteLog(m_name);
+		DiskManager.writeTransactions(m_name, transactions);
 		DiskManager.writeAbortedList(m_name, abortedTXN);
+		DiskManager.writeLockManager(m_name, lm);
 	}
 	
 	public void timeoutAbort(int xid) throws InvalidTransactionException, TransactionAbortedException {
@@ -166,10 +194,8 @@ public class ResourceManager implements IResourceManager {
 		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
 		TransactionParticipant transaction = transactions.get(xid);
 		if (transaction == null) throw new InvalidTransactionException(xid);
-		if(this.crashMode == 3) System.exit(0);
 		transaction.commited = 1;
-		
-		DiskManager.writeTransaction(m_name, transaction);
+		DiskManager.writeTransactions(m_name, transactions);
 		
 		if(this.crashMode == 4) System.exit(0);
 		Trace.info("ResourceManager_" + m_name + ":: transtaction commit with id " + Integer.toString(xid));
@@ -186,8 +212,9 @@ public class ResourceManager implements IResourceManager {
 		// clean transaction history
 		this.transactions.remove(xid);
 		//delete log file
-		DiskManager.deleteLog(m_name);
+		DiskManager.writeTransactions(m_name, transactions);
 		lm.UnlockAll(xid);
+		DiskManager.writeLockManager(m_name, lm);
 	}
 	
 
@@ -654,7 +681,7 @@ public class ResourceManager implements IResourceManager {
 	    public void run() {
 	      System.out.print("Shutting down...");
 	      try {
-	        sleep(500);
+	        sleep(100);
 	      } catch (InterruptedException e) {
 	      }
 	      System.out.println("done");
@@ -674,6 +701,9 @@ public class ResourceManager implements IResourceManager {
 		if (transactions.get(id)==null) throw new InvalidTransactionException(id);
 		killTimer(id);
 		this.timeTable.remove(id);
+		Trace.info("Writing lock manager to disk");
+//		System.out.println(lm.lockTable.allElements().toString());
+		DiskManager.writeLockManager(m_name, lm);
 		boolean decision = true;
 		// if crash here, we don't need to write any log since coordinator will receive error, telling all participants to abort
 		// when server wakes up, the transaction won't even appear in the log, which is equivalent to have aborted
@@ -687,8 +717,7 @@ public class ResourceManager implements IResourceManager {
 		
 		if(transaction != null) {			
 			transaction.votedYes = decision? 1:-1;
-			DiskManager.writeTransaction(m_name, transaction);
-			
+			DiskManager.writeTransactions(m_name, transactions);
 			if(decision) {
 				transaction.xCopies = (RMHashMap) m_data.clone();
 				synchronized (transaction.xCopies) {
@@ -703,13 +732,15 @@ public class ResourceManager implements IResourceManager {
 						transaction.xCopies.remove(key);
 					}
 				}
+				
 				Trace.info(String.format("Writing updated copy into log %s", masterRecord.equals("A")? "B" : "A"));
 				DiskManager.writeRMData(m_name, transaction.xCopies, masterRecord.equals("A")? "B" : "A");
+				
 			}
-			
 		}
 		// crashing here is equivalent to voting no, coordinator will sent abort to all servers
 		if(this.crashMode == 2) System.exit(0);
+		if(this.crashMode == 3) shutdown();
 
 		return decision;
 	}

@@ -655,7 +655,7 @@ public abstract class Client
 					m_resourceManager.commit(xid);
 				}
 				catch (TransactionAbortedException e){
-					System.out.println("Transaction cannot be commited -- already aborted");
+					System.out.println("Transaction already aborted");
 					break;
 				}catch(RemoteException e) {
 					System.out.println("Remote exception.");
@@ -680,7 +680,7 @@ public abstract class Client
 					break;
 				}
 				catch (TransactionAbortedException e){
-					System.out.println("Transaction cannot be commited -- already aborted");
+					System.out.println("Transaction already aborted");
 					break;
 				}
 				System.out.println("Transaction aborted");
