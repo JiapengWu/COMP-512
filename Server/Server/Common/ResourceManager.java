@@ -28,7 +28,7 @@ public class ResourceManager implements IResourceManager {
 	protected String masterRecord = "A";
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
-	private final static int TIMEOUT_IN_SEC = 1000;
+	private final static int TIMEOUT_IN_SEC = 15;
 	private ConcurrentHashMap<Integer, Thread> timeTable = new ConcurrentHashMap<Integer, Thread>();
 	
 	protected Hashtable<Integer, TransactionParticipant> transactions = new Hashtable<Integer, TransactionParticipant>();
@@ -57,6 +57,7 @@ public class ResourceManager implements IResourceManager {
 			String masterRecord = "";
 			try {
 				masterRecord = DiskManager.readMasterRecord(m_name);
+				this.masterRecord = masterRecord;
 				System.out.println(String.format("Reading from file %s.ser", masterRecord));
 			}catch(IOException e){
 				System.out.println("Database log file dones't exist, nothing to restore.");
@@ -67,12 +68,21 @@ public class ResourceManager implements IResourceManager {
 				Trace.info("Recovered data:");
 				System.out.println(m_data);
 			}
-			
-		}
-		 catch (IOException e) {
+		}catch (IOException e) {
 			e.printStackTrace();
 		}
 		
+		HashSet<Integer> abortedTXNLog = null;
+		try {
+			abortedTXNLog = (HashSet<Integer>)DiskManager.readAbortedList(m_name);
+			if(abortedTXNLog != null) {
+				this.abortedTXN = abortedTXNLog;
+				Trace.info("Recovered abortedTXN:");
+				System.out.println(abortedTXN);
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		if(transactionLog != null) {
 			try {
@@ -91,23 +101,22 @@ public class ResourceManager implements IResourceManager {
 						try {
 							Trace.info(String.format("Committing transaction %d", xid));
 							commit(xid);
-						} catch (TransactionAbortedException e) {
-							System.out.println("Transaction aborted.");
-						}
+						} 
+						catch (TransactionAbortedException e) {}
+					}
+					else {
+						try {
+							abort(xid);
+						} catch (TransactionAbortedException e) {}
 					}
 				}
 				// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
 				// the vote method will return false
-
-				else {	
-					Trace.info(String.format("Aborting transaction %d", xid));
-					abort(xid); 
+				else {
+					transactions.remove(xid);
 				}
-				
-						
-			} catch (InvalidTransactionException e) {
-				
-			}
+
+			} catch (InvalidTransactionException e) {}
 		}
 		
 		
@@ -118,26 +127,40 @@ public class ResourceManager implements IResourceManager {
 			Trace.info("Crashing after recovery..."); 
 			System.exit(1);
 		}
-		return;
 	}
 	/*
 	 * Transaction related operations
-
 	 */
 	@Override
-	public void abort(int xid) throws InvalidTransactionException {
-		if (transactions.get(xid)==null) throw new InvalidTransactionException(xid);
+	public void abort(int xid) throws InvalidTransactionException, TransactionAbortedException {
+		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
+		TransactionParticipant transaction = transactions.get(xid);
+		if (transaction==null) throw new InvalidTransactionException(xid);
+		if(this.crashMode == 3) System.exit(0);
+		transaction.commited = -1;
+		DiskManager.writeTransaction(m_name, transaction);
+		killTimer(xid);
+		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
+		this.timeTable.remove(xid);
+		this.transactions.remove(xid);
+		if(this.crashMode == 4) System.exit(0);
+		lm.UnlockAll(xid);
+		abortedTXN.add(xid);
+		DiskManager.deleteLog(m_name);
+		DiskManager.writeAbortedList(m_name, abortedTXN);
+	}
+	
+	public void timeoutAbort(int xid) throws InvalidTransactionException, TransactionAbortedException {
+		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
+		if (transactions.get(xid) == null) throw new InvalidTransactionException(xid);
 		killTimer(xid);
 		this.timeTable.remove(xid);
-		
-		if(this.crashMode == 3) System.exit(0);
-		Trace.info("ResourceManager_" + m_name + ":: transtaction Abort with id " + Integer.toString(xid));
-		this.transactions.remove(xid);
-		lm.UnlockAll(xid);		
+		this.timeTable.remove(xid);
+		lm.UnlockAll(xid);
 		abortedTXN.add(xid);
+		DiskManager.writeAbortedList(m_name, abortedTXN);
 	}
 
-	
 	@Override
 	public synchronized void commit(int xid) throws InvalidTransactionException,TransactionAbortedException {
 		if(abortedTXN.contains(xid)) throw new TransactionAbortedException(xid);
@@ -188,7 +211,7 @@ public class ResourceManager implements IResourceManager {
 		TransactionParticipant transaction = new TransactionParticipant(xid, (RMHashMap) m_data.clone());
 		synchronized (transactions) {
 			transactions.put(xid, transaction);
-			System.out.println(transactions);
+//			System.out.println(transactions);
 		}
 		initTimer(xid);
 		// printMem(xid);
@@ -647,12 +670,6 @@ public class ResourceManager implements IResourceManager {
 	public boolean voteReply(int id)
 			throws RemoteException, InvalidTransactionException {
 		Trace.info("received vote request for  transaction#"+Integer.toString(id));
-//		try {
-//			Trace.info("Waiting for 4 seconds.");
-//			Thread.sleep(4000);
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
 		
 		if (transactions.get(id)==null) throw new InvalidTransactionException(id);
 		killTimer(id);
@@ -671,20 +688,25 @@ public class ResourceManager implements IResourceManager {
 		if(transaction != null) {			
 			transaction.votedYes = decision? 1:-1;
 			DiskManager.writeTransaction(m_name, transaction);
-			synchronized (transaction.xCopies) {
-				RMHashMap writes = transaction.xWrites;
-				Set<String> keys = writes.keySet();
-				for (String key : keys) {
-					transaction.xCopies.put(key, writes.get(key));
+			
+			if(decision) {
+				transaction.xCopies = (RMHashMap) m_data.clone();
+				synchronized (transaction.xCopies) {
+					RMHashMap writes = transaction.xWrites;
+					Set<String> keys = writes.keySet();
+					for (String key : keys) {
+						transaction.xCopies.put(key, writes.get(key));
+					}
+					RMHashMap deletes = transaction.xDeletes;
+					keys = deletes.keySet();
+					for (String key : keys) {
+						transaction.xCopies.remove(key);
+					}
 				}
-				RMHashMap deletes = transaction.xDeletes;
-				keys = deletes.keySet();
-				for (String key : keys) {
-					transaction.xCopies.remove(key);
-				}
+				Trace.info(String.format("Writing updated copy into log %s", masterRecord.equals("A")? "B" : "A"));
+				DiskManager.writeRMData(m_name, transaction.xCopies, masterRecord.equals("A")? "B" : "A");
 			}
-			Trace.info("Writing updated copy into log.");
-			DiskManager.writeRMData(m_name, transaction.xCopies, masterRecord.equals("A")? "B" : "A");
+			
 		}
 		// crashing here is equivalent to voting no, coordinator will sent abort to all servers
 		if(this.crashMode == 2) System.exit(0);
@@ -727,7 +749,6 @@ public class ResourceManager implements IResourceManager {
 		public TimeOutThread(int xid) {
 			this.xid = xid;
 		}
-
 		@Override
 		public void run() {
 			try {
@@ -738,8 +759,8 @@ public class ResourceManager implements IResourceManager {
 			}
 			try {
 				System.out.println(Integer.toString(xid) + " timeout, aborting...");
-				abort(this.xid);
-			} catch (InvalidTransactionException e1) {
+				timeoutAbort(this.xid);
+			} catch (InvalidTransactionException | TransactionAbortedException e1) {
 				System.out.println(Integer.toString(xid) + " abort invalid transaction.");
 			}
 			

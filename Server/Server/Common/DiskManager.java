@@ -28,7 +28,7 @@ public class DiskManager {
 	public static Hashtable<Integer, ? extends Transaction> readTransactions(String RMName) throws FileNotFoundException, IOException{
 		Hashtable<Integer, Transaction> result = new Hashtable<Integer, Transaction>();
 		try (
-			  InputStream file = new FileInputStream(String.format("%s.ser", RMName));
+			  InputStream file = new FileInputStream(String.format("%s_transactions.ser", RMName));
 		      InputStream buffer = new BufferedInputStream(file);
 		      ObjectInput input = new ObjectInputStream (buffer);
 		    ){
@@ -43,7 +43,7 @@ public class DiskManager {
 //	name is hostname+xid. Write RMHashtable to disk
 	public static void writeTransactions(String RMName, Hashtable<Integer, ? extends Transaction> map) {
 		try (
-	      OutputStream file = new FileOutputStream(String.format("%s.ser", RMName));
+	      OutputStream file = new FileOutputStream(String.format("%s_transactions.ser", RMName));
 	      OutputStream buffer = new BufferedOutputStream(file);
 	      ObjectOutput output = new ObjectOutputStream(buffer);
 	    ){
@@ -161,6 +161,37 @@ public class DiskManager {
 	      ObjectOutput output = new ObjectOutputStream(buffer);
 	    ){
 	      output.writeObject(data);
+	    }  
+	    catch(IOException ex){
+	    	ex.printStackTrace();
+	    }
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static HashSet<Integer> readAbortedList(String RMName) throws FileNotFoundException, IOException{
+		HashSet<Integer> result = null;
+
+		try (
+			  InputStream file = new FileInputStream(String.format("%s_abortedTXN.ser", RMName));
+		      InputStream buffer = new BufferedInputStream(file);
+		      ObjectInput input = new ObjectInputStream (buffer);
+		    ){
+			 result = (HashSet<Integer>) input.readObject();;
+		    }  
+		    catch(ClassNotFoundException ex){
+		    	
+		    }
+		return result;
+	}
+
+
+	public static void writeAbortedList(String RMName, HashSet<Integer> abortedTXN) {
+		try (
+	      OutputStream file = new FileOutputStream(String.format("%s_abortedTXN.ser", RMName));
+	      OutputStream buffer = new BufferedOutputStream(file);
+	      ObjectOutput output = new ObjectOutputStream(buffer);
+	    ){
+	      output.writeObject(abortedTXN);
 	    }  
 	    catch(IOException ex){
 	    	ex.printStackTrace();

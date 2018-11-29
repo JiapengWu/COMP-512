@@ -224,7 +224,7 @@ public interface IResourceManager extends Remote
 
     public int start() throws RemoteException;
     
-    public void abort(int txnID) throws RemoteException, InvalidTransactionException;
+    public void abort(int txnID) throws RemoteException, InvalidTransactionException, TransactionAbortedException;
  
     public boolean shutdown() throws RemoteException;
     /*

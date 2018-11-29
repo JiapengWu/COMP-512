@@ -15,8 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import Server.Interface.IResourceManager;
 
 public class TransactionManager {
-	public static final int TIMEOUT_IN_SEC = 1000;
-	public static final int TIMEOUT_VOTE_IN_SEC = 10;
+	public static final int TIMEOUT_IN_SEC = 10;
+	public static final int TIMEOUT_VOTE_IN_SEC = 5;
 	private String name = "MiddleWare";
 	private int txnIdCounter;
 	private HashSet<Integer> abortedTXN;
@@ -38,12 +38,11 @@ public class TransactionManager {
 	public static class TMMeta implements Serializable {
 		int counter;
 		HashSet<Integer> aborted;
-
+		
 		public TMMeta(int counter, HashSet<Integer> aborted) {
 			this.counter = counter;
 			this.aborted = aborted;
 		}
-
 	}
 
 	public TransactionManager() {
@@ -139,12 +138,9 @@ public class TransactionManager {
 				Trace.info(String.format("sending ABORT to trans #%d", xid));
 				try {
 					sendDecision(trans, false, true);
-				} catch (InvalidTransactionException e) {
-					;
-				}
+				} catch (InvalidTransactionException e) {}
 				old_tmMeta.aborted.add(xid);
 				old_txns.put(xid, trans);
-
 			}
 		}
 		Trace.info(String.format("From log: \n map <xid, Transaction> has size %d; txnCounter=%d", old_txns.size(),
@@ -164,18 +160,21 @@ public class TransactionManager {
 	}
 
 	// client abort, no need to vote
-	public void abort(int txnID) throws RemoteException, InvalidTransactionException {
+	public void abort(int txnID) throws RemoteException, InvalidTransactionException, TransactionAbortedException {
+		synchronized (abortedTXN) {
+			if (abortedTXN.contains(txnID))
+				throw new TransactionAbortedException(txnID);
+		}
 		if (timeTable.get(txnID) == null)
 			throw new InvalidTransactionException(txnID);
 		killTimer(txnID);
+		removeTxn(txnID);
+		
 		TransactionCoordinator trans = txns.get(txnID);
 		if (trans == null)
 			throw new InvalidTransactionException(txnID);
 
 		sendDecision(trans, false, false);
-		synchronized (abortedTXN) {
-			abortedTXN.add(txnID);
-		}
 		txns.remove(txnID);
 		DiskManager.writeTransactions(name, txns);
 		DiskManager.writeTMMetaLog(name, new TMMeta(txnIdCounter, abortedTXN));
@@ -214,6 +213,9 @@ public class TransactionManager {
 
 		txns.remove(txnId);
 		DiskManager.writeTransactions(name, txns);
+		if(!decision) {			
+			throw new TransactionAbortedException(txnId);
+		}
 	}
 
 	public class VoteReqThread implements Runnable {
@@ -245,7 +247,15 @@ public class TransactionManager {
 					break;
 				}
 				catch (ConnectException e){
-					continue;
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e1) {
+						Trace.info("Timeout");
+						synchronized (timeoutList) {
+							timeoutList.add(false);
+						}
+						return;
+					}
 				} 
 				catch (RemoteException e) {
 					try {
@@ -257,10 +267,9 @@ public class TransactionManager {
 						}
 						return;
 					}
-				} 
-
+				}
 				catch (Exception e) {
-					Trace.info(String.format("Exception receiving vote request", rmIdx));
+					Trace.info(String.format("Exception receiving vote request from #%d RM, result is false", rmIdx));
 					synchronized (voteResults) {
 						voteResults.add(false);
 					}
@@ -298,7 +307,6 @@ public class TransactionManager {
 			Thread voteThread = new Thread(new VoteReqThread(txnId, rmIdx, voteResults, timeoutList));
 			voteThreads.add(voteThread);
 			voteThread.start();
-			// if(crashMode == 3) System.exit(0);
 		}
 
 		for (Thread t : voteThreads) {
@@ -306,6 +314,9 @@ public class TransactionManager {
 				t.join(TIMEOUT_VOTE_IN_SEC * 1000);
 				t.interrupt();
 				t.join();
+				if(timeoutList.contains(false)) {
+					break;
+				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -329,7 +340,11 @@ public class TransactionManager {
 	 */
 	public void sendDecision(TransactionCoordinator trans, boolean decision, boolean recovery)
 			throws InvalidTransactionException {
-
+		if(!decision) {
+			synchronized (abortedTXN) {					
+				abortedTXN.add(trans.xid);
+			}
+		}
 		for (Integer rmIdx : trans.rmSet) {
 			try {
 				if (decision)
@@ -344,6 +359,9 @@ public class TransactionManager {
 				else
 					Trace.info("during recover, send commit/abort > 1 times -- ignore");
 			}catch(TransactionAbortedException e) {		
+				synchronized (abortedTXN) {					
+					abortedTXN.add(trans.xid);
+				}
 				Trace.info("Transaction ended on server.");
 			}
 			// crash after sending some but not all decisions
@@ -380,7 +398,6 @@ public class TransactionManager {
 				Trace.warn("Transaction aborted.");
 			}
 		}
-
 	}
 
 	public synchronized int start() throws RemoteException {
@@ -398,14 +415,19 @@ public class TransactionManager {
 		DiskManager.writeTransactions(name, txns);
 		DiskManager.writeTMMetaLog(name, new TMMeta(txnIdCounter, abortedTXN));
 
-		for (IResourceManager stub : stubs.values()) {
+		for (Integer rmIdx : stubs.keySet()) {
 			// Trace.info("Starting at stub " + stub);
-			try {
-				stub.start(txnId);
-			} catch (RemoteException e) {
-				// e.printStackTrace();
-				Trace.info(String.format("Server %s failed to start", stub));
+			while(true) {
+				try {
+					stubs.get(rmIdx).start(txnId);
+					break;
+				} catch (RemoteException e) {
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e1) {}
+				}
 			}
+			
 		}
 	}
 
@@ -413,12 +435,15 @@ public class TransactionManager {
 	// @param: rm: 1: flight, 2: car, 3:room
 	public void updateRMSet(int xid, int rm) {
 		TransactionCoordinator trans = txns.get(xid);
-		if (trans.rmSet.contains(rm))
-			return;
+		if(trans != null) {
+			if (trans.rmSet.contains(rm))
+				return;
 
-		trans.rmSet.add(rm);
-		txns.put(xid, trans);
-		DiskManager.writeTransactions(name, txns);
+			trans.rmSet.add(rm);
+			txns.put(xid, trans);
+			DiskManager.writeTransactions(name, txns);
+		}
+		
 	}
 
 	public class TimeOutThread implements Runnable {
@@ -442,6 +467,8 @@ public class TransactionManager {
 				abort(this.xid);
 			} catch (InvalidTransactionException e) {
 				System.out.println(Integer.toString(xid) + " abort invalid transaction.");
+			}catch (TransactionAbortedException e) {
+				System.out.println(Integer.toString(xid) + " transaction already aborted.");
 			} catch (RemoteException e) {
 				System.out.println(Integer.toString(xid) + " abort remote exception.");
 			}
@@ -478,13 +505,14 @@ public class TransactionManager {
 		timeTable.remove(xid);
 	}
 
+	@SuppressWarnings("rawtypes")
 	public boolean shutdown() throws RemoteException {
 		Iterator it = timeTable.entrySet().iterator();
 		while (it.hasNext()) {
 			HashMap.Entry pair = (ConcurrentHashMap.Entry) it.next();
 			try {
 				abort((int) pair.getKey());
-			} catch (InvalidTransactionException e) {
+			} catch (InvalidTransactionException | TransactionAbortedException e) {
 				continue;
 			}
 		}

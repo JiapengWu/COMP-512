@@ -185,11 +185,21 @@ public class RMIMiddleware implements IResourceManager {
 	}
 
 	public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
-			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
+			throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
 		// System.out.println(flightRM);
-		return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
+		while(true) {
+			try {
+				return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
+			
+		
 	}
 
 	@Override
@@ -197,7 +207,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 2);
-		return carRM.addCars(id, location, numCars, price);
+		while(true) {
+			try {
+				return carRM.addCars(id, location, numCars, price);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -205,7 +223,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 3);
-		return roomRM.addRooms(id, location, numRooms, price);
+		while(true) {
+			try {
+				return roomRM.addRooms(id, location, numRooms, price);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -213,7 +239,16 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
-		return flightRM.deleteFlight(id, flightNum);
+		
+		while(true) {
+			try {
+				return flightRM.deleteFlight(id, flightNum);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -221,7 +256,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 2);
-		return carRM.deleteCars(id, location);
+		while(true) {
+			try {
+				return carRM.deleteCars(id, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -229,7 +272,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 3);
-		return roomRM.deleteRooms(id, location);
+		while(true) {
+			try {
+				return roomRM.deleteRooms(id, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -240,8 +291,39 @@ public class RMIMiddleware implements IResourceManager {
 		tm.updateRMSet(id, 1);
 		tm.updateRMSet(id, 2);
 		tm.updateRMSet(id, 3);
-		return flightRM.deleteCustomer(id, customerID) && carRM.deleteCustomer(id, customerID)
-				&& roomRM.deleteCustomer(id, customerID);
+		boolean resultFlight, resultCar, resultRoom;
+		
+		while(true) {
+			try {
+				resultFlight = flightRM.deleteCustomer(id, customerID);
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
+		while(true) {
+			try {
+				resultCar = carRM.deleteCustomer(id, customerID);
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
+		while(true) {
+			try {
+				resultRoom = roomRM.deleteCustomer(id, customerID);
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
+		return resultFlight && resultCar && resultRoom;
 	}
 
 	@Override
@@ -249,7 +331,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
-		return flightRM.queryFlight(id, flightNumber);
+		while(true) {
+			try {
+				return flightRM.queryFlight(id, flightNumber);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -257,7 +347,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 2);
-		return carRM.queryCars(id, location);
+		while(true) {
+			try {
+				return carRM.queryCars(id, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -265,7 +363,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 3);
-		return roomRM.queryRooms(id, location);
+		while(true) {
+			try {
+				return roomRM.queryRooms(id, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -279,16 +385,40 @@ public class RMIMiddleware implements IResourceManager {
 		tm.updateRMSet(id, 2);
 		tm.updateRMSet(id, 3);
 		String carSummary = "";
-		try {
-			carSummary = carRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
-		} catch (ArrayIndexOutOfBoundsException e) {
+		while(true) {
+			try {
+				try {
+					carSummary = carRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
+				} catch (ArrayIndexOutOfBoundsException e) {}
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
 		}
 		String roomSummary = "";
-		try {
-			roomSummary = roomRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
-		} catch (ArrayIndexOutOfBoundsException e) {
+		while(true) {
+			try {
+				try {
+					roomSummary = roomRM.queryCustomerInfo(id, customerID).split("\n", 2)[1];
+				} catch (ArrayIndexOutOfBoundsException e) {}
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
 		}
-		return flightRM.queryCustomerInfo(id, customerID) + carSummary + roomSummary;
+		while(true) {
+			try {
+				return flightRM.queryCustomerInfo(id, customerID) + carSummary + roomSummary;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -296,7 +426,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
-		return flightRM.queryFlightPrice(id, flightNumber);
+		while(true) {
+			try {
+				return flightRM.queryFlightPrice(id, flightNumber);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -304,7 +442,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 2);
-		return carRM.queryCarsPrice(id, location);
+		while(true) {
+			try {
+				return carRM.queryCarsPrice(id, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -312,7 +458,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 3);
-		return roomRM.queryRoomsPrice(id, location);
+		while(true) {
+			try {
+				return roomRM.queryRoomsPrice(id, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -335,7 +489,38 @@ public class RMIMiddleware implements IResourceManager {
 		tm.updateRMSet(id, 1);
 		tm.updateRMSet(id, 2);
 		tm.updateRMSet(id, 3);
-		return flightRM.newCustomer(id, cid) && carRM.newCustomer(id, cid) && roomRM.newCustomer(id, cid);
+		boolean resultFlight, resultCar, resultRoom;
+		while(true) {
+			try {
+				resultFlight = flightRM.newCustomer(id, cid);
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
+		while(true) {
+			try {
+				resultCar = carRM.newCustomer(id, cid);
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
+		while(true) {
+			try {
+				resultRoom = roomRM.newCustomer(id, cid);
+				break;
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
+		return resultFlight && resultCar && resultRoom;
 	}
 
 	@Override
@@ -343,7 +528,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 1);
-		return flightRM.reserveFlight(id, customerID, flightNumber);
+		while(true) {
+			try {
+				return flightRM.reserveFlight(id, customerID, flightNumber);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -351,7 +544,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 2);
-		return carRM.reserveCar(id, customerID, location);
+		while(true) {
+			try {
+				return carRM.reserveCar(id, customerID, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -359,7 +560,15 @@ public class RMIMiddleware implements IResourceManager {
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		tm.resetTimer(id);
 		tm.updateRMSet(id, 3);
-		return roomRM.reserveRoom(id, customerID, location);
+		while(true) {
+			try {
+				return roomRM.reserveRoom(id, customerID, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
@@ -418,7 +627,7 @@ public class RMIMiddleware implements IResourceManager {
 	}
 
 	@Override
-	public void abort(int txnId) throws RemoteException, InvalidTransactionException {
+	public void abort(int txnId) throws RemoteException, InvalidTransactionException, TransactionAbortedException {
 		tm.abort(txnId);
 	}
 
@@ -434,19 +643,43 @@ public class RMIMiddleware implements IResourceManager {
 	@Override
 	public boolean unReserveFlight(int id, int customerID, int flightNumber)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		return flightRM.unReserveFlight(id, customerID, flightNumber);
+		while(true) {
+			try {
+				return flightRM.unReserveFlight(id, customerID, flightNumber);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
 	public boolean unReserveCar(int id, int customerID, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		return carRM.unReserveCar(id, customerID, location);
+		while(true) {
+			try {
+				return carRM.unReserveCar(id, customerID, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override
 	public boolean unReserveRoom(int id, int customerID, String location)
 			throws RemoteException, DeadlockException, InvalidTransactionException, TransactionAbortedException {
-		return roomRM.unReserveRoom(id, customerID, location);
+		while(true) {
+			try {
+				return roomRM.unReserveRoom(id, customerID, location);
+			} catch (RemoteException e) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {}
+			}
+		}
 	}
 
 	@Override

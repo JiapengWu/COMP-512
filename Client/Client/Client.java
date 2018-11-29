@@ -679,6 +679,10 @@ public abstract class Client
 					System.out.println("Remote exception.");
 					break;
 				}
+				catch (TransactionAbortedException e){
+					System.out.println("Transaction cannot be commited -- already aborted");
+					break;
+				}
 				System.out.println("Transaction aborted");
 				break;
 			}
