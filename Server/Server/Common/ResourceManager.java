@@ -112,7 +112,6 @@ public class ResourceManager implements IResourceManager {
 					Trace.info(String.format("Transaction #%d, votedYes=%d, commited=%d",
 							xid, transaction.votedYes, transaction.commited));
 					if(transaction.votedYes == 1) {
-						
 						if(transaction.commited == 0) {}
 						// I have a record of committed, but it could crash after writing the record but before commit
 						// if the transaction actually committed, then it will not be in the log 
@@ -135,7 +134,7 @@ public class ResourceManager implements IResourceManager {
 					}
 					// haven't received vote, thus should abort. If coordinator sent vote request on this xid again,
 					// the vote method will return false
-					else if(transaction.votedYes == 0){					
+					else if(transaction.votedYes == 0){
 						Trace.info(String.format("Aborting transaction %d", xid));
 						try {
 							abort(xid);
